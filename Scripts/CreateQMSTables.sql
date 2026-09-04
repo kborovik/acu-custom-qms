@@ -178,6 +178,11 @@ BEGIN
     );
 END
 
+IF OBJECT_ID(N'dbo.QMSNonConformance', N'SN') IS NULL
+    AND OBJECT_ID(N'dbo.QMSNonConformance', N'U') IS NULL
+    AND OBJECT_ID(N'dbo.UsrQMSNonConformance', N'U') IS NOT NULL
+    CREATE SYNONYM [dbo].[QMSNonConformance] FOR [dbo].[UsrQMSNonConformance];
+
 -- InventoryItem usr columns (I.dac InventoryItemExt). Table already exists.
 
 IF COL_LENGTH(N'dbo.InventoryItem', N'UsrQMSInspectionRequired') IS NULL
