@@ -3,6 +3,7 @@
 This repository is the Acumatica Cloud xRP customization package `Lab5.QMS`.
 It holds DACs, graphs, `QM*` screens, and the `QMS/22.200.001` REST endpoint.
 Spec: [`domain/ACUMATICA_QMS_EXTENSION_SPEC.md`](domain/ACUMATICA_QMS_EXTENSION_SPEC.md).
+Control: [`SPEC.md`](SPEC.md).
 
 Related work lives in sibling repos. File defects and changes there, not here:
 
@@ -10,3 +11,79 @@ Related work lives in sibling repos. File defects and changes there, not here:
   [`kborovik/acu-google-qms`](https://github.com/kborovik/acu-google-qms)
 - CanNordic tenant GitOps seed (`acu` YAML):
   [`kborovik/acu-gitops-qms`](https://github.com/kborovik/acu-gitops-qms)
+- `acu` CLI:
+  [`kborovik/acumatica-cli`](https://github.com/kborovik/acumatica-cli)
+
+This repo has no `config/` seed. Do not `acu apply` / `diff` / `run` from here.
+Never print `.env` secrets.
+
+## Live e2e (`acu` + `.env`)
+
+Repo-root `.env` (gitignored) is the live target. `acu` walks up from cwd to find it.
+
+```
+ACU_BASE_URL=http://<host>/AcumaticaERP
+ACU_TENANT=<login>
+ACU_USER=admin
+ACU_PASSWORD=<secret>
+```
+
+`ACU_SSH` omitted → `Administrator@<base_url host>` (SSH boxes). Present blank `ACU_SSH=` → hosted, no tenant CRUD.
+
+Verified combo (sibling CLI): Acumatica **26.101.0225**, Default contract **25.200.001**.
+
+### Preflight (read-only, always first)
+
+```sh
+acu config check          # REST login + Default/<api> listed; SSH ping if ACU_SSH set
+acu config show           # resolved .env; password redacted
+acu tenant list           # SSH; confirm ACU_TENANT exists
+```
+
+`ok rest` + `ok endpoints` = session is good. Missing `matrix.yaml` is a warn here, not a fail.
+
+**Never** `acu check` from this repo — that is a destructive cold tenant rebuild (`delete` → create → apply → run).
+
+Python probes: use the interpreter from `which acu` (uv tool `acumatica-cli`). `import acumatica_cli` then `load_instance()` + `AcumaticaClient` — same `.env` walk-up as the CLI. System `python3` will not see the package.
+
+### Package presence
+
+After packing `Lab5_QMS_Customization.zip`, publish via `/CustomizationApi` (same cookie session as `acu`; field is `projectContentBase64`, not `projectContents`). Then prove the tenant has the package:
+
+| Check | Expect |
+| --- | --- |
+| `POST /CustomizationApi/getPublished` | `Lab5.QMS` in `projects` (AcuBootstrap may also be present) |
+| `GET /entity` | `QMS` / `22.200.001` listed |
+| `GET /entity/QMS/22.200.001/swagger.json` | 200 |
+| `GET /entity/QMS/22.200.001/InspectionPlan` | 200 (empty list OK) |
+| `GET /entity/QMS/22.200.001/InspectionOrder` | 200 |
+| `GET /entity/QMS/22.200.001/NonConformance` | 200 |
+| SQL `INFORMATION_SCHEMA.TABLES` `UsrQMS%` (SSH `sqlcmd -S "(local)" -E -C`, db `AcumaticaDB`) | plan / plan-test / order / order-result / NCR tables |
+| `InventoryItem` columns `UsrQMS%` / `UsrMinShelf%` | `UsrQMSInspectionRequired`, `UsrQMSInspectionPlanID`, `UsrMinShelfLifeDays` |
+| `SiteMap` `ScreenID LIKE 'QM%'` | `QM.10.10.00` prefs, `QM.20.10.00` plans, `QM.30.10.00` orders, `QM.30.20.00` NCR |
+| Bootstrap `NumberingSequence` `QORD` / `QNCR` | present |
+| Bootstrap `Role` `Quality Manager` | present |
+
+`GET /entity/QMS/22.200.001/...` → `Endpoint [QMS/22.200.001] not found` means the zip is not published on this tenant. Do not invent the endpoint.
+
+Default-contract entities (`StockItem`, `PurchaseReceipt`, `LotSerialClass`) live under `/entity/Default/25.200.001/`. Numbering, Role, Company, IN/PO prefs live under `/entity/Bootstrap/1.4.0/` — Default has no `NumberingSequence`.
+
+### Functional paths (needs GitOps seed on the same tenant)
+
+Dock / lot e2e needs inventory + IN/PO setup from sibling `acu-gitops-qms` applied to **this** `ACU_TENANT`. Probe first:
+
+- Bootstrap `Company` / `INPreferences` / `POPreferences` return rows
+- Default `StockItem` `$top=1` is 200 with a record
+- `PurchaseReceipt` GET does not 500 on missing Purchasing Preferences
+
+If those miss, stop. Seed the tenant from `acu-gitops-qms` (or switch `.env` `ACU_TENANT`); do not apply that YAML from this repo.
+
+Then, against `QMS/22.200.001` + Default:
+
+1. Item with `UsrQMSInspectionRequired=true` + plan id → release PO receipt → lot `QC Hold` + draft `InspectionOrder` (PlanID, lot, vendor, receipt).
+2. GET `InspectionPlan?$expand=Tests` → PUT `InspectionOrder` results + lab cert fields → attach CoA PDF + JSON via `/files` on the order `NoteID`.
+3. Pass: `EvaluateResults` → `OverallEvaluation` Pass → `ReleaseLotDecision` → lot `Released`, order Completed.
+4. Fail: any required test Fail → lot `Quarantine` + `NonConformance` inserted; allocation halted.
+5. QC Hold → Released only as `Quality Manager` or the ingestion service account.
+
+Read-only probes do not mutate. Publish, receipt release, evaluate, and lot flips do — keep them on the `.env` tenant, never on an unnamed default tenant (CLI tenant guard).
