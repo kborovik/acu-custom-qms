@@ -1,5 +1,4 @@
 .env
-.env.gpg
 .DS_Store
 bin/
 obj/
