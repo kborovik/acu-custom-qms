@@ -1,0 +1,9 @@
+.env
+.env.gpg
+.DS_Store
+bin/
+obj/
+*.user
+*.suo
+.vs/
+findings/
