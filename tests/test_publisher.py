@@ -39,6 +39,7 @@ class TestPublisherV8(unittest.TestCase):
         self.assertIn('namespace Lab5.QMS', src)
         self.assertIn('AssemblyFile = "Lab5.QMS.dll"', src)
         self.assertIn('PackageZip = "Lab5_QMS_Customization.zip"', src)
+        self.assertIn('EndpointName = "QMS"', src)
         self.assertIn('EndpointVersion = "22.200.001"', src)
 
     def test_project_metadata(self) -> None:

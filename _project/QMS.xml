@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lab5.QMS EntityEndpoint project item. Packed into project.xml by T12.
+  XmlSerializer form of PX.Api.ContractBased.Common.Model.Endpoint
+  (namespace http://www.acumatica.com/entity/maintenance/5.31).
+  systemContractVersion 4 = SystemContracts.V4.
+
+  Contract verbs (I.rest / V2):
+    InspectionPlan   GET
+    InspectionOrder  GET PUT
+    NonConformance   GET POST
+-->
+<EntityEndpoint>
+  <Endpoint xmlns="http://www.acumatica.com/entity/maintenance/5.31" name="QMS" version="22.200.001" systemContractVersion="4">
+    <TopLevelEntity name="InspectionPlan" screen="QM201000">
+      <Fields>
+        <Field name="PlanID" type="StringValue" />
+        <Field name="Description" type="StringValue" />
+        <Field name="InventoryID" type="StringValue" />
+        <Field name="SamplingPlan" type="StringValue" />
+        <Field name="Status" type="StringValue" />
+        <Field name="Tests" type="InspectionPlanTest[]" />
+      </Fields>
+      <Mappings>
+        <Mapping field="PlanID">
+          <To object="Document" field="PlanID" />
+        </Mapping>
+        <Mapping field="Description">
+          <To object="Document" field="Description" />
+        </Mapping>
+        <Mapping field="InventoryID">
+          <To object="Document" field="InventoryID" />
+        </Mapping>
+        <Mapping field="SamplingPlan">
+          <To object="Document" field="SamplingPlan" />
+        </Mapping>
+        <Mapping field="Status">
+          <To object="Document" field="Status" />
+        </Mapping>
+        <Mapping field="Tests">
+          <To object="Tests" field="" />
+        </Mapping>
+      </Mappings>
+    </TopLevelEntity>
+    <Detail name="InspectionPlanTest">
+      <Fields>
+        <Field name="LineNbr" type="IntValue" />
+        <Field name="TestID" type="StringValue" />
+        <Field name="Description" type="StringValue" />
+        <Field name="TestMethod" type="StringValue" />
+        <Field name="TargetValue" type="DecimalValue" />
+        <Field name="MinValue" type="DecimalValue" />
+        <Field name="MaxValue" type="DecimalValue" />
+        <Field name="UOM" type="StringValue" />
+        <Field name="Criticality" type="StringValue" />
+      </Fields>
+      <Mappings>
+        <Mapping field="LineNbr">
+          <To object="Tests" field="LineNbr" />
+        </Mapping>
+        <Mapping field="TestID">
+          <To object="Tests" field="TestID" />
+        </Mapping>
+        <Mapping field="Description">
+          <To object="Tests" field="Description" />
+        </Mapping>
+        <Mapping field="TestMethod">
+          <To object="Tests" field="TestMethod" />
+        </Mapping>
+        <Mapping field="TargetValue">
+          <To object="Tests" field="TargetValue" />
+        </Mapping>
+        <Mapping field="MinValue">
+          <To object="Tests" field="MinValue" />
+        </Mapping>
+        <Mapping field="MaxValue">
+          <To object="Tests" field="MaxValue" />
+        </Mapping>
+        <Mapping field="UOM">
+          <To object="Tests" field="UOM" />
+        </Mapping>
+        <Mapping field="Criticality">
+          <To object="Tests" field="Criticality" />
+        </Mapping>
+      </Mappings>
+    </Detail>
+    <TopLevelEntity name="InspectionOrder" screen="QM301000">
+      <Fields>
+        <Field name="InspectionOrderNbr" type="StringValue" />
+        <Field name="InventoryID" type="StringValue" />
+        <Field name="LotSerialNbr" type="StringValue" />
+        <Field name="VendorID" type="StringValue" />
+        <Field name="ReceiptNbr" type="StringValue" />
+        <Field name="PlanID" type="StringValue" />
+        <Field name="TestingLabID" type="StringValue" />
+        <Field name="LabCertificateNbr" type="StringValue" />
+        <Field name="InspectionDate" type="DateTimeValue" />
+        <Field name="OverallEvaluation" type="StringValue" />
+        <Field name="Results" type="InspectionOrderResult[]" />
+      </Fields>
+      <Mappings>
+        <Mapping field="InspectionOrderNbr">
+          <To object="Document" field="InspectionOrderNbr" />
+        </Mapping>
+        <Mapping field="InventoryID">
+          <To object="Document" field="InventoryID" />
+        </Mapping>
+        <Mapping field="LotSerialNbr">
+          <To object="Document" field="LotSerialNbr" />
+        </Mapping>
+        <Mapping field="VendorID">
+          <To object="Document" field="VendorID" />
+        </Mapping>
+        <Mapping field="ReceiptNbr">
+          <To object="Document" field="ReceiptNbr" />
+        </Mapping>
+        <Mapping field="PlanID">
+          <To object="Document" field="PlanID" />
+        </Mapping>
+        <Mapping field="TestingLabID">
+          <To object="Document" field="TestingLabID" />
+        </Mapping>
+        <Mapping field="LabCertificateNbr">
+          <To object="Document" field="LabCertificateNbr" />
+        </Mapping>
+        <Mapping field="InspectionDate">
+          <To object="Document" field="InspectionDate" />
+        </Mapping>
+        <Mapping field="OverallEvaluation">
+          <To object="Document" field="OverallEvaluation" />
+        </Mapping>
+        <Mapping field="Results">
+          <To object="Results" field="" />
+        </Mapping>
+      </Mappings>
+    </TopLevelEntity>
+    <Detail name="InspectionOrderResult">
+      <Fields>
+        <Field name="LineNbr" type="IntValue" />
+        <Field name="TestID" type="StringValue" />
+        <Field name="TestMethod" type="StringValue" />
+        <Field name="TargetSpec" type="StringValue" />
+        <Field name="ActualNumericValue" type="DecimalValue" />
+        <Field name="ActualTextValue" type="StringValue" />
+        <Field name="Evaluation" type="StringValue" />
+        <Field name="Notes" type="StringValue" />
+      </Fields>
+      <Mappings>
+        <Mapping field="LineNbr">
+          <To object="Results" field="LineNbr" />
+        </Mapping>
+        <Mapping field="TestID">
+          <To object="Results" field="TestID" />
+        </Mapping>
+        <Mapping field="TestMethod">
+          <To object="Results" field="TestMethod" />
+        </Mapping>
+        <Mapping field="TargetSpec">
+          <To object="Results" field="TargetSpec" />
+        </Mapping>
+        <Mapping field="ActualNumericValue">
+          <To object="Results" field="ActualNumericValue" />
+        </Mapping>
+        <Mapping field="ActualTextValue">
+          <To object="Results" field="ActualTextValue" />
+        </Mapping>
+        <Mapping field="Evaluation">
+          <To object="Results" field="Evaluation" />
+        </Mapping>
+        <Mapping field="Notes">
+          <To object="Results" field="Notes" />
+        </Mapping>
+      </Mappings>
+    </Detail>
+    <TopLevelEntity name="NonConformance" screen="QM302000">
+      <Fields>
+        <Field name="NCRNbr" type="StringValue" />
+        <Field name="InspectionOrderNbr" type="StringValue" />
+        <Field name="InventoryID" type="StringValue" />
+        <Field name="LotSerialNbr" type="StringValue" />
+        <Field name="VendorID" type="StringValue" />
+        <Field name="ReceiptNbr" type="StringValue" />
+        <Field name="Severity" type="StringValue" />
+        <Field name="NonConformanceType" type="StringValue" />
+        <Field name="RootCauseCategory" type="StringValue" />
+        <Field name="Description" type="StringValue" />
+        <Field name="ActionRequired" type="StringValue" />
+        <Field name="InventoryHoldStatus" type="StringValue" />
+      </Fields>
+      <Mappings>
+        <Mapping field="NCRNbr">
+          <To object="Document" field="NCRNbr" />
+        </Mapping>
+        <Mapping field="InspectionOrderNbr">
+          <To object="Document" field="InspectionOrderNbr" />
+        </Mapping>
+        <Mapping field="InventoryID">
+          <To object="Document" field="InventoryID" />
+        </Mapping>
+        <Mapping field="LotSerialNbr">
+          <To object="Document" field="LotSerialNbr" />
+        </Mapping>
+        <Mapping field="VendorID">
+          <To object="Document" field="VendorID" />
+        </Mapping>
+        <Mapping field="ReceiptNbr">
+          <To object="Document" field="ReceiptNbr" />
+        </Mapping>
+        <Mapping field="Severity">
+          <To object="Document" field="Severity" />
+        </Mapping>
+        <Mapping field="NonConformanceType">
+          <To object="Document" field="NonConformanceType" />
+        </Mapping>
+        <Mapping field="RootCauseCategory">
+          <To object="Document" field="RootCauseCategory" />
+        </Mapping>
+        <Mapping field="Description">
+          <To object="Document" field="Description" />
+        </Mapping>
+        <Mapping field="ActionRequired">
+          <To object="Document" field="ActionRequired" />
+        </Mapping>
+        <Mapping field="InventoryHoldStatus">
+          <To object="Document" field="InventoryHoldStatus" />
+        </Mapping>
+      </Mappings>
+    </TopLevelEntity>
+  </Endpoint>
+</EntityEndpoint>
