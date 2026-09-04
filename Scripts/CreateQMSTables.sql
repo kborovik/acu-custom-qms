@@ -134,6 +134,16 @@ BEGIN
     );
 END
 
+IF OBJECT_ID(N'dbo.QMSInspectionOrder', N'SN') IS NULL
+    AND OBJECT_ID(N'dbo.QMSInspectionOrder', N'U') IS NULL
+    AND OBJECT_ID(N'dbo.UsrQMSInspectionOrder', N'U') IS NOT NULL
+    CREATE SYNONYM [dbo].[QMSInspectionOrder] FOR [dbo].[UsrQMSInspectionOrder];
+
+IF OBJECT_ID(N'dbo.QMSInspectionOrderResult', N'SN') IS NULL
+    AND OBJECT_ID(N'dbo.QMSInspectionOrderResult', N'U') IS NULL
+    AND OBJECT_ID(N'dbo.UsrQMSInspectionOrderResult', N'U') IS NOT NULL
+    CREATE SYNONYM [dbo].[QMSInspectionOrderResult] FOR [dbo].[UsrQMSInspectionOrderResult];
+
 IF OBJECT_ID(N'dbo.UsrQMSNonConformance', N'U') IS NULL
 BEGIN
     CREATE TABLE [dbo].[UsrQMSNonConformance] (
