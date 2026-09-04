@@ -61,6 +61,17 @@ BEGIN
     );
 END
 
+-- DAC class names match I.dac; tables stay UsrQMS*. Synonyms bind BQL to Usr tables.
+IF OBJECT_ID(N'dbo.QMSInspectionPlan', N'SN') IS NULL
+    AND OBJECT_ID(N'dbo.QMSInspectionPlan', N'U') IS NULL
+    AND OBJECT_ID(N'dbo.UsrQMSInspectionPlan', N'U') IS NOT NULL
+    CREATE SYNONYM [dbo].[QMSInspectionPlan] FOR [dbo].[UsrQMSInspectionPlan];
+
+IF OBJECT_ID(N'dbo.QMSInspectionPlanTest', N'SN') IS NULL
+    AND OBJECT_ID(N'dbo.QMSInspectionPlanTest', N'U') IS NULL
+    AND OBJECT_ID(N'dbo.UsrQMSInspectionPlanTest', N'U') IS NOT NULL
+    CREATE SYNONYM [dbo].[QMSInspectionPlanTest] FOR [dbo].[UsrQMSInspectionPlanTest];
+
 IF OBJECT_ID(N'dbo.UsrQMSInspectionOrder', N'U') IS NULL
 BEGIN
     CREATE TABLE [dbo].[UsrQMSInspectionOrder] (
