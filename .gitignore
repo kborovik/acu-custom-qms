@@ -6,3 +6,5 @@ obj/
 *.suo
 .vs/
 findings/
+__pycache__/
+*.pyc
