@@ -156,3 +156,25 @@ BEGIN
         )
     );
 END
+
+-- InventoryItem usr columns (I.dac InventoryItemExt). Table already exists.
+
+IF COL_LENGTH(N'dbo.InventoryItem', N'UsrQMSInspectionRequired') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[InventoryItem] ADD
+        [UsrQMSInspectionRequired] [bit] NOT NULL
+        CONSTRAINT [DF_InventoryItem_UsrQMSInspectionRequired] DEFAULT ((0));
+END
+
+IF COL_LENGTH(N'dbo.InventoryItem', N'UsrQMSInspectionPlanID') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[InventoryItem] ADD
+        [UsrQMSInspectionPlanID] [nvarchar](30) NULL;
+END
+
+IF COL_LENGTH(N'dbo.InventoryItem', N'UsrMinShelfLifeDays') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[InventoryItem] ADD
+        [UsrMinShelfLifeDays] [int] NOT NULL
+        CONSTRAINT [DF_InventoryItem_UsrMinShelfLifeDays] DEFAULT ((0));
+END

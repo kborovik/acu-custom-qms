@@ -36,7 +36,7 @@ V9: three-way-link — `POReceipt.ReceiptNbr` + `POReceiptLineSplit.LotSerialNbr
 ## §T TASKS
 id|status|task|cites
 T1|x|init customization project `Lab5.QMS` + `UsrQMS*` DDL|V8,I.pkg
-T2|.|add `InventoryItemExt` usr fields|V1,I.dac
+T2|x|add `InventoryItemExt` usr fields|V1,I.dac
 T3|.|add inspection plan DACs + `QMSInspectionPlanMaint` + `QM.20.10.00`|V7,I.dac,I.graph,I.screen
 T4|.|add inspection order DACs + `QMSInspectionOrderEntry` + `QM.30.10.00` + `EvaluateResults`|V4,I.dac,I.graph,I.screen
 T5|.|add NCR DAC + `QMSNonConformanceEntry` + `QM.30.20.00`|V6,I.dac,I.graph,I.screen
