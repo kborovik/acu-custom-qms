@@ -1,6 +1,7 @@
 using System;
 using PX.Data;
 using PX.Objects.AP;
+using PX.Objects.CS;
 using PX.Objects.IN;
 using PX.Objects.PO;
 
@@ -15,6 +16,7 @@ namespace Lab5.QMS
         #region InspectionOrderNbr
         [PXDBString(15, IsUnicode = true, IsKey = true, InputMask = ">CCCCCCCCCCCCCCC")]
         [PXDefault]
+        [AutoNumber(typeof(QMSSetup.inspectionOrderNumberingID), typeof(AccessInfo.businessDate))]
         [PXSelector(typeof(Search<QMSInspectionOrder.inspectionOrderNbr>))]
         [PXUIField(DisplayName = "Inspection Order Nbr", Visibility = PXUIVisibility.SelectorVisible)]
         public virtual string InspectionOrderNbr { get; set; }

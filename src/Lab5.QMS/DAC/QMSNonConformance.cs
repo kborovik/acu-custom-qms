@@ -1,6 +1,7 @@
 using System;
 using PX.Data;
 using PX.Objects.AP;
+using PX.Objects.CS;
 using PX.Objects.IN;
 using PX.Objects.PO;
 
@@ -15,6 +16,7 @@ namespace Lab5.QMS
         #region NCRNbr
         [PXDBString(15, IsUnicode = true, IsKey = true, InputMask = ">CCCCCCCCCCCCCCC")]
         [PXDefault]
+        [AutoNumber(typeof(QMSSetup.nCRNumberingID), typeof(AccessInfo.businessDate))]
         [PXSelector(typeof(Search<QMSNonConformance.nCRNbr>))]
         [PXUIField(DisplayName = "NCR Nbr", Visibility = PXUIVisibility.SelectorVisible)]
         public virtual string NCRNbr { get; set; }

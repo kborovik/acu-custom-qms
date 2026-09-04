@@ -9,6 +9,8 @@ namespace Lab5.QMS
         public PXSelect<QMSNonConformance,
             Where<QMSNonConformance.nCRNbr, Equal<Current<QMSNonConformance.nCRNbr>>>> Document;
 
+        public PXSetup<QMSSetup> QMSSetup;
+
         public PXAction<QMSNonConformance> CloseNCR;
 
         [PXButton(CommitChanges = true)]

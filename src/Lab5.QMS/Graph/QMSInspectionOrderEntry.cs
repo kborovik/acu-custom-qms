@@ -14,6 +14,8 @@ namespace Lab5.QMS
         public PXSelect<QMSInspectionOrderResult,
             Where<QMSInspectionOrderResult.inspectionOrderNbr, Equal<Current<QMSInspectionOrder.inspectionOrderNbr>>>> Results;
 
+        public PXSetup<QMSSetup> QMSSetup;
+
         public PXAction<QMSInspectionOrder> EvaluateResults;
         public PXAction<QMSInspectionOrder> ReleaseLotDecision;
 

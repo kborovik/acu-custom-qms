@@ -183,6 +183,31 @@ IF OBJECT_ID(N'dbo.QMSNonConformance', N'SN') IS NULL
     AND OBJECT_ID(N'dbo.UsrQMSNonConformance', N'U') IS NOT NULL
     CREATE SYNONYM [dbo].[QMSNonConformance] FOR [dbo].[UsrQMSNonConformance];
 
+IF OBJECT_ID(N'dbo.UsrQMSSetup', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[UsrQMSSetup] (
+        [CompanyID] [int] NOT NULL,
+        [InspectionOrderNumberingID] [nvarchar](10) NOT NULL,
+        [NCRNumberingID] [nvarchar](10) NOT NULL,
+        [tstamp] [timestamp] NOT NULL,
+        [CreatedByID] [uniqueidentifier] NOT NULL,
+        [CreatedByScreenID] [char](8) NOT NULL,
+        [CreatedDateTime] [datetime] NOT NULL,
+        [LastModifiedByID] [uniqueidentifier] NOT NULL,
+        [LastModifiedByScreenID] [char](8) NOT NULL,
+        [LastModifiedDateTime] [datetime] NOT NULL,
+        CONSTRAINT [UsrQMSSetup_PK] PRIMARY KEY CLUSTERED
+        (
+            [CompanyID] ASC
+        )
+    );
+END
+
+IF OBJECT_ID(N'dbo.QMSSetup', N'SN') IS NULL
+    AND OBJECT_ID(N'dbo.QMSSetup', N'U') IS NULL
+    AND OBJECT_ID(N'dbo.UsrQMSSetup', N'U') IS NOT NULL
+    CREATE SYNONYM [dbo].[QMSSetup] FOR [dbo].[UsrQMSSetup];
+
 -- InventoryItem usr columns (I.dac InventoryItemExt). Table already exists.
 
 IF COL_LENGTH(N'dbo.InventoryItem', N'UsrQMSInspectionRequired') IS NULL

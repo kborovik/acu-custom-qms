@@ -15,6 +15,7 @@ USR_QMS_TABLES = (
     "UsrQMSInspectionOrder",
     "UsrQMSInspectionOrderResult",
     "UsrQMSNonConformance",
+    "UsrQMSSetup",
 )
 
 
