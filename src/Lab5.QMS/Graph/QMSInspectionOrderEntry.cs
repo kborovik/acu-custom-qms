@@ -15,6 +15,7 @@ namespace Lab5.QMS
             Where<QMSInspectionOrderResult.inspectionOrderNbr, Equal<Current<QMSInspectionOrder.inspectionOrderNbr>>>> Results;
 
         public PXAction<QMSInspectionOrder> EvaluateResults;
+        public PXAction<QMSInspectionOrder> ReleaseLotDecision;
 
         [PXButton(CommitChanges = true)]
         [PXUIField(DisplayName = "Evaluate")]
@@ -69,6 +70,75 @@ namespace Lab5.QMS
             order.EvaluationDateTime = DateTime.UtcNow;
             Document.Update(order);
             return adapter.Get();
+        }
+
+        [PXButton(CommitChanges = true)]
+        [PXUIField(DisplayName = "Release Lot Decision")]
+        protected virtual IEnumerable releaseLotDecision(PXAdapter adapter)
+        {
+            QMSInspectionOrder order = Document.Current;
+            if (order == null)
+            {
+                return adapter.Get();
+            }
+            if (!QMSLotDecisionRules.CanRelease(order.OverallEvaluation, order.Status))
+            {
+                throw new PXException("Overall evaluation must be Pass or Fail on an open inspection order.");
+            }
+
+            string lotStatus = QMSLotDecisionRules.TargetLotStatus(order.OverallEvaluation);
+            UpdateLotStatus(order.InventoryID, order.LotSerialNbr, lotStatus);
+
+            if (QMSLotDecisionRules.ShouldCreateNcr(order.OverallEvaluation))
+            {
+                CreateNcrFromFailedOrder(order);
+            }
+
+            order.Status = QMSInspectionOrderStatus.Completed;
+            Document.Update(order);
+            return adapter.Get();
+        }
+
+        protected virtual void UpdateLotStatus(int? inventoryID, string lotSerialNbr, string lotStatus)
+        {
+            if (inventoryID == null || !QMSReceiptReleaseRules.HasLot(lotSerialNbr))
+            {
+                return;
+            }
+            INLotSerialStatus lot = PXSelect<INLotSerialStatus,
+                Where<INLotSerialStatus.inventoryID, Equal<Required<INLotSerialStatus.inventoryID>>,
+                    And<INLotSerialStatus.lotSerialNbr, Equal<Required<INLotSerialStatus.lotSerialNbr>>>>>
+                .Select(this, inventoryID, lotSerialNbr);
+            if (lot == null)
+            {
+                return;
+            }
+            lot.LotStatus = lotStatus;
+            Caches[typeof(INLotSerialStatus)].Update(lot);
+        }
+
+        protected virtual void CreateNcrFromFailedOrder(QMSInspectionOrder order)
+        {
+            QMSNonConformance existing = PXSelect<QMSNonConformance,
+                Where<QMSNonConformance.inspectionOrderNbr, Equal<Required<QMSNonConformance.inspectionOrderNbr>>>>
+                .Select(this, order.InspectionOrderNbr);
+            if (existing != null)
+            {
+                return;
+            }
+
+            QMSNonConformanceEntry graph = PXGraph.CreateInstance<QMSNonConformanceEntry>();
+            QMSNonConformance ncr = new QMSNonConformance();
+            ncr.NCRNbr = QMSLotDecisionRules.NcrNbr(order.InspectionOrderNbr);
+            QMSNonConformanceRules.SeedFromFailedOrder(
+                ncr,
+                order.InspectionOrderNbr,
+                order.InventoryID,
+                order.LotSerialNbr,
+                order.VendorID,
+                order.ReceiptNbr);
+            graph.Document.Insert(ncr);
+            graph.Actions.PressSave();
         }
 
         protected virtual QMSInspectionOrderResult FindResult(int? lineNbr)

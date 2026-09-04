@@ -7,6 +7,7 @@
         TypeName="Lab5.QMS.QMSInspectionOrderEntry" PrimaryView="Document">
         <CallbackCommands>
             <px:PXDSCallbackCommand Name="EvaluateResults" CommitChanges="True" />
+            <px:PXDSCallbackCommand Name="ReleaseLotDecision" CommitChanges="True" />
         </CallbackCommands>
     </px:PXDataSource>
 </asp:Content>

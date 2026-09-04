@@ -41,7 +41,7 @@ T3|x|add inspection plan DACs + `QMSInspectionPlanMaint` + `QM.20.10.00`|V7,I.da
 T4|x|add inspection order DACs + `QMSInspectionOrderEntry` + `QM.30.10.00` + `EvaluateResults`|V4,I.dac,I.graph,I.screen
 T5|x|add NCR DAC + `QMSNonConformanceEntry` + `QM.30.20.00`|V6,I.dac,I.graph,I.screen
 T6|x|add `POReceiptEntry_Extension` Release: QC Hold + draft order|V1,V9,I.graph
-T7|.|add `ReleaseLotDecision` pass/fail lot flip + NCR auto-create|V5,V6,V9,I.lot
+T7|x|add `ReleaseLotDecision` pass/fail lot flip + NCR auto-create|V5,V6,V9,I.lot
 T8|.|register REST `QMS/22.200.001` InspectionPlan GET, InspectionOrder GET/PUT, NonConformance GET/POST|V2,I.rest
 T9|.|attach CoA PDF + JSON via `/files` on InspectionOrder `NoteID`|V2,V3,I.files
 T10|.|stamp audit fields + gate QC Hold→Released on service-account token or `Quality Manager`|V3,I.role
