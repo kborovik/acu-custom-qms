@@ -26,6 +26,8 @@
             <px:PXTextEdit ID="edTestingLabID" runat="server" DataField="TestingLabID" />
             <px:PXTextEdit ID="edLabCertificateNbr" runat="server" DataField="LabCertificateNbr" />
             <px:PXDropDown ID="edOverallEvaluation" runat="server" DataField="OverallEvaluation" />
+            <px:PXSelector ID="edEvaluatedByID" runat="server" DataField="EvaluatedByID" Enabled="False" />
+            <px:PXDateTimeEdit ID="edEvaluationDateTime" runat="server" DataField="EvaluationDateTime" Enabled="False" />
         </Template>
     </px:PXFormView>
 </asp:Content>

@@ -66,8 +66,8 @@ namespace Lab5.QMS
                 FindMinShelfLifeDays(order));
 
             order.OverallEvaluation = QMSInspectionOrderRules.Rollup(anyFail, anyMissingRequired, shelfLifePass);
-            order.EvaluatedByID = Accessinfo.UserID;
-            order.EvaluationDateTime = DateTime.UtcNow;
+            order.EvaluatedByID = QMSAuditRules.StampEvaluatedByID(order.EvaluatedByID, Accessinfo.UserID);
+            order.EvaluationDateTime = QMSAuditRules.StampEvaluationDateTime(order.EvaluationDateTime, DateTime.UtcNow);
             Document.Update(order);
             return adapter.Get();
         }
@@ -87,6 +87,14 @@ namespace Lab5.QMS
             }
 
             string lotStatus = QMSLotDecisionRules.TargetLotStatus(order.OverallEvaluation);
+            if (!QMSAuditRules.MayReleaseLot(
+                lotStatus,
+                QMSAuditRules.HasQualityManagerRole(PXAccess.GetUserRoles()),
+                QMSAuditRules.IsIngestionServiceAccount(PXAccess.GetUserName())))
+            {
+                throw new PXException(
+                    "QC Hold to Released requires Quality Manager role or the ingestion service account.");
+            }
             UpdateLotStatus(order.InventoryID, order.LotSerialNbr, lotStatus);
 
             if (QMSLotDecisionRules.ShouldCreateNcr(order.OverallEvaluation))
