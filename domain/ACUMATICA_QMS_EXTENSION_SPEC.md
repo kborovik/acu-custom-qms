@@ -6,7 +6,7 @@
 ## 1. Executive Summary & Purpose
 
 ### 1.1 Purpose
-Standard Acumatica Cloud ERP does not ship with a native Quality Management module in its out-of-the-box Distribution or Manufacturing editions. To support automated Certificate of Analysis (CoA) ingestion, receiving dock quarantine, tolerance validation, and automated lot dispositioning, this specification defines the **minimum viable Acumatica xRP extension** (`CanNordic.QMS`).
+Standard Acumatica Cloud ERP does not ship with a native Quality Management module in its out-of-the-box Distribution or Manufacturing editions. To support automated Certificate of Analysis (CoA) ingestion, receiving dock quarantine, tolerance validation, and automated lot dispositioning, this specification defines the **minimum viable Acumatica xRP extension** (`Lab5.QMS`).
 
 This extension provides the database tables, Data Access Classes (DACs), Business Logic Controllers (Graphs), Web Service Endpoints, and UI screens required to implement the integration architecture detailed in `acumatica/acumatica_integration_matrix.md` and regulatory mandates under **Health Canada GMP (GUI-0001 / GUI-0158)** and **21 CFR Part 11**.
 
@@ -82,7 +82,7 @@ The extension introduces three primary custom entities, one setup entity, and on
 Defines the required analytical testing specifications and acceptable ranges for an inventory item.
 
 * **Database Table:** `UsrQMSInspectionPlan`
-* **DAC Name:** `CanNordic.QMS.QMSInspectionPlan`
+* **DAC Name:** `Lab5.QMS.QMSInspectionPlan`
 
 | Field Name | Type | Key | Description / Constraints |
 | :--- | :--- | :---: | :--- |
@@ -102,7 +102,7 @@ Defines the required analytical testing specifications and acceptable ranges for
 Defines individual parameter tolerances, target values, analytical methods, and criticality.
 
 * **Database Table:** `UsrQMSInspectionPlanTest`
-* **DAC Name:** `CanNordic.QMS.QMSInspectionPlanTest`
+* **DAC Name:** `Lab5.QMS.QMSInspectionPlanTest`
 
 | Field Name | Type | Key | Description / Constraints |
 | :--- | :--- | :---: | :--- |
@@ -124,7 +124,7 @@ Defines individual parameter tolerances, target values, analytical methods, and 
 Represents the quality evaluation lifecycle for a specific received batch/lot.
 
 * **Database Table:** `UsrQMSInspectionOrder`
-* **DAC Name:** `CanNordic.QMS.QMSInspectionOrder`
+* **DAC Name:** `Lab5.QMS.QMSInspectionOrder`
 
 | Field Name | Type | Key | Description / Constraints |
 | :--- | :--- | :---: | :--- |
@@ -149,7 +149,7 @@ Represents the quality evaluation lifecycle for a specific received batch/lot.
 Stores actual laboratory analytical results extracted from the CoA against plan criteria.
 
 * **Database Table:** `UsrQMSInspectionOrderResult`
-* **DAC Name:** `CanNordic.QMS.QMSInspectionOrderResult`
+* **DAC Name:** `Lab5.QMS.QMSInspectionOrderResult`
 
 | Field Name | Type | Key | Description / Constraints |
 | :--- | :--- | :---: | :--- |
@@ -169,7 +169,7 @@ Stores actual laboratory analytical results extracted from the CoA against plan 
 Captures out-of-specification failures, quarantine segregation, and corrective action workflows.
 
 * **Database Table:** `UsrQMSNonConformance`
-* **DAC Name:** `CanNordic.QMS.QMSNonConformance`
+* **DAC Name:** `Lab5.QMS.QMSNonConformance`
 
 | Field Name | Type | Key | Description / Constraints |
 | :--- | :--- | :---: | :--- |
@@ -194,7 +194,7 @@ Captures out-of-specification failures, quarantine segregation, and corrective a
 ### 2.6 DAC Extension: `InventoryItem` (Stock Item Master Extension)
 Extends Acumatica's standard `PX.Objects.IN.InventoryItem` DAC to flag items subject to mandatory QMS inspection.
 
-* **Class Name:** `CanNordic.QMS.InventoryItemExt : PXCacheExtension<InventoryItem>`
+* **Class Name:** `Lab5.QMS.InventoryItemExt : PXCacheExtension<InventoryItem>`
 
 ```csharp
 public class InventoryItemExt : PXCacheExtension<InventoryItem>
@@ -492,12 +492,12 @@ To satisfy Health Canada requirements for computer-assisted raw material release
 The customization package is delivered as a standard Acumatica Customization Project (`.zip`):
 
 ```
-CanNordic_QMS_Customization.zip
+Lab5_QMS_Customization.zip
 ├── _project/
 │   └── ProjectMetadata.xml             <- Package manifest, version 22.200.001
 ├── Cst_App/
 │   └── bin/
-│       └── CanNordic.QMS.dll           <- Compiled C# assemblies (DACs, Graphs, Extensions)
+│       └── Lab5.QMS.dll           <- Compiled C# assemblies (DACs, Graphs, Extensions)
 ├── Pages_QM/
 │   ├── QM101000.aspx                   <- Quality Preferences
 │   ├── QM201000.aspx                   <- Inspection Plans

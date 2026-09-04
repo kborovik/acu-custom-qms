@@ -1,6 +1,6 @@
 # Acumatica QMS Customization (`acu-custom-qms`)
 
-Acumatica Cloud xRP customization package **`CanNordic.QMS`**: inspection plans,
+Acumatica Cloud xRP customization package **`Lab5.QMS`**: inspection plans,
 dock-receipt quarantine, CoA result ingestion, lot disposition, and
 non-conformance reports.
 
@@ -17,7 +17,7 @@ The package delivers DACs, graphs, screens (`QM*`), and the `QMS/22.200.001`
 REST endpoint used by the ingestion engine. Shipped artifact:
 
 ```
-CanNordic_QMS_Customization.zip
+Lab5_QMS_Customization.zip
 ```
 
 ## Family
