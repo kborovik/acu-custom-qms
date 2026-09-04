@@ -49,6 +49,7 @@ INSPECTION_ORDER_FIELDS = {
     "LabCertificateNbr": "StringValue",
     "InspectionDate": "DateTimeValue",
     "OverallEvaluation": "StringValue",
+    "NoteID": "GuidValue",
     "Results": "InspectionOrderResult[]",
 }
 
@@ -176,7 +177,7 @@ class TestInspectionOrderPutV2(unittest.TestCase):
         order = _top("InspectionOrder")
         mappings = _mappings(order)
         self.assertEqual(mappings["Results"], ("Results", ""))
-        for name in ("TestingLabID", "LabCertificateNbr", "InspectionDate", "OverallEvaluation"):
+        for name in ("TestingLabID", "LabCertificateNbr", "InspectionDate", "OverallEvaluation", "NoteID"):
             self.assertEqual(mappings[name], ("Document", name))
         results = _detail("InspectionOrderResult")
         self.assertEqual(_fields(results), INSPECTION_ORDER_RESULT_FIELDS)

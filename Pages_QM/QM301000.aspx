@@ -12,7 +12,8 @@
     </px:PXDataSource>
 </asp:Content>
 <asp:Content ID="cont2" ContentPlaceHolderID="phF" runat="Server">
-    <px:PXFormView ID="form" runat="server" DataSourceID="ds" Width="100%" DataMember="Document">
+    <px:PXFormView ID="form" runat="server" DataSourceID="ds" Width="100%" DataMember="Document"
+        NoteIndicator="True" FilesIndicator="True">
         <Template>
             <px:PXLayoutRule runat="server" StartColumn="True" LabelsWidth="SM" ControlSize="M" />
             <px:PXSelector ID="edInspectionOrderNbr" runat="server" DataField="InspectionOrderNbr" />

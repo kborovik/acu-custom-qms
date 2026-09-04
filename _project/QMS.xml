@@ -9,6 +9,9 @@
     InspectionPlan   GET
     InspectionOrder  GET PUT
     NonConformance   GET POST
+  Files (I.files / V2 / V3):
+    PUT /entity/QMS/22.200.001/InspectionOrder/{InspectionOrderNbr}/files/{fileName}
+    CoA PDF + parsed JSON on InspectionOrder NoteID; GET ?$expand=files
 -->
 <EntityEndpoint>
   <Endpoint xmlns="http://www.acumatica.com/entity/maintenance/5.31" name="QMS" version="22.200.001" systemContractVersion="4">
@@ -96,6 +99,7 @@
         <Field name="LabCertificateNbr" type="StringValue" />
         <Field name="InspectionDate" type="DateTimeValue" />
         <Field name="OverallEvaluation" type="StringValue" />
+        <Field name="NoteID" type="GuidValue" />
         <Field name="Results" type="InspectionOrderResult[]" />
       </Fields>
       <Mappings>
@@ -128,6 +132,9 @@
         </Mapping>
         <Mapping field="OverallEvaluation">
           <To object="Document" field="OverallEvaluation" />
+        </Mapping>
+        <Mapping field="NoteID">
+          <To object="Document" field="NoteID" />
         </Mapping>
         <Mapping field="Results">
           <To object="Results" field="" />
