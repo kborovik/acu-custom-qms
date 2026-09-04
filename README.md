@@ -27,3 +27,14 @@ CanNordic_QMS_Customization.zip
 | `acu-google-qms` | GCP ingestion |
 | `acu-gitops-qms` | tenant GitOps seed |
 | `acu-custom-qms` | Acumatica customization project |
+
+## License
+
+This project is licensed under the PolyForm Noncommercial License 1.0.0.
+Noncommercial use is free under that license.
+
+Commercial use requires a separate license — contact [lab5.ca](https://lab5.ca).
+
+See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+Copyright 2026 Konstantin Borovik.
