@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [v0.1.0] - 2026-09-04
+
 ### Added
 
 - **Lab5.QMS customization package:** DACs, graphs, and `QM*` screens for
@@ -21,3 +23,4 @@
 - **GitHub release path:** `gmake release major|minor|patch` bumps the
   version, promotes CHANGELOG, packs the zip, tags `vX.Y.Z`, and publishes
   via `gh release create`.
+
