@@ -28,6 +28,22 @@ Lab5_QMS_Customization.zip
 | `acu-gitops-qms` | tenant GitOps seed |
 | `acu-custom-qms` | Acumatica customization project |
 
+## Release
+
+Notes live in [`CHANGELOG.md`](CHANGELOG.md). Append user-facing work under
+`## Unreleased` (`### Added` / `### Changed` / `### Fixed`). Empty Unreleased
+hard-fails — nothing to ship.
+
+```sh
+gmake release patch   # or minor | major
+```
+
+`gmake release` is the sole path: local tests, bump `pyproject.toml`, promote
+CHANGELOG, tag `vX.Y.Z`, pack `Lab5_QMS_Customization.zip`, push, then
+`gh release create` with the zip attached. There is no CI publisher — `gh`
+runs locally. Requires a clean tree, `gh` authenticated, and bullets under
+`## Unreleased`.
+
 ## License
 
 This project is licensed under the PolyForm Noncommercial License 1.0.0.

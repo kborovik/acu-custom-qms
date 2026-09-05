@@ -53,12 +53,41 @@ check: test preflight ## Live e2e vs .env tenant (acu CLI + REST; publishes Lab5
 # Release
 ###############################################################################
 
+# `gmake release <part>` passes the part as an extra goal; pick it out and
+# give the part words no-op recipes so make does not try to build them.
+# There is no CI publisher — this recipe tags, packs the zip, and runs
+# `gh release create` locally (unlike acumatica-cli).
 part := $(word 1,$(filter major minor patch,$(MAKECMDGOALS)))
 
-release: test
+release: test ## Bump version, promote CHANGELOG, pack zip, tag, push, gh release
 	test -n "$(part)" || { echo "usage: gmake release major|minor|patch"; exit 1; }
 	git diff --quiet && git diff --cached --quiet \
 		|| { echo "working tree not clean — commit or stash first"; exit 1; }
+	command -v gh >/dev/null \
+		|| { echo "gh CLI required — https://cli.github.com/"; exit 1; }
+	gh auth status >/dev/null 2>&1 \
+		|| { echo "gh not authenticated — run: gh auth login"; exit 1; }
+	$(call header,Checking CHANGELOG Unreleased has shippable bullets)
+	./Scripts/changelog check
+	$(call header,Bumping $(part) version)
+	$(UV) version --bump $(part)
+	version=$$($(UV) version --short)
+	$(call header,Promoting CHANGELOG Unreleased → v$$version)
+	./Scripts/changelog promote "$$version"
+	git add pyproject.toml uv.lock CHANGELOG.md
+	git commit -m "chore: release v$$version"
+	git tag "v$$version"
+	$(call header,Packing Lab5_QMS_Customization.zip)
+	./pack.py
+	$(call header,Pushing v$$version)
+	git push && git push --tags
+	$(call header,Creating GitHub release v$$version)
+	./Scripts/changelog notes "$$version" | gh release create "v$$version" \
+		--title "v$$version" \
+		--notes-file - \
+		--verify-tag \
+		Lab5_QMS_Customization.zip
+	echo "$(green)Released v$$version$(reset)"
 
 major minor patch:
 	@:
