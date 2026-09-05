@@ -1,3 +1,4 @@
+#!/usr/bin/env -S uv run
 """Seed gate + CoA ingest + evaluate/release. Dock/lot skips without lots."""
 
 from __future__ import annotations

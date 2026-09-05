@@ -1,3 +1,8 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.14"
+# dependencies = []
+# ///
 """T5 / V6: NCR DAC, QMSNonConformanceEntry, QM.30.20.00, CloseNCR, fail-path seed."""
 
 from __future__ import annotations

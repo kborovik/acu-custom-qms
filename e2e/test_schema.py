@@ -1,3 +1,4 @@
+#!/usr/bin/env -S uv run
 """SSH sqlcmd: UsrQMS tables, InventoryItem usr columns, QM sitemap."""
 
 from __future__ import annotations

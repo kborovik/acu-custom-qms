@@ -28,9 +28,9 @@ test: .venv ## Local unit tests (no live tenant)
 	$(call header,Running unit tests)
 	$(UV) run python -m unittest discover -s tests -p 'test_*.py' -v
 
-pack: .venv ## Build Lab5_QMS_Customization.zip
+pack: ## Build Lab5_QMS_Customization.zip
 	$(call header,Packing Lab5_QMS_Customization.zip)
-	$(UV) run python pack.py
+	./pack.py
 
 preflight: .venv ## Read-only acu config check against .env
 	test -e .env || { echo ".env missing — decrypt .env.gpg at the repo root"; exit 1; }

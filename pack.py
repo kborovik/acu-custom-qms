@@ -1,3 +1,8 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.14"
+# dependencies = []
+# ///
 """Pack Lab5_QMS_Customization.zip (T12 / V8 / I.pkg).
 
 The zip is an Acumatica CustomizationApi import: project.xml holds

@@ -1,3 +1,8 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.14"
+# dependencies = []
+# ///
 """T11 / I.screen: QMSSetupMaint, QM.10.10.00, numbering QORD / QNCR."""
 
 from __future__ import annotations

@@ -1,3 +1,8 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.14"
+# dependencies = []
+# ///
 """T10 / V3 / I.role: audit stamps + QC Hold to Released gate."""
 
 from __future__ import annotations

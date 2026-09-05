@@ -1,3 +1,8 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.14"
+# dependencies = []
+# ///
 """T1 / V8: Lab5.QMS publisher identity and I.pkg source layout."""
 
 from __future__ import annotations

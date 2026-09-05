@@ -1,3 +1,8 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.14"
+# dependencies = []
+# ///
 """T9 / V2 / V3 / I.files: attach CoA PDF + JSON via /files on InspectionOrder NoteID."""
 
 from __future__ import annotations

@@ -1,3 +1,8 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.14"
+# dependencies = []
+# ///
 """T8 / V2: REST endpoint QMS/22.200.001 InspectionPlan GET, InspectionOrder GET/PUT, NonConformance GET/POST."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+#!/usr/bin/env -S uv run
 """Read-only preflight: `acu config check` / `show` / `tenant list` vs .env."""
 
 from __future__ import annotations

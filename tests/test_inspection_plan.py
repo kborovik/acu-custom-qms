@@ -1,3 +1,8 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.14"
+# dependencies = []
+# ///
 """T3 / V7: inspection plan DACs, QMSInspectionPlanMaint, QM.20.10.00."""
 
 from __future__ import annotations

@@ -1,6 +1,6 @@
 """Live-tenant helpers for Lab5.QMS e2e.
 
-Uses `uv run python` (`import acumatica_cli`) so `.env` walk-up matches
+Uses `uv run` (`import acumatica_cli`) so `.env` walk-up matches
 `uv run acu config check`. Never call `acu check` (destructive rebuild).
 Never print ACU_PASSWORD.
 """

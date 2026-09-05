@@ -1,3 +1,8 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.14"
+# dependencies = []
+# ///
 """T6 / V1 / V9: POReceiptEntry_Extension Release QC Hold + draft inspection order."""
 
 from __future__ import annotations

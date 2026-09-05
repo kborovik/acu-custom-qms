@@ -1,3 +1,8 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.14"
+# dependencies = []
+# ///
 """T2 / V1: InventoryItemExt usr fields for the cannot-pass lot gate."""
 
 from __future__ import annotations

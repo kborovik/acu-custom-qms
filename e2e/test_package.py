@@ -1,3 +1,4 @@
+#!/usr/bin/env -S uv run
 """Pack + publish Lab5.QMS, then prove the QMS/22.200.001 contract is live."""
 
 from __future__ import annotations

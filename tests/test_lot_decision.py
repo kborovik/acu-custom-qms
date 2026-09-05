@@ -1,3 +1,8 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.14"
+# dependencies = []
+# ///
 """T7 / V5 / V6 / V9: ReleaseLotDecision pass/fail lot flip + NCR auto-create."""
 
 from __future__ import annotations
