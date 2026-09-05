@@ -34,19 +34,19 @@ SCREENS = (
 )
 
 CODE_CLASSES = {
-    "QMSInspectionPlan": "DAC",
-    "QMSInspectionPlanTest": "DAC",
-    "QMSInspectionOrder": "DAC",
-    "QMSInspectionOrderResult": "DAC",
-    "QMSNonConformance": "DAC",
-    "QMSSetup": "DAC",
-    "InventoryItemExt": "DAC",
-    "QMSInspectionPlanMaint": "Graph",
-    "QMSInspectionOrderEntry": "Graph",
-    "QMSNonConformanceEntry": "Graph",
-    "QMSSetupMaint": "Graph",
-    "POReceiptEntry_Extension": "Graph",
-    "QMS": "Code",
+    "QMSInspectionPlan": "NewDac",
+    "QMSInspectionPlanTest": "NewDac",
+    "QMSInspectionOrder": "NewDac",
+    "QMSInspectionOrderResult": "NewDac",
+    "QMSNonConformance": "NewDac",
+    "QMSSetup": "NewDac",
+    "InventoryItemExt": "NewDac",
+    "QMSInspectionPlanMaint": "NewGraph",
+    "QMSInspectionOrderEntry": "NewGraph",
+    "QMSNonConformanceEntry": "NewGraph",
+    "QMSSetupMaint": "NewGraph",
+    "POReceiptEntry_Extension": "ExistingGraph",
+    "QMS": "NewFile",
 }
 
 
@@ -127,18 +127,11 @@ class TestProjectXmlPackedItems(unittest.TestCase):
         self.assertEqual(tops, {"InspectionPlan", "InspectionOrder", "NonConformance"})
 
     def test_code_items_lab5_namespace(self) -> None:
-        with _zip() as zf:
-            root = _project(zf)
-        by_class: dict[str, ET.Element] = {}
-        for tag in ("DAC", "Graph", "Code"):
-            for item in root.findall(tag):
-                by_class[item.get("ClassName")] = item
-        for class_name, tag in CODE_CLASSES.items():
-            self.assertIn(class_name, by_class, class_name)
-            item = by_class[class_name]
-            self.assertEqual(item.tag, tag, class_name)
-            self.assertEqual(item.get("FileType"), "NewFile", class_name)
-            source = item.get("Source") or ""
+        src = ROOT / "src" / "Lab5.QMS"
+        for class_name in CODE_CLASSES:
+            hits = list(src.rglob(f"{class_name}.cs"))
+            self.assertTrue(hits, class_name)
+            source = hits[0].read_text(encoding="utf-8")
             self.assertIn("namespace Lab5.QMS", source, class_name)
             self.assertIn(f"class {class_name}", source, class_name)
 
@@ -154,7 +147,8 @@ class TestProjectXmlPackedItems(unittest.TestCase):
         for screen in SCREENS:
             self.assertIn(rf"Pages\QM\{screen}.aspx", paths, screen)
             self.assertIn(f"Pages_QM/{screen}.aspx", names, screen)
-        sitemap = root.find("SiteMap")
+            self.assertIn(f"Pages/QM/{screen}.aspx", names, screen)
+        sitemap = root.find("SiteMapNode")
         self.assertIsNotNone(sitemap)
         screens = {
             row.get("ScreenID")

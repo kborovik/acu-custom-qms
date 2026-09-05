@@ -1,0 +1,13 @@
+[project]
+name = "lab5-qms"
+version = "0.0.0"
+description = "Acumatica Cloud xRP customization package Lab5.QMS (pack + tests)"
+authors = [{ name = "Konstantin Borovik", email = "kb@lab5.ca" }]
+license = "PolyForm-Noncommercial-1.0.0"
+requires-python = ">=3.14"
+dependencies = [
+    "acumatica-cli",
+]
+
+[tool.uv.sources]
+acumatica-cli = { git = "https://github.com/kborovik/acumatica-cli.git" }

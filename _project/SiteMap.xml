@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Quality Management workspace (I.screen). ScreenID QM.10.10.00 = QM101000. -->
-<SiteMap>
+<SiteMapNode>
   <data-set>
     <relations format-version="3" relations-version="20190730" main-table="SiteMap" />
     <layout>
@@ -19,4 +19,4 @@
       </SiteMap>
     </data>
   </data-set>
-</SiteMap>
+</SiteMapNode>

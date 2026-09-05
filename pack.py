@@ -1,7 +1,7 @@
 """Pack Lab5_QMS_Customization.zip (T12 / V8 / I.pkg).
 
 The zip is an Acumatica CustomizationApi import: project.xml holds
-EntityEndpoint, SiteMap, Sql, Code, and File items. I.pkg members
+EntityEndpoint, SiteMapNode, Sql, Code, and File items. I.pkg members
 ride as extra zip entries so the package is inspectable without unzipping
 project.xml. Code items use the Source attribute (CstCodeFile shape,
 verified vs 26.101.0225 in acumatica-cli bootstrap).
@@ -45,9 +45,13 @@ def package_zip(root: Path | None = None) -> bytes:
         zf.writestr("project.xml", xml_bytes)
         for rel in _pkg_members(root):
             zf.write(root / rel, arcname=rel.as_posix())
+        for screen in PAGES:
+            for suffix in (".aspx", ".aspx.cs"):
+                src = root / "Pages_QM" / f"{screen}{suffix}"
+                zf.write(src, arcname=f"Pages/QM/{screen}{suffix}")
         dll = _dll_path(root)
         if dll is not None:
-            zf.write(dll, arcname="Cst_App/bin/" + ASSEMBLY_DLL)
+            zf.write(dll, arcname="Bin/" + ASSEMBLY_DLL)
     return buf.getvalue()
 
 
@@ -79,27 +83,19 @@ def _project_xml(root: Path) -> ET.Element:
         (root / "Scripts" / "CreateQMSTables.sql").read_text(encoding="utf-8"),
     )
 
-    for cs in _cs_files(root):
-        source = cs.read_text(encoding="utf-8")
-        tag, class_name, file_type = _classify_cs(source, cs.stem)
-        item = ET.SubElement(customization, tag)
-        item.set("ClassName", class_name)
-        item.set("FileType", file_type)
-        item.set("Source", source)
-
+    # C# CstCodeFile <Graph Source FileType=NewDac|NewGraph|NewFile> import
+    # succeeds but publishBegin CstCodeFile.Upgrade KeyNotFoundException on
+    # 26.101.0225 (includedAspxFiles). Training packages ship Bin\*.dll.
+    # Keep DAC/graph source in src/; pack as File once a DLL is produced.
     for screen in PAGES:
         for suffix in (".aspx", ".aspx.cs"):
-            rel = Path("Pages_QM") / f"{screen}{suffix}"
-            content = (root / rel).read_text(encoding="utf-8")
             file_el = ET.SubElement(customization, "File")
             file_el.set("AppRelativePath", rf"Pages\QM\{screen}{suffix}")
-            file_el.set("Content", content)
 
     dll = _dll_path(root)
     if dll is not None:
         file_el = ET.SubElement(customization, "File")
         file_el.set("AppRelativePath", rf"Bin\{ASSEMBLY_DLL}")
-        file_el.set("ContentType", "application/octet-stream")
 
     return customization
 
@@ -134,18 +130,24 @@ def _cs_files(root: Path) -> list[Path]:
 
 
 def _classify_cs(source: str, fallback: str) -> tuple[str, str, str]:
+    """Return (xml_tag, class_name, FileType).
+
+    CstCodeFile.Tag is always Graph. FileType is NewDac / NewGraph /
+    ExistingGraph / NewFile (verified vs PX.Web.Customization.dll on
+    26.101.0225). Wrong FileType → KeyNotFoundException in Upgrade().
+    """
     match = CLASS_RE.search(source)
     if match is None:
-        return "Code", fallback, "NewFile"
+        return "Graph", fallback, "NewFile"
     name = match.group(1)
     bases = match.group(2) or ""
-    if "PXCacheExtension" in bases:
-        return "DAC", name, "NewFile"
-    if "PXGraphExtension" in bases or "PXGraph" in bases:
-        return "Graph", name, "NewFile"
-    if "PXBqlTable" in bases or "IBqlTable" in bases:
-        return "DAC", name, "NewFile"
-    return "Code", name, "NewFile"
+    if "PXCacheExtension" in bases or "PXBqlTable" in bases or "IBqlTable" in bases:
+        return "Graph", name, "NewDac"
+    if "PXGraphExtension" in bases:
+        return "Graph", name, "ExistingGraph"
+    if "PXGraph" in bases:
+        return "Graph", name, "NewGraph"
+    return "Graph", name, "NewFile"
 
 
 def _dll_path(root: Path) -> Path | None:

@@ -40,6 +40,7 @@ INSPECTION_PLAN_TEST_FIELDS = {
 
 INSPECTION_ORDER_FIELDS = {
     "InspectionOrderNbr": "StringValue",
+    "Status": "StringValue",
     "InventoryID": "StringValue",
     "LotSerialNbr": "StringValue",
     "VendorID": "StringValue",
@@ -177,8 +178,26 @@ class TestInspectionOrderPutV2(unittest.TestCase):
         order = _top("InspectionOrder")
         mappings = _mappings(order)
         self.assertEqual(mappings["Results"], ("Results", ""))
-        for name in ("TestingLabID", "LabCertificateNbr", "InspectionDate", "OverallEvaluation", "NoteID"):
+        for name in (
+            "Status",
+            "TestingLabID",
+            "LabCertificateNbr",
+            "InspectionDate",
+            "OverallEvaluation",
+            "NoteID",
+        ):
             self.assertEqual(mappings[name], ("Document", name))
+        actions = {
+            action.get("name"): action.get("mappedTo")
+            for action in order.findall(f"{NS}Actions/{NS}Action")
+        }
+        self.assertEqual(
+            actions,
+            {
+                "EvaluateResults": "EvaluateResults",
+                "ReleaseLotDecision": "ReleaseLotDecision",
+            },
+        )
         results = _detail("InspectionOrderResult")
         self.assertEqual(_fields(results), INSPECTION_ORDER_RESULT_FIELDS)
         result_maps = _mappings(results)

@@ -1,0 +1,96 @@
+ifeq ($(filter oneshell,$(.FEATURES)),)
+$(error GNU Make ≥ 3.82 required (this is $(MAKE_VERSION) from $(MAKE)). On macOS: brew install make && gmake <target>)
+endif
+
+.EXPORT_ALL_VARIABLES:
+.ONESHELL:
+.SILENT:
+
+SHELL := /bin/bash
+.SHELLFLAGS := -euo pipefail -c
+MAKEFLAGS += --no-builtin-rules --no-builtin-variables
+export PATH := $(abspath .venv)/bin:$(PATH)
+
+UV ?= uv
+
+default: help
+
+.PHONY: help check test pack preflight release major minor patch
+
+###############################################################################
+# Tests
+###############################################################################
+
+# All Python goes through `uv run` (project env has acumatica-cli). Never
+# `acu check` from this repo (destructive tenant rebuild).
+
+test: .venv ## Local unit tests (no live tenant)
+	$(call header,Running unit tests)
+	$(UV) run python -m unittest discover -s tests -p 'test_*.py' -v
+
+pack: .venv ## Build Lab5_QMS_Customization.zip
+	$(call header,Packing Lab5_QMS_Customization.zip)
+	$(UV) run python pack.py
+
+preflight: .venv ## Read-only acu config check against .env
+	test -e .env || { echo ".env missing — decrypt .env.gpg at the repo root"; exit 1; }
+	$(call header,acu config check)
+	$(UV) run acu config check
+
+# `gmake check FILE=<path-or-stem>` scopes to one e2e file; unset = whole tier.
+check_target := $(if $(FILE),$(firstword $(wildcard $(FILE) e2e/$(FILE) e2e/$(FILE).py)),e2e)
+
+check: test preflight ## Live e2e vs .env tenant (acu CLI + REST; publishes Lab5.QMS)
+	test -n "$(check_target)" || { echo "no e2e file matches FILE=$(FILE)"; exit 1; }
+	$(call header,Live e2e)
+	if [[ "$(check_target)" == *.py ]]; then
+		$(UV) run python -m unittest discover -s e2e -p "$$(basename "$(check_target)")" -t . -v
+	else
+		$(UV) run python -m unittest discover -s e2e -t . -v
+	fi
+
+###############################################################################
+# Release
+###############################################################################
+
+part := $(word 1,$(filter major minor patch,$(MAKECMDGOALS)))
+
+release: test
+	test -n "$(part)" || { echo "usage: gmake release major|minor|patch"; exit 1; }
+	git diff --quiet && git diff --cached --quiet \
+		|| { echo "working tree not clean — commit or stash first"; exit 1; }
+
+major minor patch:
+	@:
+
+###############################################################################
+# Python env
+###############################################################################
+
+.venv: uv.lock
+	$(UV) venv --clear && hash -r && $(UV) sync
+
+uv.lock: pyproject.toml
+	$(UV) lock --upgrade && touch $(@)
+
+###############################################################################
+# Colors and Headers
+###############################################################################
+
+TERM := xterm-256color
+
+blue := $$(tput setaf 4)
+green := $$(tput setaf 2)
+yellow := $$(tput setaf 3)
+reset := $$(tput sgr0)
+
+define header
+echo "$(blue)==> $(1) <==$(reset)"
+endef
+
+help:
+	echo "$(blue)Usage: $(green)gmake [recipe]$(reset)"
+	echo "$(blue)Recipes:$(reset)"
+	awk 'BEGIN {FS = ":.*?## "; sort_cmd = "sort"} /^[a-zA-Z0-9_-]+:.*?## / \
+	{ printf "  \033[33m%-10s\033[0m %s\n", $$1, $$2 | sort_cmd; } \
+	END {close(sort_cmd)}' $(MAKEFILE_LIST)

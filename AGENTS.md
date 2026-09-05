@@ -19,6 +19,8 @@ Never print `.env` secrets.
 
 ## Live e2e (`acu` + `.env`)
 
+`gmake check` runs local tests, `uv run acu config check`, then live e2e against the `.env` tenant. Never `acu check` (destructive tenant rebuild).
+
 Repo-root `.env` (gitignored) is the live target. `acu` walks up from cwd to find it.
 
 ```
@@ -35,16 +37,16 @@ Verified combo (sibling CLI): Acumatica **26.101.0225**, Default contract **25.2
 ### Preflight (read-only, always first)
 
 ```sh
-acu config check          # REST login + Default/<api> listed; SSH ping if ACU_SSH set
-acu config show           # resolved .env; password redacted
-acu tenant list           # SSH; confirm ACU_TENANT exists
+uv run acu config check   # REST login + Default/<api> listed; SSH ping if ACU_SSH set
+uv run acu config show    # resolved .env; password redacted
+uv run acu tenant list    # SSH; confirm ACU_TENANT exists
 ```
 
 `ok rest` + `ok endpoints` = session is good. Missing `matrix.yaml` is a warn here, not a fail.
 
 **Never** `acu check` from this repo — that is a destructive cold tenant rebuild (`delete` → create → apply → run).
 
-Python probes: use the interpreter from `which acu` (uv tool `acumatica-cli`). `import acumatica_cli` then `load_instance()` + `AcumaticaClient` — same `.env` walk-up as the CLI. System `python3` will not see the package.
+Python probes: `uv run python` (project env installs `acumatica-cli`). `import acumatica_cli` then `load_instance()` + `AcumaticaClient` — same `.env` walk-up as `uv run acu`. System `python3` will not see the package.
 
 ### Package presence
 

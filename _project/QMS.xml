@@ -9,6 +9,8 @@
     InspectionPlan   GET
     InspectionOrder  GET PUT
     NonConformance   GET POST
+  InspectionOrder actions (V4/V5/V6):
+    EvaluateResults, ReleaseLotDecision
   Files (I.files / V2 / V3):
     PUT /entity/QMS/22.200.001/InspectionOrder/{InspectionOrderNbr}/files/{fileName}
     CoA PDF + parsed JSON on InspectionOrder NoteID; GET ?$expand=files
@@ -90,6 +92,7 @@
     <TopLevelEntity name="InspectionOrder" screen="QM301000">
       <Fields>
         <Field name="InspectionOrderNbr" type="StringValue" />
+        <Field name="Status" type="StringValue" />
         <Field name="InventoryID" type="StringValue" />
         <Field name="LotSerialNbr" type="StringValue" />
         <Field name="VendorID" type="StringValue" />
@@ -105,6 +108,9 @@
       <Mappings>
         <Mapping field="InspectionOrderNbr">
           <To object="Document" field="InspectionOrderNbr" />
+        </Mapping>
+        <Mapping field="Status">
+          <To object="Document" field="Status" />
         </Mapping>
         <Mapping field="InventoryID">
           <To object="Document" field="InventoryID" />
@@ -140,6 +146,10 @@
           <To object="Results" field="" />
         </Mapping>
       </Mappings>
+      <Actions>
+        <Action name="EvaluateResults" mappedTo="EvaluateResults" isDefault="false" />
+        <Action name="ReleaseLotDecision" mappedTo="ReleaseLotDecision" isDefault="false" />
+      </Actions>
     </TopLevelEntity>
     <Detail name="InspectionOrderResult">
       <Fields>
