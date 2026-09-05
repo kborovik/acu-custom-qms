@@ -110,7 +110,7 @@ class TestQcHoldNotReleasedV1(unittest.TestCase):
         graph = GRAPH_CS.read_text(encoding="utf-8")
         self.assertIn("UpdateLotStatus(item.InventoryID, split.LotSerialNbr, QMSLotStatus.QcHold)", graph)
         self.assertNotIn("QMSLotStatus.Released", graph)
-        self.assertIn("lot.LotStatus = lotStatus;", graph)
+        self.assertIn("ext.UsrQMSLotStatus = lotStatus;", graph)
 
     def test_draft_order_open_pending(self) -> None:
         order = seed_draft_order("Q0000001LOT0001", 42, "LOT-1", 7, "PR000001", "QPLAN-BOT")

@@ -211,11 +211,14 @@ class TestReleaseGateIRoleV3(unittest.TestCase):
         self.assertIn("return hasQualityManagerRole || isIngestionServiceAccount;", src)
         graph = GRAPH_CS.read_text(encoding="utf-8")
         self.assertIn("QMSAuditRules.MayReleaseLot(", graph)
-        self.assertIn("QMSAuditRules.HasQualityManagerRole(PXAccess.GetUserRoles())", graph)
+        self.assertIn("QMSAuditRules.HasQualityManagerRole(QMSAccess.CurrentUserRoles())", graph)
         self.assertIn(
-            "QMSAuditRules.IsIngestionServiceAccount(PXAccess.GetUserName())",
+            "QMSAuditRules.IsIngestionServiceAccount(QMSAccess.CurrentUserName())",
             graph,
         )
+        access = (ROOT / "src" / "Lab5.QMS" / "QMSAccess.cs").read_text(encoding="utf-8")
+        self.assertIn("PXAccess.GetRoles(PXAccess.GetUserName())", access)
+        self.assertIn("list.Common", access)
         self.assertIn(
             "QC Hold to Released requires Quality Manager role or the ingestion service account.",
             graph,

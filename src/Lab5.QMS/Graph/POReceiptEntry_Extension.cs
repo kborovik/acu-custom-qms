@@ -70,7 +70,11 @@ namespace Lab5.QMS
             {
                 return;
             }
-            lot.LotStatus = lotStatus;
+            INLotSerialStatusExt ext = lot.GetExtension<INLotSerialStatusExt>();
+            if (ext != null)
+            {
+                ext.UsrQMSLotStatus = lotStatus;
+            }
             Base.Caches[typeof(INLotSerialStatus)].Update(lot);
         }
 

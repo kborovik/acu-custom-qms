@@ -10,5 +10,24 @@
     <Product>Lab5.QMS</Product>
     <Description>Acumatica QMS customization 22.200.001</Description>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AcumaticaDir Condition="'$(AcumaticaDir)' == ''">C:\Acumatica\AcumaticaERP</AcumaticaDir>
   </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="PX.Data">
+      <HintPath>$(AcumaticaDir)\Bin\PX.Data.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="PX.Objects">
+      <HintPath>$(AcumaticaDir)\Bin\PX.Objects.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="PX.Common">
+      <HintPath>$(AcumaticaDir)\Bin\PX.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="PX.Common.Std">
+      <HintPath>$(AcumaticaDir)\Bin\PX.Common.Std.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
 </Project>

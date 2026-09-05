@@ -12,10 +12,11 @@ MAKEFLAGS += --no-builtin-rules --no-builtin-variables
 export PATH := $(abspath .venv)/bin:$(PATH)
 
 UV ?= uv
+QMS_DLL := src/Lab5.QMS/bin/Release/Lab5.QMS.dll
 
 default: help
 
-.PHONY: help check test pack preflight release major minor patch
+.PHONY: help check test pack dll clean preflight release major minor patch
 
 ###############################################################################
 # Tests
@@ -28,9 +29,30 @@ test: .venv ## Local unit tests (no live tenant)
 	$(call header,Running unit tests)
 	$(UV) run python -m unittest discover -s tests -p 'test_*.py' -v
 
-pack: ## Build Lab5_QMS_Customization.zip
+pack: dll ## Build Lab5_QMS_Customization.zip
 	$(call header,Packing Lab5_QMS_Customization.zip)
 	./pack.py
+
+dll: $(QMS_DLL) ## Compile Lab5.QMS.dll on the ERP VM (SSH) if missing
+
+# File target: compile only when the assembly is absent. Order-only .venv
+# so `uv sync` does not force a rebuild. No source prereqs — `gmake dll`
+# with an existing file is a no-op.
+$(QMS_DLL): | .venv
+	test -e .env || { echo ".env missing — decrypt .env.gpg at the repo root"; exit 1; }
+	$(call header,Building Lab5.QMS.dll via SSH)
+	$(UV) run python dll.py
+
+clean: ## Remove compiled DLL, pack zip, and temp artifacts
+	$(call header,Cleaning)
+	rm -rf src/Lab5.QMS/bin src/Lab5.QMS/obj
+	rm -f Lab5_QMS_Customization.zip
+	rm -rf .ruff_cache .pytest_cache findings .vs
+	find . \( -path './.venv' -o -path './.git' \) -prune -o \
+		-name '__pycache__' -type d -exec rm -rf {} +
+	find . \( -path './.venv' -o -path './.git' \) -prune -o \
+		\( -name '*.pyc' -o -name '.DS_Store' -o -name '*.user' \
+		   -o -name '*.suo' \) -delete
 
 preflight: .venv ## Read-only acu config check against .env
 	test -e .env || { echo ".env missing — decrypt .env.gpg at the repo root"; exit 1; }
@@ -40,7 +62,7 @@ preflight: .venv ## Read-only acu config check against .env
 # `gmake check FILE=<path-or-stem>` scopes to one e2e file; unset = whole tier.
 check_target := $(if $(FILE),$(firstword $(wildcard $(FILE) e2e/$(FILE) e2e/$(FILE).py)),e2e)
 
-check: test preflight ## Live e2e vs .env tenant (acu CLI + REST; publishes Lab5.QMS)
+check: test preflight $(QMS_DLL) ## Live e2e vs .env tenant (acu CLI + REST; publishes Lab5.QMS)
 	test -n "$(check_target)" || { echo "no e2e file matches FILE=$(FILE)"; exit 1; }
 	$(call header,Live e2e)
 	if [[ "$(check_target)" == *.py ]]; then
@@ -59,7 +81,7 @@ check: test preflight ## Live e2e vs .env tenant (acu CLI + REST; publishes Lab5
 # `gh release create` locally (unlike acumatica-cli).
 part := $(word 1,$(filter major minor patch,$(MAKECMDGOALS)))
 
-release: test ## Bump version, promote CHANGELOG, pack zip, tag, push, gh release
+release: test $(QMS_DLL) ## Bump version, promote CHANGELOG, pack zip, tag, push, gh release
 	test -n "$(part)" || { echo "usage: gmake release major|minor|patch"; exit 1; }
 	git diff --quiet && git diff --cached --quiet \
 		|| { echo "working tree not clean — commit or stash first"; exit 1; }

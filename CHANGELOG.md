@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+### Added
+
+- **`gmake dll`:** compile `Lab5.QMS.dll` on the ERP VM over SSH (site
+  Roslyn `csc` against `PX.Data` / `PX.Objects` / `PX.Common` /
+  `PX.Common.Std`) and copy it to `src/Lab5.QMS/bin/Release` for
+  `gmake pack`. The csproj now HintPaths those assemblies at
+  `$(AcumaticaDir)\Bin` (default `C:\Acumatica\AcumaticaERP`).
+  `gmake pack` depends on `dll`; `check` / `release` compile that path
+  when it is missing.
+- **`gmake clean`:** remove `Lab5.QMS.dll`, `obj/`, the pack zip,
+  `__pycache__`, and other temp artifacts. Leaves `.venv` and `.env`.
+
+### Changed
+
+- **26.x lot status + roles:** `INLotSerialStatus` has no `LotStatus`
+  field — persist `UsrQMSLotStatus`. QC Hold → Released reads roles via
+  `PXAccess.GetRoles` (`GetUserRoles` is gone).
+
 ## [v0.1.0] - 2026-09-04
 
 ### Added

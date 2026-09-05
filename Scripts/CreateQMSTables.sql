@@ -229,3 +229,10 @@ BEGIN
         [UsrMinShelfLifeDays] [int] NOT NULL
         CONSTRAINT [DF_InventoryItem_UsrMinShelfLifeDays] DEFAULT ((0));
 END
+
+-- I.lot: 26.x INLotSerialStatus has no LotStatus column.
+IF COL_LENGTH(N'dbo.INLotSerialStatus', N'UsrQMSLotStatus') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[INLotSerialStatus] ADD
+        [UsrQMSLotStatus] [nvarchar](10) NULL;
+END

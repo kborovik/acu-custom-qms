@@ -91,8 +91,8 @@ namespace Lab5.QMS
             string lotStatus = QMSLotDecisionRules.TargetLotStatus(order.OverallEvaluation);
             if (!QMSAuditRules.MayReleaseLot(
                 lotStatus,
-                QMSAuditRules.HasQualityManagerRole(PXAccess.GetUserRoles()),
-                QMSAuditRules.IsIngestionServiceAccount(PXAccess.GetUserName())))
+                QMSAuditRules.HasQualityManagerRole(QMSAccess.CurrentUserRoles()),
+                QMSAuditRules.IsIngestionServiceAccount(QMSAccess.CurrentUserName())))
             {
                 throw new PXException(
                     "QC Hold to Released requires Quality Manager role or the ingestion service account.");
@@ -123,7 +123,11 @@ namespace Lab5.QMS
             {
                 return;
             }
-            lot.LotStatus = lotStatus;
+            INLotSerialStatusExt ext = lot.GetExtension<INLotSerialStatusExt>();
+            if (ext != null)
+            {
+                ext.UsrQMSLotStatus = lotStatus;
+            }
             Caches[typeof(INLotSerialStatus)].Update(lot);
         }
 

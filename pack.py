@@ -91,7 +91,8 @@ def _project_xml(root: Path) -> ET.Element:
     # C# CstCodeFile <Graph Source FileType=NewDac|NewGraph|NewFile> import
     # succeeds but publishBegin CstCodeFile.Upgrade KeyNotFoundException on
     # 26.101.0225 (includedAspxFiles). Training packages ship Bin\*.dll.
-    # Keep DAC/graph source in src/; pack as File once a DLL is produced.
+    # Keep DAC/graph source in src/; `gmake dll` compiles on the ERP VM
+    # and pack adds File Bin\Lab5.QMS.dll when that assembly exists.
     for screen in PAGES:
         for suffix in (".aspx", ".aspx.cs"):
             file_el = ET.SubElement(customization, "File")

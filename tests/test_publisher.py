@@ -39,6 +39,18 @@ class TestPublisherV8(unittest.TestCase):
 
         self.assertEqual(text("AssemblyName"), "Lab5.QMS")
         self.assertEqual(text("RootNamespace"), "Lab5.QMS")
+        self.assertEqual(text("AcumaticaDir"), r"C:\Acumatica\AcumaticaERP")
+        refs = {
+            (el.get("Include"), (el.find("HintPath").text or "").strip())
+            for el in root.findall("ItemGroup/Reference")
+            if el.find("HintPath") is not None
+        }
+        for name in ("PX.Data", "PX.Objects", "PX.Common", "PX.Common.Std"):
+            self.assertIn(
+                (name, rf"$(AcumaticaDir)\Bin\{name}.dll"),
+                refs,
+                name,
+            )
 
     def test_qms_marker_constants(self) -> None:
         src = (ROOT / "src" / "Lab5.QMS" / "QMS.cs").read_text(encoding="utf-8")

@@ -46,12 +46,14 @@ CODE_CLASSES = {
     "QMSNonConformance": "NewDac",
     "QMSSetup": "NewDac",
     "InventoryItemExt": "NewDac",
+    "INLotSerialStatusExt": "NewDac",
     "QMSInspectionPlanMaint": "NewGraph",
     "QMSInspectionOrderEntry": "NewGraph",
     "QMSNonConformanceEntry": "NewGraph",
     "QMSSetupMaint": "NewGraph",
     "POReceiptEntry_Extension": "ExistingGraph",
     "QMS": "NewFile",
+    "QMSAccess": "NewFile",
 }
 
 
@@ -163,6 +165,31 @@ class TestProjectXmlPackedItems(unittest.TestCase):
         self.assertIn("QM000000", screens)
         for screen in SCREENS:
             self.assertIn(screen, screens, screen)
+
+
+class TestPackDllFile(unittest.TestCase):
+    def test_zip_includes_bin_dll_when_present(self) -> None:
+        dest = ROOT / "src" / "Lab5.QMS" / "bin" / "Release" / pack.ASSEMBLY_DLL
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        created = not dest.exists()
+        previous = dest.read_bytes() if dest.exists() else None
+        dest.write_bytes(b"MZ-test-dll")
+        try:
+            with _zip() as zf:
+                names = set(zf.namelist())
+                root = _project(zf)
+                payload = zf.read("Bin/" + pack.ASSEMBLY_DLL)
+            self.assertIn("Bin/" + pack.ASSEMBLY_DLL, names)
+            self.assertEqual(payload, b"MZ-test-dll")
+            paths = {
+                item.get("AppRelativePath") for item in root.findall("File")
+            }
+            self.assertIn(rf"Bin\{pack.ASSEMBLY_DLL}", paths)
+        finally:
+            if created:
+                dest.unlink(missing_ok=True)
+            elif previous is not None:
+                dest.write_bytes(previous)
 
 
 if __name__ == "__main__":
