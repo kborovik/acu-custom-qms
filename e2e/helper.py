@@ -7,8 +7,10 @@ Never print ACU_PASSWORD.
 
 from __future__ import annotations
 
+import faulthandler
 import hashlib
 import io
+import os
 import subprocess
 import sys
 import time
@@ -21,7 +23,7 @@ from typing import Any
 
 import httpx
 
-from acumatica_cli.client import AcumaticaClient, unwrap
+from acumatica_cli.client import AcumaticaClient, unwrap, wrap
 from acumatica_cli.config import DB_NAME, Instance, load_instance
 from acumatica_cli.tenant import TenantManager
 
@@ -73,26 +75,56 @@ MIN_PDF = (
 _published: bool | None = None
 _publish_error: BaseException | None = None
 
+# Per-request HTTP bound. Publish polling uses this plus a loop deadline
+# (ensure_published timeout=600); do not raise the default back to 300s —
+# a stuck GET then looks like a hung `gmake check`.
+HTTP_TIMEOUT = 30.0
+ACU_TIMEOUT = 60.0
+INVOKE_TIMEOUT = 60.0
+SSH_TIMEOUT = 30.0
+
+
+def _arm_e2e_timeout() -> None:
+    """Kill a stuck e2e process. `E2E_TIMEOUT` seconds; 0 disables."""
+    raw = os.environ.get("E2E_TIMEOUT")
+    if not raw:
+        return
+    seconds = float(raw)
+    if seconds <= 0:
+        return
+    faulthandler.dump_traceback_later(seconds, exit=True)
+
+
+_arm_e2e_timeout()
+
 
 def instance() -> Instance:
     return load_instance()
 
 
 @contextmanager
-def client(timeout: float = 300.0) -> Iterator[AcumaticaClient]:
+def client(timeout: float = HTTP_TIMEOUT) -> Iterator[AcumaticaClient]:
     with AcumaticaClient(instance(), timeout=timeout) as session:
         yield session
 
 
-def run_acu(*args: str) -> subprocess.CompletedProcess[str]:
+def run_acu(
+    *args: str, timeout: float = ACU_TIMEOUT
+) -> subprocess.CompletedProcess[str]:
     """Run the installed `acu` binary from the repo root (`.env` walk-up)."""
-    return subprocess.run(
-        ["acu", *args],
-        cwd=ROOT,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        return subprocess.run(
+            ["acu", *args],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            f"acu {' '.join(args)} timed out after {timeout:.0f}s"
+        ) from exc
 
 
 def bootstrap_endpoint(session: AcumaticaClient) -> str:
@@ -111,14 +143,35 @@ def company_id() -> int:
     raise RuntimeError(f"tenant {inst.tenant!r} not in acu tenant list")
 
 
-def sqlcmd(query: str) -> str:
+def sqlcmd(query: str, timeout: float = SSH_TIMEOUT) -> str:
     inst = instance()
     if not inst.ssh:
         raise RuntimeError("ACU_SSH empty — hosted path has no sqlcmd")
-    mgr = TenantManager(inst)
-    return mgr._ssh(
-        f'sqlcmd -S "(local)" -E -C -W -h -1 -s "|" -Q "SET NOCOUNT ON; {query}"'
-    )
+    try:
+        r = subprocess.run(
+            [
+                "ssh",
+                "-o",
+                "BatchMode=yes",
+                "-o",
+                "ConnectTimeout=10",
+                inst.ssh,
+                'sqlcmd -S "(local)" -E -C -W -h -1 -s "|" -Q '
+                f'"SET NOCOUNT ON; {query}"'
+                "\nexit $LASTEXITCODE",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"sqlcmd via ssh timed out after {timeout:.0f}s") from exc
+    if r.returncode != 0:
+        raise RuntimeError(
+            f"remote command failed ({r.returncode}):\n{r.stdout}\n{r.stderr}"
+        )
+    return r.stdout
 
 
 def sql_lines(query: str) -> list[str]:
@@ -295,8 +348,33 @@ def qms_put(session: AcumaticaClient, entity: str, record: dict[str, Any]) -> di
     return unwrap(session.put(entity, record, endpoint=QMS_ENDPOINT))
 
 
-def qms_invoke(session: AcumaticaClient, action: str, record: dict[str, Any]) -> None:
-    session.invoke("InspectionOrder", action, record, endpoint=QMS_ENDPOINT)
+def qms_invoke(
+    session: AcumaticaClient,
+    action: str,
+    record: dict[str, Any],
+    timeout: float = INVOKE_TIMEOUT,
+) -> None:
+    """POST InspectionOrder action; bound the 202 status poll.
+
+    `AcumaticaClient.invoke` polls Location while status is 202 with no
+    deadline — a stuck EvaluateResults/ReleaseLotDecision hangs `gmake check`.
+    """
+    body: dict[str, Any] = {"entity": wrap(record)}
+    r = session._checked(
+        session._http.post(
+            f"{session._url('InspectionOrder', QMS_ENDPOINT)}/{action}",
+            json=body,
+        )
+    )
+    deadline = time.monotonic() + timeout
+    while r.status_code == 202:
+        if time.monotonic() >= deadline:
+            raise RuntimeError(
+                f"InspectionOrder {action} did not complete within {timeout:.0f}s"
+            )
+        status_url = r.request.url.join(r.headers.get("Location", ""))
+        time.sleep(session.poll_interval)
+        r = session._checked(session._http.get(status_url))
 
 
 def ensure_numbering_and_role(session: AcumaticaClient) -> None:

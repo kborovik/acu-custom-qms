@@ -20,6 +20,13 @@
   field — persist `UsrQMSLotStatus`. QC Hold → Released reads roles via
   `PXAccess.GetRoles` (`GetUserRoles` is gone).
 
+### Fixed
+
+- **`gmake check` hang:** e2e HTTP default 30s (publish loop still 600s),
+  `acu` subprocess 60s, sqlcmd-over-ssh 30s, bounded InspectionOrder 202
+  poll 60s, unbuffered `python -u` output, process backstop `E2E_TIMEOUT`
+  (default 900s).
+
 ## [v0.1.0] - 2026-09-04
 
 ### Added

@@ -88,6 +88,7 @@ class TestDllScript(unittest.TestCase):
         self.assertIn("release: test $(QMS_DLL)", makefile)
         self.assertIn("$(QMS_DLL): | .venv", makefile)
         self.assertIn("python dll.py", makefile)
+        self.assertIn("python -u -m unittest discover -s tests", makefile)
         self.assertIn("clean: ##", makefile)
         self.assertIn("rm -rf src/Lab5.QMS/bin src/Lab5.QMS/obj", makefile)
         self.assertIn("rm -f Lab5_QMS_Customization.zip", makefile)

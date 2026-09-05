@@ -13,6 +13,10 @@ export PATH := $(abspath .venv)/bin:$(PATH)
 
 UV ?= uv
 QMS_DLL := src/Lab5.QMS/bin/Release/Lab5.QMS.dll
+# Unbuffered unittest so a stuck e2e test prints its name. Process-level
+# backstop (seconds) via faulthandler in e2e/helper.py; 0 disables.
+PYTHONUNBUFFERED := 1
+E2E_TIMEOUT ?= 900
 
 default: help
 
@@ -27,7 +31,7 @@ default: help
 
 test: .venv ## Local unit tests (no live tenant)
 	$(call header,Running unit tests)
-	$(UV) run python -m unittest discover -s tests -p 'test_*.py' -v
+	$(UV) run python -u -m unittest discover -s tests -p 'test_*.py' -v
 
 pack: dll ## Build Lab5_QMS_Customization.zip
 	$(call header,Packing Lab5_QMS_Customization.zip)
@@ -66,9 +70,9 @@ check: test preflight $(QMS_DLL) ## Live e2e vs .env tenant (acu CLI + REST; pub
 	test -n "$(check_target)" || { echo "no e2e file matches FILE=$(FILE)"; exit 1; }
 	$(call header,Live e2e)
 	if [[ "$(check_target)" == *.py ]]; then
-		$(UV) run python -m unittest discover -s e2e -p "$$(basename "$(check_target)")" -t . -v
+		$(UV) run python -u -m unittest discover -s e2e -p "$$(basename "$(check_target)")" -t . -v
 	else
-		$(UV) run python -m unittest discover -s e2e -t . -v
+		$(UV) run python -u -m unittest discover -s e2e -t . -v
 	fi
 
 ###############################################################################
