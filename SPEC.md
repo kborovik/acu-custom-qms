@@ -15,7 +15,7 @@ Ship Acumatica xRP customization `Lab5.QMS`: cannot-pass lot gate + REST CoA ing
 
 ## §I INTERFACES
 - pkg: `Lab5_QMS_Customization.zip` → `_project/ProjectMetadata.xml` 22.200.001 + `Lab5.QMS.dll` + Pages_QM + `CreateQMSTables.sql`; ! Role `UsersInRoles` `RolesInGraph`
-- cmd: `lab5-qms` Click console script on installable `lab5-qms` → pack `Lab5_QMS_Customization.zip` + CustomizationApi publish + post-publish Role seed
+- cmd: `lab5-qms` Click console script on installable `lab5-qms` → subcommands `pack` `publish` `seed` `deploy`; no subcommand → Click help exit 0 (not deploy); `deploy` pack `Lab5_QMS_Customization.zip` + CustomizationApi publish + post-publish Role seed; pack/publish/seed/deploy emit per-step progress on stderr (step, target, result, elapsed); stdout stays path / status / `seeded`
 - dac: `QMSInspectionPlan` `QMSInspectionPlanTest` `QMSInspectionOrder` `QMSInspectionOrderResult` `QMSNonConformance` + `InventoryItemExt` (`UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays`)
 - graph: `QMSInspectionPlanMaint` `QMSInspectionOrderEntry` (`EvaluateResults` `ReleaseLotDecision`) `QMSNonConformanceEntry` (`CloseNCR` `DispositionRTV`) `POReceiptEntry_Extension` on `Release`
 - screen: Quality Management workspace — `QM.10.10.00` prefs, `QM.20.10.00` plans, `QM.30.10.00` orders, `QM.30.20.00` NCR
@@ -52,6 +52,8 @@ T11|x|add `QMSSetupMaint` `QM.10.10.00` numbering `QORD` `QNCR`|I.screen
 T12|x|pack `Lab5_QMS_Customization.zip`|V8,I.pkg
 T13|x|seed post-publish Role `Quality Manager` + RolesInGraph Delete on QM* for Administrator and Quality Manager; attach Quality Manager to `ACU_USER` e2e-only; drop InspectionPlan 403 skip|V10,V8,I.role,I.pkg
 T14|x|add Click console script `lab5-qms` pack+publish+post-publish Role seed|V10,V8,I.cmd,I.pkg
+T15|.|naked `lab5-qms` (no subcommand) emit Click help exit 0; not invoke deploy|I.cmd
+T16|.|deploy/publish/seed emit per-step progress on stderr: pack zip, drain in-flight publish, digest skip or import, publishBegin, poll publishEnd, wait `QMS/22.200.001`, seed Role, seed RolesInGraph|V10,I.cmd
 
 ## §B BUGS
 id|date|cause|fix
