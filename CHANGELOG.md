@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [v0.2.0] - 2026-09-06
+
 ### Added
 
 - **README:** sequence diagram under Quality workflow (receipt gate,
