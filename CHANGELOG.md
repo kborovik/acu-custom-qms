@@ -30,7 +30,11 @@
 
 - **Project deps:** drop `acumatica-cli` from `pyproject.toml` and
   `[tool.uv.sources]`; relock. Released PATH `acu` is not a project
-  dependency.
+  dependency. `lab5-qms` publish, `dll.py`, and e2e invoke PATH `acu`
+  (`acu config show`, `acu tenant list`) plus a local httpx REST
+  session. Python does not `import acumatica_cli`.
+- **httpx:** direct project dependency for CustomizationApi / contract
+  REST after dropping the CLI package.
 - **`lab5-qms` progress:** `pack`, `publish`, `seed`, and `deploy` emit
   per-step progress on stderr (step, target, result, elapsed). Stdout
   stays the zip path, publish status, or `seeded`.

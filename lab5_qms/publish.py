@@ -13,17 +13,21 @@ import subprocess
 import time
 import xml.etree.ElementTree as ET
 import zipfile
-from collections.abc import Iterator
-from contextlib import contextmanager
 from typing import Any
 
 import httpx
 
-from acumatica_cli.client import AcumaticaClient
-from acumatica_cli.config import DB_NAME, Instance, load_instance
-from acumatica_cli.tenant import TenantManager
-
 from lab5_qms import pack
+from lab5_qms.acu import (
+    DB_NAME,
+    HTTP_TIMEOUT,
+    SSH_TIMEOUT,
+    AcumaticaClient,
+    Instance,
+    client,
+    list_tenants,
+    load_instance,
+)
 from lab5_qms.progress import progress
 
 PACKAGE_NAME = "Lab5.QMS"
@@ -37,18 +41,9 @@ ROLES_IN_GRAPH_COMPANY_ID = 1
 ROLES_IN_GRAPH_APPLICATION = "/"
 ACCESSRIGHTS_DELETE = 4
 
-HTTP_TIMEOUT = 30.0
-SSH_TIMEOUT = 30.0
-
 
 def instance() -> Instance:
     return load_instance()
-
-
-@contextmanager
-def client(timeout: float = HTTP_TIMEOUT) -> Iterator[AcumaticaClient]:
-    with AcumaticaClient(instance(), timeout=timeout) as session:
-        yield session
 
 
 def bootstrap_endpoint(session: AcumaticaClient) -> str:
@@ -60,8 +55,7 @@ def bootstrap_endpoint(session: AcumaticaClient) -> str:
 
 def company_id() -> int:
     inst = instance()
-    mgr = TenantManager(inst)
-    for tenant in mgr.list():
+    for tenant in list_tenants():
         if tenant.login_name.casefold() == inst.tenant.casefold():
             return tenant.company_id
     raise RuntimeError(f"tenant {inst.tenant!r} not in acu tenant list")

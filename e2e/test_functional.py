@@ -7,8 +7,6 @@ import json
 import unittest
 from datetime import date
 
-from acumatica_cli.client import unwrap, wrap
-
 from e2e.helper import (
     FAIL_ORDER,
     ITEM_CD,
@@ -30,6 +28,8 @@ from e2e.helper import (
     qms_get,
     qms_invoke,
     qms_put,
+    unwrap,
+    wrap,
 )
 
 

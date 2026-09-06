@@ -18,10 +18,8 @@ import subprocess
 import zipfile
 from pathlib import Path
 
-from acumatica_cli.config import ACU_INSTANCE_PATH, load_instance
-from acumatica_cli.tenant import TenantManager
-
 from lab5_qms import pack
+from lab5_qms.acu import ACU_INSTANCE_PATH, load_instance, ssh_run
 
 ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "src" / "Lab5.QMS"
@@ -132,8 +130,7 @@ def compile_on_vm(root: Path | None = None) -> Path:
         )
     dest = local_dll_path(root)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    mgr = TenantManager(inst)
-    temp = mgr._ssh("$env:TEMP").strip().splitlines()[-1].strip()
+    temp = ssh_run("$env:TEMP", host=inst.ssh).strip().splitlines()[-1].strip()
     if not temp:
         raise RuntimeError("remote $env:TEMP was empty")
     posix_temp = temp.replace("\\", "/")
@@ -143,7 +140,7 @@ def compile_on_vm(root: Path | None = None) -> Path:
     local_zip.write_bytes(source_zip(root))
     try:
         _scp(str(local_zip), f"{inst.ssh}:{remote_zip}")
-        mgr._ssh(
+        ssh_run(
             "$ErrorActionPreference = 'Stop'; "
             f"$zip = '{temp}\\{REMOTE_ZIP}'; "
             f"$work = '{remote_work}'; "
@@ -152,7 +149,8 @@ def compile_on_vm(root: Path | None = None) -> Path:
             "New-Item -ItemType Directory -Path $work | Out-Null; "
             "Expand-Archive -LiteralPath $zip -DestinationPath $work -Force; "
             "Set-Location -LiteralPath $work; "
-            "& .\\build.ps1"
+            "& .\\build.ps1",
+            host=inst.ssh,
         )
         remote_dll = f"{posix_temp}/{REMOTE_DIR}/bin/Release/{pack.ASSEMBLY_DLL}"
         _scp(f"{inst.ssh}:{remote_dll}", str(dest))

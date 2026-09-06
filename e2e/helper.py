@@ -1,7 +1,7 @@
 """Live-tenant helpers for Lab5.QMS e2e.
 
-Uses `uv run` (`import acumatica_cli`) so `.env` walk-up matches
-`uv run acu config check`. Never call `acu check` (destructive rebuild).
+PATH `acu` (released `uv tool install`) resolves `.env` via walk-up.
+acu is never launched through uv. Never call `acu check` (destructive rebuild).
 Never print ACU_PASSWORD.
 """
 
@@ -14,10 +14,14 @@ import time
 from pathlib import Path
 from typing import Any
 
-from acumatica_cli.client import AcumaticaClient, unwrap, wrap
-from acumatica_cli.config import DB_NAME
-
 from lab5_qms import pack
+from lab5_qms.acu import (  # noqa: F401
+    AcumaticaClient,
+    DB_NAME,
+    run_acu as _run_acu,
+    unwrap,
+    wrap,
+)
 from lab5_qms.publish import (
     ACCESSRIGHTS_DELETE,
     HTTP_TIMEOUT,
@@ -81,7 +85,7 @@ MIN_PDF = (
 _published: bool | None = None
 _publish_error: BaseException | None = None
 
-# Per-request HTTP bound lives in lab5_qms.publish (HTTP_TIMEOUT = 30.0).
+# Per-request HTTP bound lives in lab5_qms.acu (HTTP_TIMEOUT = 30.0).
 # Publish polling uses that plus a loop deadline (ensure_published
 # timeout=600); do not raise the default back to 300s — a stuck GET then
 # looks like a hung `gmake check`.
@@ -106,20 +110,8 @@ _arm_e2e_timeout()
 def run_acu(
     *args: str, timeout: float = ACU_TIMEOUT
 ) -> subprocess.CompletedProcess[str]:
-    """Run the installed `acu` binary from the repo root (`.env` walk-up)."""
-    try:
-        return subprocess.run(
-            ["acu", *args],
-            cwd=ROOT,
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-    except subprocess.TimeoutExpired as exc:
-        raise RuntimeError(
-            f"acu {' '.join(args)} timed out after {timeout:.0f}s"
-        ) from exc
+    """Run PATH `acu` from the repo root (`.env` walk-up). Never through uv."""
+    return _run_acu(*args, timeout=timeout, cwd=ROOT)
 
 
 def ensure_published(*, timeout: float = 600.0) -> str:

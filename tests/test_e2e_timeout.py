@@ -20,12 +20,13 @@ class TestE2eTimeouts(unittest.TestCase):
     def test_helper_bounds_http_acu_and_invoke(self) -> None:
         src = (ROOT / "e2e" / "helper.py").read_text(encoding="utf-8")
         publish = (ROOT / "lab5_qms" / "publish.py").read_text(encoding="utf-8")
-        self.assertIn("HTTP_TIMEOUT = 30.0", publish)
+        acu = (ROOT / "lab5_qms" / "acu.py").read_text(encoding="utf-8")
+        self.assertIn("HTTP_TIMEOUT = 30.0", acu)
         self.assertIn("ACU_TIMEOUT = 60.0", src)
         self.assertIn("INVOKE_TIMEOUT = 60.0", src)
-        self.assertIn("SSH_TIMEOUT = 30.0", publish)
+        self.assertIn("SSH_TIMEOUT = 30.0", acu)
         self.assertIn("sqlcmd via ssh timed out", publish)
-        self.assertIn("timeout: float = HTTP_TIMEOUT", publish)
+        self.assertIn("timeout: float = HTTP_TIMEOUT", acu)
         self.assertIn("timeout: float = ACU_TIMEOUT", src)
         self.assertIn("timeout: float = INVOKE_TIMEOUT", src)
         self.assertIn("timeout=timeout", src)
@@ -35,6 +36,7 @@ class TestE2eTimeouts(unittest.TestCase):
         self.assertIn("E2E_TIMEOUT", src)
         self.assertNotIn("timeout: float = 300.0", src)
         self.assertNotIn("timeout: float = 300.0", publish)
+        self.assertNotIn("timeout: float = 300.0", acu)
 
     def test_makefile_unbuffered_e2e_timeout(self) -> None:
         makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
