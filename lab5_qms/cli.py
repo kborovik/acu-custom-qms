@@ -1,4 +1,4 @@
-"""lab5-qms Click console script (T14 / I.cmd / V8 / V10).
+"""lab5-qms Click console script (T14 / T15 / T16 / I.cmd / V8 / V10).
 
 Packs Lab5_QMS_Customization.zip, publishes via CustomizationApi, and
 seeds post-publish Role Quality Manager + RolesInGraph Delete on QM*
@@ -14,6 +14,7 @@ from pathlib import Path
 import click
 
 from lab5_qms import pack, publish
+from lab5_qms.progress import progress
 
 
 @click.group(
@@ -28,6 +29,13 @@ def cli(ctx: click.Context) -> None:
         ctx.exit(0)
 
 
+def _write_zip(output: Path | None) -> Path:
+    with progress("pack zip", str(output or pack.PACKAGE_ZIP)) as p:
+        path = pack.write_package(output)
+        p.target = str(path)
+        return path
+
+
 @cli.command("pack")
 @click.option(
     "-o",
@@ -38,8 +46,7 @@ def cli(ctx: click.Context) -> None:
 )
 def pack_cmd(output: Path | None) -> None:
     """Write Lab5_QMS_Customization.zip (no Role / UsersInRoles / RolesInGraph)."""
-    path = pack.write_package(output)
-    click.echo(str(path))
+    click.echo(str(_write_zip(output)))
 
 
 @cli.command("publish")
@@ -69,7 +76,7 @@ def seed_cmd() -> None:
 @click.option("--timeout", type=float, default=600.0, show_default=True)
 def deploy(output: Path | None, timeout: float) -> None:
     """Pack, CustomizationApi publish, and post-publish Role seed."""
-    path = pack.write_package(output)
+    path = _write_zip(output)
     click.echo(str(path))
     status = publish.publish_package(path.read_bytes(), timeout=timeout)
     click.echo(status)

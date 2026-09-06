@@ -28,6 +28,9 @@
 
 ### Changed
 
+- **`lab5-qms` progress:** `pack`, `publish`, `seed`, and `deploy` emit
+  per-step progress on stderr (step, target, result, elapsed). Stdout
+  stays the zip path, publish status, or `seeded`.
 - **26.x lot status + roles:** `INLotSerialStatus` has no `LotStatus`
   field — persist `UsrQMSLotStatus`. QC Hold → Released reads roles via
   `PXAccess.GetRoles` (`GetUserRoles` is gone).

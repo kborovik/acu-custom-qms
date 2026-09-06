@@ -1,4 +1,4 @@
-"""CustomizationApi publish + post-publish QM Role seed (T14 / V10 / V8).
+"""CustomizationApi publish + post-publish QM Role seed (T14 / T16 / V10 / V8).
 
 Zip never carries Role / UsersInRoles / RolesInGraph (V8 / I.pkg).
 `ACU_USER` Quality Manager attach stays e2e-only (V10).
@@ -24,6 +24,7 @@ from acumatica_cli.config import DB_NAME, Instance, load_instance
 from acumatica_cli.tenant import TenantManager
 
 from lab5_qms import pack
+from lab5_qms.progress import progress
 
 PACKAGE_NAME = "Lab5.QMS"
 QMS_ENDPOINT = "QMS/22.200.001"
@@ -192,46 +193,55 @@ def publish_package(zip_bytes: bytes, *, timeout: float = 600.0) -> str:
     """
     description = package_description(zip_bytes)
     with client() as session:
-        drain_publish(session)
+        with progress("drain in-flight publish", PACKAGE_NAME):
+            drain_publish(session)
         names = session.customization_published()
         same = (
             PACKAGE_NAME in names
             and published_description(session) == description
             and ("QMS", QMS_VERSION) in session.list_endpoints()
         )
+        with progress("digest skip or import", PACKAGE_NAME) as p:
+            if same:
+                p.result = "skip"
+            else:
+                session.customization_import(
+                    PACKAGE_NAME, zip_bytes, description=description
+                )
+                p.result = "import"
         if same:
             return "already published"
-        session.customization_import(
-            PACKAGE_NAME, zip_bytes, description=description
-        )
-        publish_begin(session, [PACKAGE_NAME])
+        with progress("publishBegin", PACKAGE_NAME):
+            publish_begin(session, [PACKAGE_NAME])
         deadline = time.monotonic() + timeout
-        while True:
-            try:
-                status = session.customization_publish_end()
-            except httpx.TransportError:
-                status = {}
-            except RuntimeError:
+        with progress("poll publishEnd", PACKAGE_NAME):
+            while True:
                 try:
-                    session.relogin()
-                except Exception:
-                    pass
-                status = {}
-            if status.get("isFailed"):
-                detail = _log_tail(status)
-                raise RuntimeError(
-                    f"publishing {PACKAGE_NAME} failed"
-                    + (f": {detail}" if detail else "")
-                )
-            if status.get("isCompleted"):
-                break
-            if time.monotonic() >= deadline:
-                raise RuntimeError(
-                    f"publishing {PACKAGE_NAME} did not complete within {timeout:.0f}s"
-                )
-            time.sleep(5.0)
+                    status = session.customization_publish_end()
+                except httpx.TransportError:
+                    status = {}
+                except RuntimeError:
+                    try:
+                        session.relogin()
+                    except Exception:
+                        pass
+                    status = {}
+                if status.get("isFailed"):
+                    detail = _log_tail(status)
+                    raise RuntimeError(
+                        f"publishing {PACKAGE_NAME} failed"
+                        + (f": {detail}" if detail else "")
+                    )
+                if status.get("isCompleted"):
+                    break
+                if time.monotonic() >= deadline:
+                    raise RuntimeError(
+                        f"publishing {PACKAGE_NAME} did not complete within {timeout:.0f}s"
+                    )
+                time.sleep(5.0)
 
-    wait_published(timeout=120.0)
+    with progress("wait QMS/22.200.001", QMS_ENDPOINT):
+        wait_published(timeout=120.0)
     return "published"
 
 
@@ -322,11 +332,13 @@ def _ensure_qm_roles_in_graph() -> None:
 
 def seed_qm_rights(session: AcumaticaClient) -> None:
     """Post-publish Role Quality Manager + QM RolesInGraph. No ACU_USER attach."""
-    boot = bootstrap_endpoint(session)
-    session.put(
-        "Role",
-        {"Rolename": QUALITY_MANAGER_ROLE, "Descr": "QC Hold to Released"},
-        endpoint=boot,
-    )
-    _ensure_quality_manager_role_row()
-    _ensure_qm_roles_in_graph()
+    with progress("seed Role", QUALITY_MANAGER_ROLE):
+        boot = bootstrap_endpoint(session)
+        session.put(
+            "Role",
+            {"Rolename": QUALITY_MANAGER_ROLE, "Descr": "QC Hold to Released"},
+            endpoint=boot,
+        )
+        _ensure_quality_manager_role_row()
+    with progress("seed RolesInGraph", ",".join(QM_SCREENS)):
+        _ensure_qm_roles_in_graph()
