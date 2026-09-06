@@ -30,7 +30,7 @@ ACU_USER=admin
 ACU_PASSWORD=<secret>
 ```
 
-`ACU_SSH` omitted → `Administrator@<base_url host>` (SSH boxes). Present blank `ACU_SSH=` → hosted, no tenant CRUD.
+`ACU_SSH` omitted becomes `Administrator@<base_url host>` (SSH boxes). Present blank `ACU_SSH=` means hosted, no tenant CRUD.
 
 Verified combo (sibling CLI): Acumatica **26.101.0225**, Default contract **25.200.001**.
 
@@ -44,7 +44,7 @@ uv run acu tenant list    # SSH; confirm ACU_TENANT exists
 
 `ok rest` + `ok endpoints` = session is good. Missing `matrix.yaml` is a warn here, not a fail.
 
-**Never** `acu check` from this repo — that is a destructive cold tenant rebuild (`delete` → create → apply → run).
+**Never** `acu check` from this repo — that is a destructive cold tenant rebuild (`delete` then create then apply then run).
 
 Python probes: `uv run python` (project env installs `acumatica-cli`). `import acumatica_cli` then `load_instance()` + `AcumaticaClient` — same `.env` walk-up as `uv run acu`. System `python3` will not see the package.
 
@@ -66,7 +66,7 @@ After packing `Lab5_QMS_Customization.zip`, publish via `/CustomizationApi` (sam
 | Bootstrap `NumberingSequence` `QORD` / `QNCR` | present |
 | Bootstrap `Role` `Quality Manager` | present |
 
-`GET /entity/QMS/22.200.001/...` → `Endpoint [QMS/22.200.001] not found` means the zip is not published on this tenant. Do not invent the endpoint.
+`GET /entity/QMS/22.200.001/...` returning `Endpoint [QMS/22.200.001] not found` means the zip is not published on this tenant. Do not invent the endpoint.
 
 Default-contract entities (`StockItem`, `PurchaseReceipt`, `LotSerialClass`) live under `/entity/Default/25.200.001/`. Numbering, Role, Company, IN/PO prefs live under `/entity/Bootstrap/1.4.0/` — Default has no `NumberingSequence`.
 
@@ -82,10 +82,10 @@ If those miss, stop. Seed the tenant from `acu-gitops-qms` (or switch `.env` `AC
 
 Then, against `QMS/22.200.001` + Default:
 
-1. Item with `UsrQMSInspectionRequired=true` + plan id → release PO receipt → lot `QC Hold` + draft `InspectionOrder` (PlanID, lot, vendor, receipt).
-2. GET `InspectionPlan?$expand=Tests` → PUT `InspectionOrder` results + lab cert fields → attach CoA PDF + JSON via `/files` on the order `NoteID`.
-3. Pass: `EvaluateResults` → `OverallEvaluation` Pass → `ReleaseLotDecision` → lot `Released`, order Completed.
-4. Fail: any required test Fail → lot `Quarantine` + `NonConformance` inserted; allocation halted.
-5. QC Hold → Released only as `Quality Manager` or the ingestion service account.
+1. Item with `UsrQMSInspectionRequired=true` + plan id: release PO receipt; lot becomes `QC Hold` + draft `InspectionOrder` (PlanID, lot, vendor, receipt).
+2. GET `InspectionPlan?$expand=Tests`, then PUT `InspectionOrder` results + lab cert fields, then attach CoA PDF + JSON via `/files` on the order `NoteID`.
+3. Pass: `EvaluateResults` produces `OverallEvaluation` Pass; `ReleaseLotDecision` then sets lot `Released` and order Completed.
+4. Fail: any required test Fail sets lot `Quarantine` + `NonConformance` inserted; allocation halted.
+5. QC Hold becomes Released only as `Quality Manager` or the ingestion service account.
 
 Read-only probes do not mutate. Publish, receipt release, evaluate, and lot flips do — keep them on the `.env` tenant, never on an unnamed default tenant (CLI tenant guard).
