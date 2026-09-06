@@ -34,6 +34,8 @@
 
 ### Changed
 
+- **README:** Quality inspection workflow fills participant boxes:
+  Acumatica ERP blue, Quality Manager green, GCP AI Agent red.
 - **README:** fold the QMS extension specification into README (purpose,
   business workflow, entities, REST, screens, GMP). Remove
   `domain/ACUMATICA_QMS_EXTENSION_SPEC.md`.
