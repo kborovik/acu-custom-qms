@@ -21,7 +21,7 @@ from pathlib import Path
 from acumatica_cli.config import ACU_INSTANCE_PATH, load_instance
 from acumatica_cli.tenant import TenantManager
 
-import pack
+from lab5_qms import pack
 
 ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "src" / "Lab5.QMS"

@@ -27,6 +27,7 @@ from e2e.helper import (  # noqa: E402
 )
 
 HELPER = ROOT / "e2e" / "helper.py"
+PUBLISH = ROOT / "lab5_qms" / "publish.py"
 PACKAGE_E2E = ROOT / "e2e" / "test_package.py"
 FUNCTIONAL_E2E = ROOT / "e2e" / "test_functional.py"
 
@@ -63,18 +64,21 @@ class TestRolesInGraphSeedV10(unittest.TestCase):
         self.assertIn("(14, N'QM201000', N'Quality Manager'", sql)
 
     def test_publish_digest_includes_dll(self) -> None:
-        src = HELPER.read_text(encoding="utf-8")
+        src = PUBLISH.read_text(encoding="utf-8")
         self.assertIn("digest.update(zf.read(\"project.xml\"))", src)
         self.assertIn('dll_name = "Bin/" + pack.ASSEMBLY_DLL', src)
         self.assertIn("digest.update(zf.read(dll_name))", src)
 
     def test_ensure_published_seeds_qm_rights(self) -> None:
         src = HELPER.read_text(encoding="utf-8")
+        publish = PUBLISH.read_text(encoding="utf-8")
         self.assertIn("ensure_qm_rights(session)", src)
         self.assertIn("def ensure_qm_rights", src)
         self.assertIn("_ensure_acu_user_quality_manager", src)
-        self.assertIn("_ensure_qm_roles_in_graph", src)
-        self.assertIn("roles_in_graph_company_ids()", src)
+        self.assertIn("seed_qm_rights(session)", src)
+        self.assertIn("def seed_qm_rights", publish)
+        self.assertIn("_ensure_qm_roles_in_graph", publish)
+        self.assertIn("roles_in_graph_company_ids()", publish)
 
 
 class TestNoInspectionPlan403SkipV10(unittest.TestCase):

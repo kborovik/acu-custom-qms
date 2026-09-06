@@ -7,7 +7,20 @@ license = "PolyForm-Noncommercial-1.0.0"
 requires-python = ">=3.14"
 dependencies = [
     "acumatica-cli",
+    "click>=8.1",
 ]
+
+[project.scripts]
+lab5-qms = "lab5_qms.cli:main"
+
+# Required for uv to install this project (editable) and wire [project.scripts].
+# Without a build system, `uv run lab5-qms` cannot resolve the console entry point.
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["lab5_qms*"]
 
 [tool.uv.sources]
 acumatica-cli = { git = "https://github.com/kborovik/acumatica-cli.git" }

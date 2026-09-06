@@ -51,7 +51,7 @@ T10|x|stamp audit fields + gate QC Hold→Released on service-account token or `
 T11|x|add `QMSSetupMaint` `QM.10.10.00` numbering `QORD` `QNCR`|I.screen
 T12|x|pack `Lab5_QMS_Customization.zip`|V8,I.pkg
 T13|x|seed post-publish Role `Quality Manager` + RolesInGraph Delete on QM* for Administrator and Quality Manager; attach Quality Manager to `ACU_USER` e2e-only; drop InspectionPlan 403 skip|V10,V8,I.role,I.pkg
-T14|.|add Click console script `lab5-qms` pack+publish+post-publish Role seed|V10,V8,I.cmd,I.pkg
+T14|x|add Click console script `lab5-qms` pack+publish+post-publish Role seed|V10,V8,I.cmd,I.pkg
 
 ## §B BUGS
 id|date|cause|fix

@@ -20,6 +20,15 @@ REST endpoint used by the ingestion engine. Shipped artifact:
 Lab5_QMS_Customization.zip
 ```
 
+Installable Click CLI (`uv run lab5-qms`): pack that zip, publish via
+CustomizationApi, and seed post-publish Role `Quality Manager` plus
+`RolesInGraph` Delete on the QM screens.
+
+```sh
+uv run lab5-qms pack      # write Lab5_QMS_Customization.zip
+uv run lab5-qms           # pack + publish + seed
+```
+
 ## Family
 
 | Repo | Layer |

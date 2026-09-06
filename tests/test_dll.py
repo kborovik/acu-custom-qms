@@ -19,7 +19,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import dll  # noqa: E402
-import pack  # noqa: E402
+from lab5_qms import pack  # noqa: E402
 
 PX = ("PX.Data", "PX.Objects", "PX.Common", "PX.Common.Std")
 
@@ -88,6 +88,7 @@ class TestDllScript(unittest.TestCase):
         self.assertIn("release: test $(QMS_DLL)", makefile)
         self.assertIn("$(QMS_DLL): | .venv", makefile)
         self.assertIn("python dll.py", makefile)
+        self.assertIn("lab5-qms pack", makefile)
         self.assertIn("python -u -m unittest discover -s tests", makefile)
         self.assertIn("clean: ##", makefile)
         self.assertIn("rm -rf src/Lab5.QMS/bin src/Lab5.QMS/obj", makefile)

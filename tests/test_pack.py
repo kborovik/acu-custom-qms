@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import pack  # noqa: E402
+from lab5_qms import pack  # noqa: E402
 
 ENDPOINT_NS = "{http://www.acumatica.com/entity/maintenance/5.31}"
 

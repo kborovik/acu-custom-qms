@@ -35,7 +35,7 @@ test: .venv ## Local unit tests (no live tenant)
 
 pack: dll ## Build Lab5_QMS_Customization.zip
 	$(call header,Packing Lab5_QMS_Customization.zip)
-	./pack.py
+	$(UV) run lab5-qms pack
 
 dll: $(QMS_DLL) ## Compile Lab5.QMS.dll on the ERP VM (SSH) if missing
 
@@ -104,7 +104,7 @@ release: test $(QMS_DLL) ## Bump version, promote CHANGELOG, pack zip, tag, push
 	git commit -m "chore: release v$$version"
 	git tag "v$$version"
 	$(call header,Packing Lab5_QMS_Customization.zip)
-	./pack.py
+	$(UV) run lab5-qms pack
 	$(call header,Pushing v$$version)
 	git push && git push --tags
 	$(call header,Creating GitHub release v$$version)

@@ -104,13 +104,17 @@ wheels = [
 [[package]]
 name = "lab5-qms"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "acumatica-cli" },
+    { name = "click" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "acumatica-cli", git = "https://github.com/kborovik/acumatica-cli.git" }]
+requires-dist = [
+    { name = "acumatica-cli", git = "https://github.com/kborovik/acumatica-cli.git" },
+    { name = "click", specifier = ">=8.1" },
+]
 
 [[package]]
 name = "markdown-it-py"

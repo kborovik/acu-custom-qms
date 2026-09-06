@@ -1,9 +1,4 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.14"
-# dependencies = []
-# ///
-"""Pack Lab5_QMS_Customization.zip (T12 / V8 / I.pkg).
+"""Pack Lab5_QMS_Customization.zip (T12 / T14 / V8 / I.pkg).
 
 The zip is an Acumatica CustomizationApi import: project.xml holds
 EntityEndpoint, SiteMapNode, Sql, Code, and File items. I.pkg members
@@ -21,7 +16,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[1]
 
 PACKAGE_ZIP = "Lab5_QMS_Customization.zip"
 ASSEMBLY_DLL = "Lab5.QMS.dll"
