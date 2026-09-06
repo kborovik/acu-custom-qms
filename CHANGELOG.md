@@ -28,6 +28,9 @@
 
 ### Changed
 
+- **Project deps:** drop `acumatica-cli` from `pyproject.toml` and
+  `[tool.uv.sources]`; relock. Released PATH `acu` is not a project
+  dependency.
 - **`lab5-qms` progress:** `pack`, `publish`, `seed`, and `deploy` emit
   per-step progress on stderr (step, target, result, elapsed). Stdout
   stays the zip path, publish status, or `seeded`.

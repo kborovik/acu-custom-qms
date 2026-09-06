@@ -6,7 +6,6 @@ authors = [{ name = "Konstantin Borovik", email = "kb@lab5.ca" }]
 license = "PolyForm-Noncommercial-1.0.0"
 requires-python = ">=3.14"
 dependencies = [
-    "acumatica-cli",
     "click>=8.1",
 ]
 
@@ -21,6 +20,3 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["lab5_qms*"]
-
-[tool.uv.sources]
-acumatica-cli = { git = "https://github.com/kborovik/acumatica-cli.git" }
