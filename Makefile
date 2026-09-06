@@ -26,8 +26,8 @@ default: help
 # Tests
 ###############################################################################
 
-# All Python goes through `uv run` (project env has acumatica-cli). Never
-# `acu check` from this repo (destructive tenant rebuild).
+# PATH `acu` from `uv tool install acumatica-cli`. Never `uv run acu`.
+# Never `acu check` from this repo (destructive tenant rebuild).
 
 test: .venv ## Local unit tests (no live tenant)
 	$(call header,Running unit tests)
@@ -60,8 +60,10 @@ clean: ## Remove compiled DLL, pack zip, and temp artifacts
 
 preflight: .venv ## Read-only acu config check against .env
 	test -e .env || { echo ".env missing — decrypt .env.gpg at the repo root"; exit 1; }
+	command -v acu >/dev/null \
+		|| { echo "acu not on PATH — uv tool install acumatica-cli"; exit 1; }
 	$(call header,acu config check)
-	$(UV) run acu config check
+	acu config check
 
 # `gmake check FILE=<path-or-stem>` scopes to one e2e file; unset = whole tier.
 check_target := $(if $(FILE),$(firstword $(wildcard $(FILE) e2e/$(FILE) e2e/$(FILE).py)),e2e)

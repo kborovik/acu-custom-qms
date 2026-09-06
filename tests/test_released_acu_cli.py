@@ -146,5 +146,22 @@ class TestPathAcuNotImportV11(unittest.TestCase):
         self.assertNotIn("secret", repr(inst))
 
 
+class TestPreflightPathAcuV11(unittest.TestCase):
+    def test_makefile_preflight_uses_path_acu(self) -> None:
+        makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+        self.assertIn("acu config check", makefile)
+        self.assertIn("uv tool install acumatica-cli", makefile)
+        self.assertNotIn("$(UV) run acu", makefile)
+        self.assertNotIn("uv run acu config", makefile)
+
+    def test_agents_and_readme_use_path_acu(self) -> None:
+        for name in ("AGENTS.md", "README.md"):
+            text = (ROOT / name).read_text(encoding="utf-8")
+            self.assertIn("acu config check", text, name)
+            self.assertIn("uv tool install acumatica-cli", text, name)
+            self.assertNotIn("uv run acu config", text, name)
+            self.assertNotIn("$(UV) run acu", text, name)
+
+
 if __name__ == "__main__":
     unittest.main()

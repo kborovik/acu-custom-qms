@@ -35,6 +35,9 @@
   session. Python does not `import acumatica_cli`.
 - **httpx:** direct project dependency for CustomizationApi / contract
   REST after dropping the CLI package.
+- **Preflight:** `gmake check` / Makefile / AGENTS.md / README call
+  PATH `acu config check`. Install with `uv tool install acumatica-cli`.
+  Do not launch acu through uv.
 - **`lab5-qms` progress:** `pack`, `publish`, `seed`, and `deploy` emit
   per-step progress on stderr (step, target, result, elapsed). Stdout
   stays the zip path, publish status, or `seeded`.

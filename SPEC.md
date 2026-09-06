@@ -59,7 +59,7 @@ T15|x|naked `lab5-qms` (no subcommand) emit Click help exit 0; not invoke deploy
 T16|x|deploy/publish/seed emit per-step progress on stderr: pack zip, drain in-flight publish, digest skip or import, publishBegin, poll publishEnd, wait `QMS/22.200.001`, seed Role, seed RolesInGraph|V10,I.cmd
 T17|x|drop `acumatica-cli` from `pyproject.toml` deps + `[tool.uv.sources]`; relock|V11
 T18|x|swap `lab5_qms` `dll.py` `e2e` `import acumatica_cli` → PATH `acu` CLI|V11,I.cli
-T19|.|preflight Makefile AGENTS.md README: `acu config check` not `uv run acu`; `uv tool install` released `acu`|V11,I.cli
+T19|x|preflight Makefile AGENTS.md README: `acu config check` not `uv run acu`; `uv tool install` released `acu`|V11,I.cli
 
 ## §B BUGS
 id|date|cause|fix

@@ -31,6 +31,13 @@ uv run lab5-qms deploy    # pack + publish + seed
 uv run lab5-qms           # Click help (exit 0)
 ```
 
+Released PATH `acu` is required for publish, SSH compile, and live e2e. Install it once; this repo does not depend on `acumatica-cli`.
+
+```sh
+uv tool install acumatica-cli
+acu config check          # PATH acu; never through uv
+```
+
 ## Family
 
 | Repo | Layer |
