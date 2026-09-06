@@ -4,6 +4,12 @@
 
 ### Added
 
+- **README:** sequence diagram under Quality workflow (receipt gate,
+  CoA ingest, evaluate, lot decision), colored with lab5.ca brand
+  (green, blue, yellow, red). Vertex AI is labeled **GCP AI Agent**;
+  the receiving dock sends CoA PDF documents to that agent. Actors:
+  Receiving Dock, Acumatica ERP, Quality Manager, GCP AI Agent. Drop
+  the Business workflow object-path flowchart.
 - **`lab5-qms` CLI:** Click console script on the installable `lab5-qms`
   package. Subcommands: `pack`, `publish`, `seed`, `deploy`. No
   subcommand prints Click help and exits 0 (does not deploy).

@@ -1,7 +1,7 @@
 # Acumatica QMS Customization (`acu-custom-qms`)
 
-Acumatica Cloud xRP customization package **`Lab5.QMS`**. It adds a Quality
-Management workspace to Acumatica so a receiving dock cannot put inspected
+Acumatica Cloud xRP customization package **`Lab5.QMS`**. It adds a **Quality
+Management** workspace to Acumatica so a receiving dock cannot put inspected
 goods into production until laboratory results pass the item’s inspection
 plan.
 
@@ -40,8 +40,9 @@ inside Acumatica:
 2. When a **PO Receipt** is released, every lot on those lines is set to
    **QC Hold** and a draft **Inspection Order** is opened (plan, lot,
    vendor, receipt).
-3. The ingestion engine reads the plan, writes laboratory results onto the
-   order, and attaches the original CoA PDF and JSON payload.
+3. The receiving dock sends CoA PDF documents to the **GCP AI Agent**. The
+   agent reads the plan, writes laboratory results onto the order, and
+   attaches the original CoA PDF and JSON payload.
 4. **Evaluate** compares each required test to the plan. All pass, then the
    lot is **Released** and the order **Completed**. Any required fail or
    missing result, then the lot is **Quarantine**, a **Non-Conformance**
@@ -50,54 +51,71 @@ inside Acumatica:
 QC Hold becomes Released only as role **Quality Manager** or as the
 ingestion service account.
 
-## Business workflow
+## Quality inspection workflow
+
+Actors: **Receiving Dock**, **Acumatica ERP**, **Quality Manager**,
+**GCP AI Agent**. Same path as graph actions and
+`QMS/22.200.001` REST. QC Hold becomes Released only as role **Quality
+Manager** or as the ingestion service account (`qms-ingestion`). A
+Quality Manager can also **Evaluate** and **Release Lot Decision** from
+Inspection Orders (`QM.30.10.00`).
 
 ```mermaid
-flowchart TD
-    subgraph master [Acumatica Master data]
-        Plan["Inspection Plan<br/>tests, methods, min/max, criticality"]
-        Item["Stock item<br/>inspection required + plan + min shelf life"]
-        Item --> Plan
-    end
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dafbe1', 'primaryTextColor': '#1f2328', 'primaryBorderColor': '#1f883d', 'secondaryColor': '#ddf4ff', 'tertiaryColor': '#fff6d6', 'lineColor': '#0969da', 'actorBkg': '#dafbe1', 'actorBorder': '#1f883d', 'actorTextColor': '#1f2328', 'signalColor': '#0969da', 'signalTextColor': '#1f2328', 'labelBoxBkgColor': '#ddf4ff', 'labelBoxBorderColor': '#0969da', 'labelTextColor': '#0550ae', 'loopTextColor': '#1f2328', 'noteBkgColor': '#f6f8fa', 'noteTextColor': '#1f2328', 'noteBorderColor': '#d1d9e0', 'activationBkgColor': '#ddf4ff', 'activationBorderColor': '#0969da', 'sequenceNumberColor': '#ffffff'}}}%%
+sequenceDiagram
+    %% lab5.ca: green #1f883d, blue #0969da, yellow #f9c513, red #cf222e
+    autonumber
+    actor Dock as Receiving Dock
+    participant ERP as Acumatica ERP
+    participant QMS as Quality Manager
+    participant Agent as GCP AI Agent
 
-    subgraph coa [Certificate of Analysis]
-        Engine["GCP Vertex AI Reasoning Engine"]
-        Engine -->|"GET plan tests"| Plan
-        Engine -->|"PUT results + lab certificate"| Draft
-        Engine -->|"Attach CoA PDF + JSON"| Draft
-    end
+    Dock->>ERP: Release PO Receipt
+    ERP->>QMS: POReceiptEntry.Release
 
-    subgraph dock [Receiving dock]
-        Rec["PO Receipt released"]
-        Rec --> Need{"Item requires quality inspection?"}
-        Need -->|No| Free["Lot available for allocation"]
-        Need -->|Yes| Hold["Lot status: QC Hold"]
-        Hold --> Draft["Draft Inspection Order<br/>plan, lot, vendor, receipt"]
-        Plan --> Draft
-    end
+    alt Item requires quality inspection
+        rect rgb(218, 251, 225)
+            QMS->>ERP: Lot status QC Hold
+            QMS->>QMS: Insert draft Inspection Order (plan, lot, vendor, receipt)
+        end
 
-    subgraph disposition [Disposition]
-        Eval["Evaluate against Inspection Plan<br/>numeric bounds, text tokens, shelf life"]
-        Draft --> Eval
-        Eval --> Gate{"All required tests pass?"}
-        Gate -->|Yes| Pass["Overall evaluation: Pass"]
-        Pass --> Rel["Lot status: Released"]
-        Rel --> Done["Inspection Order: Completed"]
-        Gate -->|No| Fail["Overall evaluation: Fail"]
-        Fail --> Quar["Lot status: Quarantine"]
-        Quar --> NCR["Non-Conformance report opened"]
-        NCR --> Halt["Allocation halted"]
-    end
+        rect rgb(255, 246, 214)
+            Dock->>Agent: CoA PDF documents
+            Agent->>QMS: GET InspectionPlan with Tests
+            QMS-->>Agent: Tests, methods, min/max, criticality
+            Agent->>QMS: PUT InspectionOrder (results + lab certificate)
+            Agent->>ERP: Attach CoA PDF + JSON on order NoteID
+        end
 
-    style master fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
-    style coa fill:#fef3c7,stroke:#d97706,color:#92400e
-    style dock fill:#dcfce7,stroke:#16a34a,color:#14532d
-    style disposition fill:#cffafe,stroke:#0891b2,color:#155e75
+        Agent->>QMS: EvaluateResults
+        QMS->>QMS: Numeric bounds, text tokens, shelf life
+
+        alt All required tests pass
+            rect rgb(218, 251, 225)
+                QMS-->>Agent: OverallEvaluation Pass
+                Agent->>QMS: ReleaseLotDecision
+                QMS->>ERP: Lot status Released
+                QMS->>QMS: Inspection Order Completed
+            end
+        else Required fail or missing
+            rect rgb(255, 235, 233)
+                QMS-->>Agent: OverallEvaluation Fail
+                Agent->>QMS: ReleaseLotDecision
+                QMS->>ERP: Lot status Quarantine
+                QMS->>QMS: Insert Non-Conformance
+            end
+        end
+    else Inspection not required
+        rect rgb(221, 244, 255)
+            ERP-->>Dock: Lot allocatable
+        end
+    end
 ```
 
 Lot status on inspected receipts is one of **QC Hold**, **Released**, or
 **Quarantine**. The receipt number, lot serial, and inspection order stay
-linked for the life of the lot.
+linked for the life of the lot. The attached CoA PDF and parsed JSON stay
+on the order as the audit record.
 
 ## Entities
 
