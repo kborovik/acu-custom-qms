@@ -42,10 +42,10 @@ inside Acumatica:
    vendor, receipt).
 3. The ingestion engine reads the plan, writes laboratory results onto the
    order, and attaches the original CoA PDF and JSON payload.
-4. **Evaluate** compares each required test to the plan. All pass → lot
-   **Released** and the order **Completed**. Any required fail or missing
-   result → lot **Quarantine**, a **Non-Conformance** ticket is opened, and
-   allocation stays blocked.
+4. **Evaluate** compares each required test to the plan. All pass, then the
+   lot is **Released** and the order **Completed**. Any required fail or
+   missing result, then the lot is **Quarantine**, a **Non-Conformance**
+   ticket is opened, and allocation stays blocked.
 
 QC Hold becomes Released only as role **Quality Manager** or as the
 ingestion service account.
@@ -54,10 +54,17 @@ ingestion service account.
 
 ```mermaid
 flowchart TD
-    subgraph master [Master data]
+    subgraph master [Acumatica Master data]
         Plan["Inspection Plan<br/>tests, methods, min/max, criticality"]
         Item["Stock item<br/>inspection required + plan + min shelf life"]
         Item --> Plan
+    end
+
+    subgraph coa [Certificate of Analysis]
+        Engine["GCP Vertex AI Reasoning Engine"]
+        Engine -->|"GET plan tests"| Plan
+        Engine -->|"PUT results + lab certificate"| Draft
+        Engine -->|"Attach CoA PDF + JSON"| Draft
     end
 
     subgraph dock [Receiving dock]
@@ -67,13 +74,6 @@ flowchart TD
         Need -->|Yes| Hold["Lot status: QC Hold"]
         Hold --> Draft["Draft Inspection Order<br/>plan, lot, vendor, receipt"]
         Plan --> Draft
-    end
-
-    subgraph coa [Certificate of Analysis]
-        Engine["Ingestion engine"]
-        Engine -->|"GET plan tests"| Plan
-        Engine -->|"PUT results + lab certificate"| Draft
-        Engine -->|"Attach CoA PDF + JSON"| Draft
     end
 
     subgraph disposition [Disposition]
@@ -88,6 +88,11 @@ flowchart TD
         Quar --> NCR["Non-Conformance report opened"]
         NCR --> Halt["Allocation halted"]
     end
+
+    style master fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+    style coa fill:#fef3c7,stroke:#d97706,color:#92400e
+    style dock fill:#dcfce7,stroke:#16a34a,color:#14532d
+    style disposition fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
 ```
 
 Lot status on inspected receipts is one of **QC Hold**, **Released**, or
@@ -193,10 +198,10 @@ Acumatica’s Return to Vendor flow.
 | --- | --- |
 | Numeric | `Min ≤ actual ≤ Max` (a bound is skipped when unset) |
 | Text / qualitative | Result contains the required token (example: `Absent`, `Negative` for pathogens) |
-| Shelf life | Lot expiry ≥ receipt date + item min shelf-life days |
+| Shelf life | Lot expiry is at least receipt date + item min shelf-life days |
 
-Any required test that fails or is missing → overall **Fail**. All required
-tests pass → overall **Pass**.
+Any required test that fails or is missing, then overall **Fail**. All
+required tests pass, then overall **Pass**.
 
 **Release Lot Decision** then:
 
@@ -246,7 +251,7 @@ Inspection Orders toolbar:
 
 - **Evaluate** — run the plan rules and set overall evaluation
 - **Release Lot** — complete as Pass and promote the lot to Released
-- **Quarantine Lot & Raise NCR** — complete as Fail, hold the lot, open NCR
+- **Quarantine Lot and Raise NCR** — complete as Fail, hold the lot, open NCR
 
 ## Regulatory record
 
