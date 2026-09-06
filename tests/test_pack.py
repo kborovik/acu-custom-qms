@@ -98,6 +98,17 @@ class TestPackIPkg(unittest.TestCase):
         self.assertEqual(meta.get("name"), "Lab5.QMS")
         self.assertIn("22.200.001", meta.get("description") or "")
 
+    def test_zip_excludes_role_usersinroles_rolesingraph(self) -> None:
+        with _zip() as zf:
+            project = zf.read("project.xml").decode("utf-8")
+            sql = zf.read("Scripts/CreateQMSTables.sql").decode("utf-8")
+            names = " ".join(zf.namelist())
+        blob = project + sql + names
+        for token in ("RolesInGraph", "UsersInRoles"):
+            self.assertNotIn(token, blob, token)
+        self.assertNotIn("<Role", project)
+        self.assertNotIn("Quality Manager", blob)
+
     def test_packed_sql_creates_usrqms_tables(self) -> None:
         with _zip() as zf:
             sql = zf.read("Scripts/CreateQMSTables.sql").decode("utf-8")

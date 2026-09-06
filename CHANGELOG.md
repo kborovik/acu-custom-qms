@@ -4,7 +4,12 @@
 
 ### Added
 
-- **`gmake dll`:** compile `Lab5.QMS.dll` on the ERP VM over SSH (site
+- **Post-publish QM rights:** after `Lab5.QMS` publish, seed Role
+  `Quality Manager` and `RolesInGraph` Delete (`Accessrights=4`) on
+  `QM101000` / `QM201000` / `QM301000` / `QM302000` for Administrator
+  (CompanyID 1) and Quality Manager. `gmake check` attaches Quality
+  Manager to `ACU_USER` and no longer skips InspectionPlan 403.
+- **`gmake dll`:** compile `Lab5.QMS.dll` on the ERP VM over SSH (site)
   Roslyn `csc` against `PX.Data` / `PX.Objects` / `PX.Common` /
   `PX.Common.Std`) and copy it to `src/Lab5.QMS/bin/Release` for
   `gmake pack`. The csproj now HintPaths those assemblies at
@@ -22,6 +27,9 @@
 
 ### Fixed
 
+- **QM selector fields:** `EvaluatedByID` and `AssignedQAOfficer` now have
+  `PXSelector` so InspectionOrder and NonConformance REST lists do not 500
+  after rights are granted.
 - **`gmake check` hang:** e2e HTTP default 30s (publish loop still 600s),
   `acu` subprocess 60s, sqlcmd-over-ssh 30s, bounded InspectionOrder 202
   poll 60s, unbuffered `python -u` output, process backstop `E2E_TIMEOUT`

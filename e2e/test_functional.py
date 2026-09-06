@@ -158,6 +158,9 @@ class TestCoaIngest(unittest.TestCase):
                 ensure_numbering_and_role(session)
                 qms_put(session, "InspectionPlan", _plan_record())
             except RuntimeError as exc:
+                text = str(exc)
+                if "403" in text or "insufficient rights" in text.lower():
+                    raise
                 raise unittest.SkipTest(
                     f"InspectionPlan PUT unavailable ({exc})"
                 ) from exc

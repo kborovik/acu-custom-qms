@@ -51,6 +51,11 @@ USR_ITEM_COLUMNS = (
     "UsrMinShelfLifeDays",
 )
 QM_SCREENS = ("QM101000", "QM201000", "QM301000", "QM302000")
+QUALITY_MANAGER_ROLE = "Quality Manager"
+QM_RIGHTS_ROLES = ("Administrator", QUALITY_MANAGER_ROLE)
+ROLES_IN_GRAPH_COMPANY_ID = 1
+ROLES_IN_GRAPH_APPLICATION = "/"
+ACCESSRIGHTS_DELETE = 4
 
 PLAN_ID = "E2EQPLAN-ECH4"
 ITEM_CD = "RAW-ECH-EXT4"
@@ -180,7 +185,12 @@ def sql_lines(query: str) -> list[str]:
 
 def _zip_digest(zip_bytes: bytes) -> str:
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
-        return hashlib.sha256(zf.read("project.xml")).hexdigest()
+        digest = hashlib.sha256()
+        digest.update(zf.read("project.xml"))
+        dll_name = "Bin/" + pack.ASSEMBLY_DLL
+        if dll_name in zf.namelist():
+            digest.update(zf.read(dll_name))
+        return digest.hexdigest()
 
 
 def _published_description(session: AcumaticaClient) -> str | None:
@@ -268,7 +278,10 @@ def ensure_published(*, timeout: float = 600.0) -> str:
     )
 
     try:
-        return _import_and_publish(zip_bytes, description, timeout)
+        status = _import_and_publish(zip_bytes, description, timeout)
+        with client() as session:
+            ensure_qm_rights(session)
+        return status
     except BaseException as exc:
         _publish_error = exc
         raise
@@ -377,16 +390,84 @@ def qms_invoke(
         r = session._checked(session._http.get(status_url))
 
 
-def ensure_numbering_and_role(session: AcumaticaClient) -> None:
+def roles_in_graph_rows() -> tuple[tuple[str, str], ...]:
+    """(Rolename, ScreenID) pairs for V10 RolesInGraph Delete seed."""
+    return tuple(
+        (role, screen) for role in QM_RIGHTS_ROLES for screen in QM_SCREENS
+    )
+
+
+def roles_in_graph_company_ids() -> tuple[int, ...]:
+    """CompanyID 1 (shared) plus the live tenant when it differs."""
+    ids = [ROLES_IN_GRAPH_COMPANY_ID]
+    cid = company_id()
+    if cid not in ids:
+        ids.append(cid)
+    return tuple(ids)
+
+
+def roles_in_graph_merge_sql(
+    company_ids: tuple[int, ...] | None = None,
+) -> str:
+    """MERGE RolesInGraph Accessrights=4 on QM* for Administrator + Quality Manager."""
+    nil = "00000000-0000-0000-0000-000000000000"
+    companies = company_ids or (ROLES_IN_GRAPH_COMPANY_ID,)
+    values = ", ".join(
+        f"({cid}, N'{screen}', N'{role}', "
+        f"N'{ROLES_IN_GRAPH_APPLICATION}', {ACCESSRIGHTS_DELETE})"
+        for cid in companies
+        for role, screen in roles_in_graph_rows()
+    )
+    return (
+        f"DECLARE @mask varbinary(32); "
+        f"SELECT TOP 1 @mask = CompanyMask FROM {DB_NAME}.dbo.RolesInGraph "
+        f"WHERE CompanyID = {ROLES_IN_GRAPH_COMPANY_ID} "
+        f"AND Rolename = N'Administrator'; "
+        f"IF @mask IS NULL SET @mask = 0xAAAAAAAA; "
+        f"MERGE {DB_NAME}.dbo.RolesInGraph AS t "
+        f"USING (VALUES {values}) AS s("
+        f"CompanyID, ScreenID, Rolename, ApplicationName, Accessrights) "
+        f"ON t.CompanyID = s.CompanyID AND t.ScreenID = s.ScreenID "
+        f"AND t.Rolename = s.Rolename AND t.ApplicationName = s.ApplicationName "
+        f"WHEN MATCHED AND t.Accessrights <> s.Accessrights THEN "
+        f"UPDATE SET Accessrights = s.Accessrights, "
+        f"LastModifiedDateTime = GETDATE() "
+        f"WHEN NOT MATCHED THEN INSERT ("
+        f"CompanyID, ScreenID, Rolename, ApplicationName, Accessrights, "
+        f"CompanyMask, CreatedByID, CreatedByScreenID, CreatedDateTime, "
+        f"LastModifiedByID, LastModifiedByScreenID, LastModifiedDateTime"
+        f") VALUES ("
+        f"s.CompanyID, s.ScreenID, s.Rolename, s.ApplicationName, "
+        f"s.Accessrights, @mask, '{nil}', 'QM101000', GETDATE(), "
+        f"'{nil}', 'QM101000', GETDATE());"
+    )
+
+
+def ensure_qm_rights(session: AcumaticaClient) -> None:
+    """Post-publish Role Quality Manager + QM RolesInGraph + ACU_USER attach."""
     boot = bootstrap_endpoint(session)
-    _ensure_numbering_rows()
     session.put(
         "Role",
-        {"Rolename": "Quality Manager", "Descr": "QC Hold to Released"},
+        {"Rolename": QUALITY_MANAGER_ROLE, "Descr": "QC Hold to Released"},
         endpoint=boot,
     )
-    _ensure_admin_quality_manager(session, boot)
+    _ensure_quality_manager_role_row()
+    _ensure_acu_user_quality_manager()
+    _ensure_qm_roles_in_graph()
+
+
+def ensure_numbering_and_role(session: AcumaticaClient) -> None:
+    ensure_qm_rights(session)
+    _ensure_numbering_rows()
     _ensure_setup_row()
+
+
+def _ensure_qm_roles_in_graph() -> None:
+    sqlcmd(roles_in_graph_merge_sql(roles_in_graph_company_ids()))
+
+
+def _sql_nvarchar(value: str) -> str:
+    return "N'" + value.replace("'", "''") + "'"
 
 
 def _ensure_numbering_rows() -> None:
@@ -418,26 +499,54 @@ def _ensure_numbering_rows() -> None:
         )
 
 
-def _ensure_admin_quality_manager(session: AcumaticaClient, boot: str) -> None:
-    user = session.get_record(
-        "User", [instance().user], endpoint=boot, params={"$expand": "Roles"}
+def _ensure_quality_manager_role_row() -> None:
+    """Shared Roles row on CompanyID 1 (Bootstrap PUT lands on the tenant)."""
+    role = _sql_nvarchar(QUALITY_MANAGER_ROLE)
+    sqlcmd(
+        "IF NOT EXISTS (SELECT 1 FROM "
+        f"{DB_NAME}.dbo.Roles WHERE CompanyID = {ROLES_IN_GRAPH_COMPANY_ID} "
+        f"AND Rolename = {role} AND ApplicationName = "
+        f"N'{ROLES_IN_GRAPH_APPLICATION}') "
+        f"INSERT INTO {DB_NAME}.dbo.Roles ("
+        "CompanyID, Rolename, ApplicationName, Descr, Guest, CompanyMask, "
+        "CreatedByID, CreatedByScreenID, CreatedDateTime, "
+        "LastModifiedByID, LastModifiedByScreenID, LastModifiedDateTime"
+        ") SELECT "
+        f"{ROLES_IN_GRAPH_COMPANY_ID}, {role}, ApplicationName, "
+        "N'QC Hold to Released', 0, CompanyMask, "
+        "CreatedByID, 'QM101000', GETDATE(), "
+        "LastModifiedByID, 'QM101000', GETDATE() "
+        f"FROM {DB_NAME}.dbo.Roles "
+        f"WHERE CompanyID = {ROLES_IN_GRAPH_COMPANY_ID} "
+        "AND Rolename = N'Administrator' AND ApplicationName = "
+        f"N'{ROLES_IN_GRAPH_APPLICATION}'"
     )
-    if user is None:
-        return
-    body = unwrap(user)
-    roles = list(body.get("Roles") or [])
-    if any(
-        str(row.get("Rolename", "")).casefold() == "quality manager"
-        and row.get("Selected")
-        for row in roles
-        if isinstance(row, dict)
-    ):
-        return
-    roles.append({"Rolename": "Quality Manager", "Selected": True})
-    session.put(
-        "User",
-        {"Username": instance().user, "Roles": roles},
-        endpoint=boot,
+
+
+def _ensure_acu_user_quality_manager() -> None:
+    """Attach Quality Manager to ACU_USER on CompanyID 1 and the tenant."""
+    user = _sql_nvarchar(instance().user)
+    role = _sql_nvarchar(QUALITY_MANAGER_ROLE)
+    companies = ", ".join(f"({cid})" for cid in roles_in_graph_company_ids())
+    sqlcmd(
+        f"INSERT INTO {DB_NAME}.dbo.UsersInRoles ("
+        "CompanyID, Username, Rolename, ApplicationName, CompanyMask, "
+        "CreatedByID, CreatedByScreenID, CreatedDateTime, "
+        "LastModifiedByID, LastModifiedByScreenID, LastModifiedDateTime"
+        ") SELECT c.CompanyID, "
+        f"{user}, {role}, u.ApplicationName, u.CompanyMask, "
+        "u.CreatedByID, 'QM101000', GETDATE(), "
+        "u.LastModifiedByID, 'QM101000', GETDATE() "
+        f"FROM (VALUES {companies}) AS c(CompanyID) "
+        f"INNER JOIN {DB_NAME}.dbo.UsersInRoles u "
+        "ON u.CompanyID = c.CompanyID AND u.Username = "
+        f"{user} AND u.Rolename = N'Administrator' "
+        "AND u.ApplicationName = "
+        f"N'{ROLES_IN_GRAPH_APPLICATION}' "
+        f"WHERE NOT EXISTS (SELECT 1 FROM {DB_NAME}.dbo.UsersInRoles t "
+        "WHERE t.CompanyID = c.CompanyID AND t.Username = "
+        f"{user} AND t.Rolename = {role} "
+        "AND t.ApplicationName = u.ApplicationName)"
     )
 
 

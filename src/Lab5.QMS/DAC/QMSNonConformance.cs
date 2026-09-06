@@ -4,6 +4,7 @@ using PX.Objects.AP;
 using PX.Objects.CS;
 using PX.Objects.IN;
 using PX.Objects.PO;
+using PX.SM;
 
 namespace Lab5.QMS
 {
@@ -102,6 +103,7 @@ namespace Lab5.QMS
 
         #region AssignedQAOfficer
         [PXDBGuid]
+        [PXSelector(typeof(Search<Users.pKID>), SubstituteKey = typeof(Users.username))]
         [PXUIField(DisplayName = "Assigned QA Officer")]
         public virtual Guid? AssignedQAOfficer { get; set; }
         public abstract class assignedQAOfficer : PX.Data.BQL.BqlGuid.Field<assignedQAOfficer> { }

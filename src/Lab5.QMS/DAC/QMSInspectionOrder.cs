@@ -4,6 +4,7 @@ using PX.Objects.AP;
 using PX.Objects.CS;
 using PX.Objects.IN;
 using PX.Objects.PO;
+using PX.SM;
 
 namespace Lab5.QMS
 {
@@ -110,6 +111,7 @@ namespace Lab5.QMS
 
         #region EvaluatedByID
         [PXDBGuid]
+        [PXSelector(typeof(Search<Users.pKID>), SubstituteKey = typeof(Users.username))]
         [PXUIField(DisplayName = "Evaluated By", Enabled = false)]
         public virtual Guid? EvaluatedByID { get; set; }
         public abstract class evaluatedByID : PX.Data.BQL.BqlGuid.Field<evaluatedByID> { }

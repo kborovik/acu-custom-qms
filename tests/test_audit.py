@@ -105,6 +105,7 @@ class TestAuditFieldsV3(unittest.TestCase):
         self.assertIn("#region EvaluatedByID", order)
         self.assertIn("#region EvaluationDateTime", order)
         self.assertIn("[PXDBGuid]", order)
+        self.assertIn("[PXSelector(typeof(Search<Users.pKID>), SubstituteKey = typeof(Users.username))]", order)
         self.assertIn("[PXDBDateAndTime]", order)
         sql = _table_block(SQL.read_text(encoding="utf-8"), "UsrQMSInspectionOrder")
         self.assertIn("[EvaluatedByID] [uniqueidentifier] NULL", sql)

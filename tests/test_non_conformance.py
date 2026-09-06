@@ -176,6 +176,10 @@ class TestNonConformanceDac(unittest.TestCase):
         self.assertIn("[PXPrimaryGraph(typeof(QMSNonConformanceEntry))]", src)
         for name in NCR_FIELDS:
             self.assertIn(f"#region {name}", src)
+        self.assertIn(
+            "[PXSelector(typeof(Search<Users.pKID>), SubstituteKey = typeof(Users.username))]",
+            src,
+        )
 
     def test_status_and_severity_constants(self) -> None:
         src = STATUS_CS.read_text(encoding="utf-8")

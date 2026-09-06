@@ -54,16 +54,7 @@ class TestPublishAndPresence(unittest.TestCase):
 
     def _assert_entity_list(self, entity: str) -> None:
         with client() as session:
-            try:
-                rows = qms_get(session, entity, params={"$top": "1"})
-            except RuntimeError as exc:
-                text = str(exc)
-                if "403" in text or "insufficient rights" in text.lower():
-                    self.skipTest(
-                        f"{entity} 403 — screens published without compiled "
-                        "graphs (CstCodeFile.Upgrade); grant rights or ship DLL"
-                    )
-                raise
+            rows = qms_get(session, entity, params={"$top": "1"})
         self.assertIsInstance(rows, list)
 
 

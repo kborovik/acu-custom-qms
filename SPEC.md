@@ -49,7 +49,7 @@ T9|x|attach CoA PDF + JSON via `/files` on InspectionOrder `NoteID`|V2,V3,I.file
 T10|x|stamp audit fields + gate QC Hold→Released on service-account token or `Quality Manager`|V3,I.role
 T11|x|add `QMSSetupMaint` `QM.10.10.00` numbering `QORD` `QNCR`|I.screen
 T12|x|pack `Lab5_QMS_Customization.zip`|V8,I.pkg
-T13|.|seed post-publish Role `Quality Manager` + RolesInGraph Delete on QM* for Administrator and Quality Manager; attach Quality Manager to `ACU_USER` e2e-only; drop InspectionPlan 403 skip|V10,V8,I.role,I.pkg
+T13|x|seed post-publish Role `Quality Manager` + RolesInGraph Delete on QM* for Administrator and Quality Manager; attach Quality Manager to `ACU_USER` e2e-only; drop InspectionPlan 403 skip|V10,V8,I.role,I.pkg
 
 ## §B BUGS
 id|date|cause|fix
