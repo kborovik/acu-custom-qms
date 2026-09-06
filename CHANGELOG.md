@@ -28,6 +28,10 @@
 
 ### Changed
 
+- **README:** fold the QMS extension specification into README (purpose,
+  business workflow, entities, REST, screens, GMP). Remove
+  `domain/ACUMATICA_QMS_EXTENSION_SPEC.md`.
+
 - **Project deps:** drop `acumatica-cli` from `pyproject.toml` and
   `[tool.uv.sources]`; relock. Released PATH `acu` is not a project
   dependency. `lab5-qms` publish, `dll.py`, and e2e invoke PATH `acu`

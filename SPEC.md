@@ -5,13 +5,13 @@ Ship Acumatica xRP customization `Lab5.QMS`: cannot-pass lot gate + REST CoA ing
 
 ## §C CONSTRAINTS
 - Publisher `Lab5.QMS` (namespace, DLL, zip); not tenant-named
-- Domain field-level DAC/graph/REST schema stays in `domain/ACUMATICA_QMS_EXTENSION_SPEC.md`; this file = SDD control
+- Domain field-level DAC/graph/REST schema stays in `README.md`; this file = SDD control
 - Companion ingestion = `acu-google-qms`; tenant inventory/users = `acu-gitops-qms`; not implemented here
 - Post-publish Role `Quality Manager` + QM `RolesInGraph` seed lives here; zip ! Role `UsersInRoles` `RolesInGraph`; `ACU_USER` ← Quality Manager e2e-only
 - Acumatica Cloud xRP customization project; C# DACs/graphs/screens; endpoint `QMS/22.200.001`
 - Regulatory: Health Canada GMP GUI-0001 / GUI-0158 + 21 CFR Part 11
 - Shipped artifact `Lab5_QMS_Customization.zip`; custom tables `UsrQMS*`
-- Screen `QM.10.10.00` Quality Preferences named in sitemap; setup DAC fields underspecified in domain spec → numbering sequences `QORD` `QNCR`
+- Screen `QM.10.10.00` Quality Preferences named in sitemap; setup DAC fields underspecified in README → numbering sequences `QORD` `QNCR`
 - Released PATH `acu` via `uv tool install`; project ! `acumatica-cli` dep; Python ! `import acumatica_cli`; sibling in-dev checkout stays out of this env
 
 ## §I INTERFACES
