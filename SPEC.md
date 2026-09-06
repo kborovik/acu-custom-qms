@@ -12,10 +12,12 @@ Ship Acumatica xRP customization `Lab5.QMS`: cannot-pass lot gate + REST CoA ing
 - Regulatory: Health Canada GMP GUI-0001 / GUI-0158 + 21 CFR Part 11
 - Shipped artifact `Lab5_QMS_Customization.zip`; custom tables `UsrQMS*`
 - Screen `QM.10.10.00` Quality Preferences named in sitemap; setup DAC fields underspecified in domain spec → numbering sequences `QORD` `QNCR`
+- Released PATH `acu` via `uv tool install`; project ! `acumatica-cli` dep; Python ! `import acumatica_cli`; sibling in-dev checkout stays out of this env
 
 ## §I INTERFACES
 - pkg: `Lab5_QMS_Customization.zip` → `_project/ProjectMetadata.xml` 22.200.001 + `Lab5.QMS.dll` + Pages_QM + `CreateQMSTables.sql`; ! Role `UsersInRoles` `RolesInGraph`
 - cmd: `lab5-qms` Click console script on installable `lab5-qms` → subcommands `pack` `publish` `seed` `deploy`; no subcommand → Click help exit 0 (not deploy); `deploy` pack `Lab5_QMS_Customization.zip` + CustomizationApi publish + post-publish Role seed; pack/publish/seed/deploy emit per-step progress on stderr (step, target, result, elapsed); stdout stays path / status / `seeded`
+- cli: `acu` PATH (released `uv tool install`) → `acu config check` `acu config show` `acu tenant list`; ! `uv run acu`; ! `acu check` (destructive rebuild); Python ! `import acumatica_cli`
 - dac: `QMSInspectionPlan` `QMSInspectionPlanTest` `QMSInspectionOrder` `QMSInspectionOrderResult` `QMSNonConformance` + `InventoryItemExt` (`UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays`)
 - graph: `QMSInspectionPlanMaint` `QMSInspectionOrderEntry` (`EvaluateResults` `ReleaseLotDecision`) `QMSNonConformanceEntry` (`CloseNCR` `DispositionRTV`) `POReceiptEntry_Extension` on `Release`
 - screen: Quality Management workspace — `QM.10.10.00` prefs, `QM.20.10.00` plans, `QM.30.10.00` orders, `QM.30.20.00` NCR
@@ -35,6 +37,7 @@ V7: plan-bounds — `MinValue` and `MaxValue` both set → `MinValue` ≤ `MaxVa
 V8: publisher-lab5 — namespace `Lab5.QMS`; assembly `Lab5.QMS.dll`; zip `Lab5_QMS_Customization.zip`; zip ! Role `UsersInRoles` `RolesInGraph`
 V9: three-way-link — `POReceipt.ReceiptNbr` + `POReceiptLineSplit.LotSerialNbr` + `QMSInspectionOrder` stay consistent
 V10: post-publish-qm-rights — after `Lab5.QMS` publish, Role `Quality Manager` exists + `RolesInGraph` Accessrights=4 on QM101000 QM201000 QM301000 QM302000 for Administrator (CompanyID 1) and Quality Manager; `gmake check` ! skip 403 on those screens; `ACU_USER` ← Quality Manager e2e-only
+V11: released-acu-cli — project ! declare `acumatica-cli` (`pyproject.toml` deps / `[tool.uv.sources]` / lock); live e2e + publish + dll SSH invoke PATH `acu` from `uv tool install`; ! `uv run acu`; Python ! `import acumatica_cli`
 
 ## §T TASKS
 id|status|task|cites
@@ -54,6 +57,9 @@ T13|x|seed post-publish Role `Quality Manager` + RolesInGraph Delete on QM* for 
 T14|x|add Click console script `lab5-qms` pack+publish+post-publish Role seed|V10,V8,I.cmd,I.pkg
 T15|.|naked `lab5-qms` (no subcommand) emit Click help exit 0; not invoke deploy|I.cmd
 T16|.|deploy/publish/seed emit per-step progress on stderr: pack zip, drain in-flight publish, digest skip or import, publishBegin, poll publishEnd, wait `QMS/22.200.001`, seed Role, seed RolesInGraph|V10,I.cmd
+T17|.|drop `acumatica-cli` from `pyproject.toml` deps + `[tool.uv.sources]`; relock|V11
+T18|.|swap `lab5_qms` `dll.py` `e2e` `import acumatica_cli` → PATH `acu` CLI|V11,I.cli
+T19|.|preflight Makefile AGENTS.md README: `acu config check` not `uv run acu`; `uv tool install` released `acu`|V11,I.cli
 
 ## §B BUGS
 id|date|cause|fix
