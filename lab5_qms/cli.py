@@ -24,7 +24,8 @@ from lab5_qms import pack, publish
 def cli(ctx: click.Context) -> None:
     """Pack Lab5_QMS_Customization.zip, publish via CustomizationApi, seed Role Quality Manager."""
     if ctx.invoked_subcommand is None:
-        ctx.invoke(deploy)
+        click.echo(ctx.get_help())
+        ctx.exit(0)
 
 
 @cli.command("pack")

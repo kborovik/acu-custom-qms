@@ -3,7 +3,7 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""T14 / I.cmd / V8 / V10: Click console script lab5-qms pack+publish+seed."""
+"""T14 / T15 / I.cmd / V8 / V10: Click console script lab5-qms pack+publish+seed+deploy."""
 
 from __future__ import annotations
 
@@ -40,15 +40,35 @@ class TestProjectScriptsICmd(unittest.TestCase):
 
 
 class TestCliHelpICmd(unittest.TestCase):
-    def test_help_lists_pack_publish_seed(self) -> None:
+    def test_help_lists_pack_publish_seed_deploy(self) -> None:
         r = CliRunner().invoke(cli, ["--help"])
         self.assertEqual(r.exit_code, 0, r.output)
         self.assertIn("pack", r.output)
         self.assertIn("publish", r.output)
         self.assertIn("seed", r.output)
+        self.assertIn("deploy", r.output)
         self.assertIn("Lab5_QMS_Customization.zip", r.output)
         self.assertIn("CustomizationApi", r.output)
         self.assertIn("Quality Manager", r.output)
+
+    def test_naked_emits_help_not_deploy(self) -> None:
+        with (
+            patch("lab5_qms.cli.pack.write_package") as wp,
+            patch("lab5_qms.cli.publish.publish_package") as pp,
+            patch("lab5_qms.cli.publish.seed_qm_rights") as seed,
+            patch("lab5_qms.cli.publish.client") as client,
+        ):
+            r = CliRunner().invoke(cli, [])
+        self.assertEqual(r.exit_code, 0, r.output)
+        wp.assert_not_called()
+        pp.assert_not_called()
+        seed.assert_not_called()
+        client.assert_not_called()
+        self.assertIn("Usage:", r.output)
+        self.assertIn("pack", r.output)
+        self.assertIn("publish", r.output)
+        self.assertIn("seed", r.output)
+        self.assertIn("deploy", r.output)
 
 
 class TestCliPackV8(unittest.TestCase):
@@ -73,7 +93,7 @@ class TestCliPackV8(unittest.TestCase):
 
 
 class TestCliDeployPipelineICmd(unittest.TestCase):
-    def test_default_packs_publishes_and_seeds(self) -> None:
+    def test_deploy_packs_publishes_and_seeds(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             dest = Path(tmp) / "Lab5_QMS_Customization.zip"
             dest.write_bytes(b"PK\x03\x04fake")
@@ -90,7 +110,7 @@ class TestCliDeployPipelineICmd(unittest.TestCase):
                 patch("lab5_qms.cli.publish.seed_qm_rights") as seed,
                 patch("lab5_qms.cli.publish.client", return_value=ctx),
             ):
-                r = CliRunner().invoke(cli, [])
+                r = CliRunner().invoke(cli, ["deploy"])
             self.assertEqual(r.exit_code, 0, r.output)
             wp.assert_called_once()
             pp.assert_called_once_with(dest.read_bytes(), timeout=600.0)

@@ -50,7 +50,7 @@ Python probes: `uv run python` (project env installs `acumatica-cli`). `import a
 
 ### Package presence
 
-`uv run lab5-qms` packs `Lab5_QMS_Customization.zip`, publishes via `/CustomizationApi` (same cookie session as `acu`; field is `projectContentBase64`, not `projectContents`), and seeds post-publish Role `Quality Manager` plus QM `RolesInGraph`. Subcommands: `pack`, `publish`, `seed`. `gmake pack` runs `lab5-qms pack`. Then prove the tenant has the package:
+`uv run lab5-qms deploy` packs `Lab5_QMS_Customization.zip`, publishes via `/CustomizationApi` (same cookie session as `acu`; field is `projectContentBase64`, not `projectContents`), and seeds post-publish Role `Quality Manager` plus QM `RolesInGraph`. Subcommands: `pack`, `publish`, `seed`, `deploy`. Naked `lab5-qms` prints Click help and exits 0 (does not deploy). `gmake pack` runs `lab5-qms pack`. Then prove the tenant has the package:
 
 | Check | Expect |
 | --- | --- |

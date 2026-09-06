@@ -55,7 +55,7 @@ T11|x|add `QMSSetupMaint` `QM.10.10.00` numbering `QORD` `QNCR`|I.screen
 T12|x|pack `Lab5_QMS_Customization.zip`|V8,I.pkg
 T13|x|seed post-publish Role `Quality Manager` + RolesInGraph Delete on QM* for Administrator and Quality Manager; attach Quality Manager to `ACU_USER` e2e-only; drop InspectionPlan 403 skip|V10,V8,I.role,I.pkg
 T14|x|add Click console script `lab5-qms` pack+publish+post-publish Role seed|V10,V8,I.cmd,I.pkg
-T15|.|naked `lab5-qms` (no subcommand) emit Click help exit 0; not invoke deploy|I.cmd
+T15|x|naked `lab5-qms` (no subcommand) emit Click help exit 0; not invoke deploy|I.cmd
 T16|.|deploy/publish/seed emit per-step progress on stderr: pack zip, drain in-flight publish, digest skip or import, publishBegin, poll publishEnd, wait `QMS/22.200.001`, seed Role, seed RolesInGraph|V10,I.cmd
 T17|.|drop `acumatica-cli` from `pyproject.toml` deps + `[tool.uv.sources]`; relock|V11
 T18|.|swap `lab5_qms` `dll.py` `e2e` `import acumatica_cli` → PATH `acu` CLI|V11,I.cli

@@ -5,12 +5,12 @@
 ### Added
 
 - **`lab5-qms` CLI:** Click console script on the installable `lab5-qms`
-  package. `uv run lab5-qms` (or `lab5-qms deploy`) packs
-  `Lab5_QMS_Customization.zip`, publishes via CustomizationApi, and
-  seeds post-publish Role `Quality Manager` plus `RolesInGraph` Delete
-  on the QM screens. Subcommands: `pack`, `publish`, `seed`. Zip still
-  excludes Role / UsersInRoles / RolesInGraph. `ACU_USER` role attach
-  stays e2e-only.
+  package. Subcommands: `pack`, `publish`, `seed`, `deploy`. No
+  subcommand prints Click help and exits 0 (does not deploy).
+  `lab5-qms deploy` packs `Lab5_QMS_Customization.zip`, publishes via
+  CustomizationApi, and seeds post-publish Role `Quality Manager` plus
+  `RolesInGraph` Delete on the QM screens. Zip still excludes Role /
+  UsersInRoles / RolesInGraph. `ACU_USER` role attach stays e2e-only.
 - **Post-publish QM rights:** after `Lab5.QMS` publish, seed Role
   `Quality Manager` and `RolesInGraph` Delete (`Accessrights=4`) on
   `QM101000` / `QM201000` / `QM301000` / `QM302000` for Administrator
