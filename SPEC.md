@@ -21,14 +21,14 @@ Ship Acumatica xRP customization `Lab5.QMS`: cannot-pass lot gate + REST CoA ing
 - dac: `QMSInspectionPlan` `QMSInspectionPlanTest` `QMSInspectionOrder` `QMSInspectionOrderResult` `QMSNonConformance` + `InventoryItemExt` (`UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays`)
 - graph: `QMSInspectionPlanMaint` `QMSInspectionOrderEntry` (`EvaluateResults` `ReleaseLotDecision`) `QMSNonConformanceEntry` (`CloseNCR` `DispositionRTV`) `POReceiptEntry_Extension` on `Release`
 - screen: Quality Management workspace — `QM.10.10.00` prefs, `QM.20.10.00` plans, `QM.30.10.00` orders, `QM.30.20.00` NCR
-- rest: `/entity/QMS/22.200.001/` — InspectionPlan GET; InspectionOrder GET PUT; NonConformance GET POST
+- rest: `/entity/QMS/22.200.001/` — InspectionPlan GET PUT (`$expand=Tests`); InspectionOrder GET PUT; NonConformance GET POST
 - files: Acumatica `/files` attach CoA PDF + JSON on `QMSInspectionOrder.NoteID`
 - lot: `INLotSerialStatus.LotStatus` in {`QC Hold`, `Released`, `Quarantine`}
 - role: `Quality Manager` or ingestion service-account token for QC Hold → Released; post-publish seed Bootstrap Role `Quality Manager` + `RolesInGraph` Accessrights=4 QM101000 QM201000 QM301000 QM302000 for Administrator (CompanyID 1) and Quality Manager; `ACU_USER` ← Quality Manager e2e-only
 
 ## §V INVARIANTS
 V1: cannot-pass-lot-gate — `UsrQMSInspectionRequired=true` on `POReceiptEntry.Release` → lot `LotStatus=QC Hold` (not BOM-allocatable) + draft `QMSInspectionOrder` (PlanID, Lot, Vendor, ReceiptNbr); lot ! Released until all required plan tests Pass
-V2: rest-coa-ingest — ingestion engine GET `InspectionPlan` (`$expand=Tests`) then PUT `InspectionOrder` results + lab cert metadata; attach original CoA PDF + parsed JSON via `/files`
+V2: rest-coa-ingest — ingestion engine GET `InspectionPlan` (`$expand=Tests` returns test lines when `UsrQMSInspectionPlanTest` rows exist) then PUT `InspectionOrder` results + lab cert metadata; attach original CoA PDF + parsed JSON via `/files`
 V3: gmp-audit-record — `QMSInspectionOrder` + attached CoA PDF/JSON is system of record for lot release; plan+order carry `CreatedByID` `CreatedDateTime` `LastModifiedByID` `LastModifiedDateTime`; evaluation complete stamps `EvaluatedByID` `EvaluationDateTime`; QC Hold → Released requires ingestion service-account token or authenticated user w/ `Quality Manager` role
 V4: evaluate — each required plan test: numeric `MinValue` ≤ `ActualNumericValue` ≤ `MaxValue` (bound nullable); text contains required token; shelf-life `ExpiryDate` ≥ `ReceiptDate` + `UsrMinShelfLifeDays`; any Fail or missing required → `OverallEvaluation` Fail; all Pass → Pass
 V5: pass-path — `OverallEvaluation` Pass → `LotStatus` Released + order Status Completed
@@ -38,6 +38,7 @@ V8: publisher-lab5 — namespace `Lab5.QMS`; assembly `Lab5.QMS.dll`; zip `Lab5_
 V9: three-way-link — `POReceipt.ReceiptNbr` + `POReceiptLineSplit.LotSerialNbr` + `QMSInspectionOrder` stay consistent
 V10: post-publish-qm-rights — after `Lab5.QMS` publish, Role `Quality Manager` exists + `RolesInGraph` Accessrights=4 on QM101000 QM201000 QM301000 QM302000 for Administrator (CompanyID 1) and Quality Manager; `gmake check` ! skip 403 on those screens; `ACU_USER` ← Quality Manager e2e-only
 V11: released-acu-cli — project ! declare `acumatica-cli` (`pyproject.toml` deps / `[tool.uv.sources]` / lock); live e2e + publish + dll SSH invoke PATH `acu` from `uv tool install`; ! `uv run acu`; Python ! `import acumatica_cli`
+V12: inspection-plan-rest-write — PUT `/entity/QMS/22.200.001/InspectionPlan` w/ Tests → 200 create/update plan + test lines; GET `{PlanID}?$expand=Tests` returns those lines; GitOps `config/qms/10-inspection-plans.yaml` applies w/o 500
 
 ## §T TASKS
 id|status|task|cites
@@ -60,6 +61,9 @@ T16|x|deploy/publish/seed emit per-step progress on stderr: pack zip, drain in-f
 T17|x|drop `acumatica-cli` from `pyproject.toml` deps + `[tool.uv.sources]`; relock|V11
 T18|x|swap `lab5_qms` `dll.py` `e2e` `import acumatica_cli` → PATH `acu` CLI|V11,I.cli
 T19|x|preflight Makefile AGENTS.md README: `acu config check` not `uv run acu`; `uv tool install` released `acu`|V11,I.cli
+T20|.|map InspectionPlan PUT + Tests detail on `QMS/22.200.001`; PUT w/ Tests → 200 create/update; GET `$expand=Tests` returns test lines|V12,V2,I.rest
+T21|.|e2e drop InspectionPlan PUT-unavailable skip; prove PUT 200 + GET expand Tests; GitOps six-plan PUT shape no 500|V12,V2,I.rest,T20
 
 ## §B BUGS
 id|date|cause|fix
+B1|2026-09-07|InspectionPlan mapped GET-only; Tests expand empty despite `UsrQMSInspectionPlanTest` rows; PUT 500|V12
