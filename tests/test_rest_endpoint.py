@@ -3,7 +3,7 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""T8 / T20 / V2 / V12: REST endpoint QMS/22.200.001 InspectionPlan GET/PUT, InspectionOrder GET/PUT, NonConformance GET/POST."""
+"""T8 / T20 / T22 / V2 / V12 / V13: REST endpoint QMS/22.200.001 InspectionPlan GET/PUT, InspectionOrder GET/PUT, NonConformance GET/POST, StockItem GET/PUT."""
 
 from __future__ import annotations
 
@@ -20,6 +20,7 @@ ENTITY_VERBS = {
     "InspectionPlan": ("GET", "PUT"),
     "InspectionOrder": ("GET", "PUT"),
     "NonConformance": ("GET", "POST"),
+    "StockItem": ("GET", "PUT"),
 }
 
 INSPECTION_PLAN_FIELDS = {
@@ -83,6 +84,20 @@ NON_CONFORMANCE_FIELDS = {
     "Description": "StringValue",
     "ActionRequired": "StringValue",
     "InventoryHoldStatus": "StringValue",
+}
+
+STOCK_ITEM_FIELDS = {
+    "InventoryID": "StringValue",
+    "UsrQMSInspectionRequired": "BooleanValue",
+    "UsrQMSInspectionPlanID": "StringValue",
+    "UsrMinShelfLifeDays": "IntValue",
+}
+
+STOCK_ITEM_MAPPINGS = {
+    "InventoryID": ("Item", "InventoryCD"),
+    "UsrQMSInspectionRequired": ("Item", "UsrQMSInspectionRequired"),
+    "UsrQMSInspectionPlanID": ("Item", "UsrQMSInspectionPlanID"),
+    "UsrMinShelfLifeDays": ("Item", "UsrMinShelfLifeDays"),
 }
 
 
@@ -235,6 +250,16 @@ class TestNonConformancePostV2(unittest.TestCase):
         mappings = _mappings(ncr)
         for name in NON_CONFORMANCE_FIELDS:
             self.assertEqual(mappings[name], ("Document", name))
+
+
+class TestStockItemUsrFieldsV13(unittest.TestCase):
+    def test_screen_and_usr_fields(self) -> None:
+        item = _top("StockItem")
+        self.assertEqual(item.get("screen"), "IN202500")
+        self.assertEqual(_fields(item), STOCK_ITEM_FIELDS)
+        mappings = _mappings(item)
+        for name, mapped in STOCK_ITEM_MAPPINGS.items():
+            self.assertEqual(mappings[name], mapped, name)
 
 
 if __name__ == "__main__":

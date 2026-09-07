@@ -4,6 +4,11 @@
 
 ### Fixed
 
+- **StockItem REST usr fields (V13):** `QMS/22.200.001` maps `StockItem` on
+  Stock Items (`IN202500`) so PUT persists `UsrQMSInspectionRequired`,
+  `UsrQMSInspectionPlanID`, and `UsrMinShelfLifeDays` on `InventoryItem`.
+  GET of the same contract returns the three fields. Default `StockItem`
+  still ignores UsrQMS* (B2).
 - **InspectionPlan REST write (V12):** PUT `/entity/QMS/22.200.001/InspectionPlan`
   with Tests creates or updates a plan. GET `{PlanID}?$expand=Tests` returns
   test lines. Persist DACs bind to `UsrQMS*` via `[PXTableName]` because

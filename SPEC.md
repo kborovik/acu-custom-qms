@@ -22,6 +22,7 @@ Ship Acumatica xRP customization `Lab5.QMS`: cannot-pass lot gate + REST CoA ing
 - graph: `QMSInspectionPlanMaint` `QMSInspectionOrderEntry` (`EvaluateResults` `ReleaseLotDecision`) `QMSNonConformanceEntry` (`CloseNCR` `DispositionRTV`) `POReceiptEntry_Extension` on `Release`
 - screen: Quality Management workspace — `QM.10.10.00` prefs, `QM.20.10.00` plans, `QM.30.10.00` orders, `QM.30.20.00` NCR
 - rest: `/entity/QMS/22.200.001/` — InspectionPlan GET PUT (`$expand=Tests`); InspectionOrder GET PUT; NonConformance GET POST
+- stock: REST PUT/GET StockItem persist `UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays` on `InventoryItemExt` (extend Default or QMS entity); GitOps `config/qms/20-stock-item-qms.yaml`
 - files: Acumatica `/files` attach CoA PDF + JSON on `QMSInspectionOrder.NoteID`
 - lot: `INLotSerialStatus.LotStatus` in {`QC Hold`, `Released`, `Quarantine`}
 - role: `Quality Manager` or ingestion service-account token for QC Hold → Released; post-publish seed Bootstrap Role `Quality Manager` + `RolesInGraph` Accessrights=4 QM101000 QM201000 QM301000 QM302000 for Administrator (CompanyID 1) and Quality Manager; `ACU_USER` ← Quality Manager e2e-only
@@ -39,6 +40,7 @@ V9: three-way-link — `POReceipt.ReceiptNbr` + `POReceiptLineSplit.LotSerialNbr
 V10: post-publish-qm-rights — after `Lab5.QMS` publish, Role `Quality Manager` exists + `RolesInGraph` Accessrights=4 on QM101000 QM201000 QM301000 QM302000 for Administrator (CompanyID 1) and Quality Manager; `gmake check` ! skip 403 on those screens; `ACU_USER` ← Quality Manager e2e-only
 V11: released-acu-cli — project ! declare `acumatica-cli` (`pyproject.toml` deps / `[tool.uv.sources]` / lock); live e2e + publish + dll SSH invoke PATH `acu` from `uv tool install`; ! `uv run acu`; Python ! `import acumatica_cli`
 V12: inspection-plan-rest-write — PUT `/entity/QMS/22.200.001/InspectionPlan` w/ Tests → 200 create/update plan + test lines; GET `{PlanID}?$expand=Tests` returns those lines; GitOps `config/qms/10-inspection-plans.yaml` applies w/o 500
+V13: stock-item-qms-rest — PUT StockItem persists `UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays` on `InventoryItem`; GET same contract returns the three fields; GitOps `config/qms/20-stock-item-qms.yaml` apply sets flags on all six PARTS items w/o SQL
 
 ## §T TASKS
 id|status|task|cites
@@ -63,7 +65,10 @@ T18|x|swap `lab5_qms` `dll.py` `e2e` `import acumatica_cli` → PATH `acu` CLI|V
 T19|x|preflight Makefile AGENTS.md README: `acu config check` not `uv run acu`; `uv tool install` released `acu`|V11,I.cli
 T20|x|map InspectionPlan PUT + Tests detail on `QMS/22.200.001`; PUT w/ Tests → 200 create/update; GET `$expand=Tests` returns test lines|V12,V2,I.rest
 T21|x|e2e drop InspectionPlan PUT-unavailable skip; prove PUT 200 + GET expand Tests; GitOps six-plan PUT shape no 500|V12,V2,I.rest,T20
+T22|x|map `UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays` on REST StockItem (extend Default or QMS entity writing `InventoryItemExt`)|V13,I.stock,I.dac
+T23|x|e2e prove PARTS StockItem PUT persist + GET roundtrip; GitOps six-item `config/qms/20-stock-item-qms.yaml` apply no SQL|V13,I.stock,T22
 
 ## §B BUGS
 id|date|cause|fix
 B1|2026-09-07|InspectionPlan mapped GET-only; Tests expand empty despite `UsrQMSInspectionPlanTest` rows; PUT 500|V12
+B2|2026-09-07|Default StockItem PUT ignores UsrQMS* InventoryItemExt; SQL stays 0/NULL|V13

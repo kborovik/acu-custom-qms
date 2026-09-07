@@ -5,10 +5,14 @@
   (namespace http://www.acumatica.com/entity/maintenance/5.31).
   systemContractVersion 4 = SystemContracts.V4.
 
-  Contract verbs (I.rest / V2 / V12):
+  Contract verbs (I.rest / V2 / V12 / V13):
     InspectionPlan   GET PUT
     InspectionOrder  GET PUT
     NonConformance   GET POST
+    StockItem        GET PUT
+  StockItem (V13 / I.stock): IN202500 InventoryItem + InventoryItemExt
+    UsrQMSInspectionRequired, UsrQMSInspectionPlanID, UsrMinShelfLifeDays.
+    InventoryID maps Item.InventoryCD (Default swagger / live EntityMapping).
   InspectionOrder actions (V4/V5/V6):
     EvaluateResults, ReleaseLotDecision
   Files (I.files / V2 / V3):
@@ -236,6 +240,28 @@
         </Mapping>
         <Mapping field="InventoryHoldStatus">
           <To object="Document" field="InventoryHoldStatus" />
+        </Mapping>
+      </Mappings>
+    </TopLevelEntity>
+    <TopLevelEntity name="StockItem" screen="IN202500">
+      <Fields>
+        <Field name="InventoryID" type="StringValue" />
+        <Field name="UsrQMSInspectionRequired" type="BooleanValue" />
+        <Field name="UsrQMSInspectionPlanID" type="StringValue" />
+        <Field name="UsrMinShelfLifeDays" type="IntValue" />
+      </Fields>
+      <Mappings>
+        <Mapping field="InventoryID">
+          <To object="Item" field="InventoryCD" />
+        </Mapping>
+        <Mapping field="UsrQMSInspectionRequired">
+          <To object="Item" field="UsrQMSInspectionRequired" />
+        </Mapping>
+        <Mapping field="UsrQMSInspectionPlanID">
+          <To object="Item" field="UsrQMSInspectionPlanID" />
+        </Mapping>
+        <Mapping field="UsrMinShelfLifeDays">
+          <To object="Item" field="UsrMinShelfLifeDays" />
         </Mapping>
       </Mappings>
     </TopLevelEntity>

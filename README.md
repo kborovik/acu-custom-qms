@@ -230,13 +230,15 @@ required tests pass, then overall **Pass**.
 
 ## REST endpoint `QMS/22.200.001`
 
-Registered under Web Service Endpoints. Default-contract entities
-(Stock Item, Purchase Receipt, Lot/Serial Class) stay on
-`/entity/Default/…`. Numbering and Role stay on `/entity/Bootstrap/…`.
+Registered under Web Service Endpoints. Purchase Receipt and Lot/Serial
+Class stay on `/entity/Default/…`. Numbering and Role stay on
+`/entity/Bootstrap/…`. Default `StockItem` still ignores `UsrQMS*` —
+PUT and GET those flags on `QMS/22.200.001`.
 
 | Entity | Verbs | Use |
 | --- | --- | --- |
 | `InspectionPlan` | GET, PUT | Target specs and test criteria (`$expand=Tests`) |
+| `StockItem` | GET, PUT | Persist `UsrQMSInspectionRequired`, `UsrQMSInspectionPlanID`, `UsrMinShelfLifeDays` on `InventoryItemExt` |
 | `InspectionOrder` | GET, PUT | Ingest lab results and certificate metadata |
 | `NonConformance` | GET, POST | OOS tickets |
 
