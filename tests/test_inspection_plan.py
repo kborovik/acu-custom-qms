@@ -146,13 +146,19 @@ class TestInspectionPlanDac(unittest.TestCase):
     def test_plan_dac_fields(self) -> None:
         src = PLAN_CS.read_text(encoding="utf-8")
         self.assertIn("namespace Lab5.QMS", src)
-        self.assertIn("class QMSInspectionPlan : PXBqlTable, IBqlTable", src)
+        self.assertIn("class UsrQMSInspectionPlan : PXBqlTable, IBqlTable", src)
+        self.assertIn("class QMSInspectionPlan : UsrQMSInspectionPlan", src)
+        self.assertIn("[PXTableName]", src)
+        self.assertIn("ValidateValue = false", src)
         for name in PLAN_FIELDS:
             self.assertIn(f"#region {name}", src)
 
     def test_plan_test_dac_fields(self) -> None:
         src = TEST_CS.read_text(encoding="utf-8")
-        self.assertIn("class QMSInspectionPlanTest : PXBqlTable, IBqlTable", src)
+        self.assertIn("class UsrQMSInspectionPlanTest : PXBqlTable, IBqlTable", src)
+        self.assertIn("class QMSInspectionPlanTest : UsrQMSInspectionPlanTest", src)
+        self.assertIn("[PXTableName]", src)
+        self.assertNotIn('Enabled = false', src)
         for name in TEST_FIELDS:
             self.assertIn(f"#region {name}", src)
 

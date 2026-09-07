@@ -3,7 +3,7 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""T8 / V2: REST endpoint QMS/22.200.001 InspectionPlan GET, InspectionOrder GET/PUT, NonConformance GET/POST."""
+"""T8 / T20 / V2 / V12: REST endpoint QMS/22.200.001 InspectionPlan GET/PUT, InspectionOrder GET/PUT, NonConformance GET/POST."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ QMS_CS = ROOT / "src" / "Lab5.QMS" / "QMS.cs"
 NS = "{http://www.acumatica.com/entity/maintenance/5.31}"
 
 ENTITY_VERBS = {
-    "InspectionPlan": ("GET",),
+    "InspectionPlan": ("GET", "PUT"),
     "InspectionOrder": ("GET", "PUT"),
     "NonConformance": ("GET", "POST"),
 }
@@ -151,7 +151,7 @@ class TestQmsEndpointIdentityV2(unittest.TestCase):
             self.assertIn(" ".join(verbs), xml)
 
 
-class TestInspectionPlanGetV2(unittest.TestCase):
+class TestInspectionPlanGetPutV12(unittest.TestCase):
     def test_screen_and_plan_fields(self) -> None:
         plan = _top("InspectionPlan")
         self.assertEqual(plan.get("screen"), "QM201000")

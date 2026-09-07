@@ -4,11 +4,21 @@ using PX.Objects.CS;
 
 namespace Lab5.QMS
 {
-    /// <summary>Quality Preferences. Table UsrQMSSetup (SQL synonym QMSSetup).</summary>
+    /// <summary>
+    /// PX schema-cache table name for <see cref="QMSSetup"/>.
+    /// Synonyms are not tables; PUT Locate/Insert looks up this name.
+    /// </summary>
+    [PXTableName]
+    [Serializable]
+    public class UsrQMSSetup : PXBqlTable, IBqlTable
+    {
+    }
+
+    /// <summary>Quality Preferences. Table UsrQMSSetup.</summary>
     [Serializable]
     [PXCacheName("Quality Preferences")]
     [PXPrimaryGraph(typeof(QMSSetupMaint))]
-    public class QMSSetup : PXBqlTable, IBqlTable
+    public class QMSSetup : UsrQMSSetup
     {
         #region InspectionOrderNumberingID
         [PXDBString(10, IsUnicode = true)]

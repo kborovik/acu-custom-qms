@@ -3,10 +3,20 @@ using PX.Data;
 
 namespace Lab5.QMS
 {
-    /// <summary>Inspection test result line. Table UsrQMSInspectionOrderResult (SQL synonym QMSInspectionOrderResult).</summary>
+    /// <summary>
+    /// PX schema-cache table name for <see cref="QMSInspectionOrderResult"/>.
+    /// Synonyms are not tables; PUT Locate/Insert looks up this name.
+    /// </summary>
+    [PXTableName]
+    [Serializable]
+    public class UsrQMSInspectionOrderResult : PXBqlTable, IBqlTable
+    {
+    }
+
+    /// <summary>Inspection test result line. Table UsrQMSInspectionOrderResult.</summary>
     [Serializable]
     [PXCacheName("Inspection Order Result")]
-    public class QMSInspectionOrderResult : PXBqlTable, IBqlTable
+    public class QMSInspectionOrderResult : UsrQMSInspectionOrderResult
     {
         #region InspectionOrderNbr
         [PXDBString(15, IsUnicode = true, IsKey = true)]

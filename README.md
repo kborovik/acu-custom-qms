@@ -236,7 +236,7 @@ Registered under Web Service Endpoints. Default-contract entities
 
 | Entity | Verbs | Use |
 | --- | --- | --- |
-| `InspectionPlan` | GET | Target specs and test criteria (`$expand=Tests`) |
+| `InspectionPlan` | GET, PUT | Target specs and test criteria (`$expand=Tests`) |
 | `InspectionOrder` | GET, PUT | Ingest lab results and certificate metadata |
 | `NonConformance` | GET, POST | OOS tickets |
 

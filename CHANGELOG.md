@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Fixed
+
+- **InspectionPlan REST write (V12):** PUT `/entity/QMS/22.200.001/InspectionPlan`
+  with Tests creates or updates a plan. GET `{PlanID}?$expand=Tests` returns
+  test lines. Persist DACs bind to `UsrQMS*` via `[PXTableName]` because
+  SQL synonyms are not in the PX schema cache (PUT 500
+  `QMSInspectionPlan` does not exist).
+
 ## [v0.2.0] - 2026-09-06
 
 ### Added

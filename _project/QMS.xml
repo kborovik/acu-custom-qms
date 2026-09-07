@@ -5,8 +5,8 @@
   (namespace http://www.acumatica.com/entity/maintenance/5.31).
   systemContractVersion 4 = SystemContracts.V4.
 
-  Contract verbs (I.rest / V2):
-    InspectionPlan   GET
+  Contract verbs (I.rest / V2 / V12):
+    InspectionPlan   GET PUT
     InspectionOrder  GET PUT
     NonConformance   GET POST
   InspectionOrder actions (V4/V5/V6):

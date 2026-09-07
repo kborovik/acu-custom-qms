@@ -8,11 +8,21 @@ using PX.SM;
 
 namespace Lab5.QMS
 {
-    /// <summary>Inspection order header. Table UsrQMSInspectionOrder (SQL synonym QMSInspectionOrder).</summary>
+    /// <summary>
+    /// PX schema-cache table name for <see cref="QMSInspectionOrder"/>.
+    /// Synonyms are not tables; PUT Locate/Insert looks up this name.
+    /// </summary>
+    [PXTableName]
+    [Serializable]
+    public class UsrQMSInspectionOrder : PXBqlTable, IBqlTable
+    {
+    }
+
+    /// <summary>Inspection order header. Table UsrQMSInspectionOrder.</summary>
     [Serializable]
     [PXCacheName("Inspection Order")]
     [PXPrimaryGraph(typeof(QMSInspectionOrderEntry))]
-    public class QMSInspectionOrder : PXBqlTable, IBqlTable
+    public class QMSInspectionOrder : UsrQMSInspectionOrder
     {
         #region InspectionOrderNbr
         [PXDBString(15, IsUnicode = true, IsKey = true, InputMask = ">CCCCCCCCCCCCCCC")]
