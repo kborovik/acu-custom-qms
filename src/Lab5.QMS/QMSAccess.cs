@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using PX.Data;
+using PX.SM;
 
 namespace Lab5.QMS
 {
@@ -8,23 +10,39 @@ namespace Lab5.QMS
     {
         public static IEnumerable<string> CurrentUserRoles()
         {
+            HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             PXRoleList list = PXAccess.GetRoles(PXAccess.GetUserName());
-            if (list == null)
+            if (list != null)
             {
-                yield break;
-            }
-            if (list.Common != null)
-            {
-                foreach (string role in list.Common)
+                if (list.Common != null)
                 {
-                    yield return role;
+                    foreach (string role in list.Common)
+                    {
+                        if (!string.IsNullOrEmpty(role) && seen.Add(role))
+                        {
+                            yield return role;
+                        }
+                    }
+                }
+                if (list.Prioritized != null)
+                {
+                    foreach (string role in list.Prioritized)
+                    {
+                        if (!string.IsNullOrEmpty(role) && seen.Add(role))
+                        {
+                            yield return role;
+                        }
+                    }
                 }
             }
-            if (list.Prioritized != null)
+            PXGraph graph = PXGraph.CreateInstance<PXGraph>();
+            foreach (UsersInRoles row in PXSelect<UsersInRoles,
+                Where<UsersInRoles.username, Equal<Required<UsersInRoles.username>>>>
+                .Select(graph, PXAccess.GetUserName()))
             {
-                foreach (string role in list.Prioritized)
+                if (!string.IsNullOrEmpty(row.Rolename) && seen.Add(row.Rolename))
                 {
-                    yield return role;
+                    yield return row.Rolename;
                 }
             }
         }

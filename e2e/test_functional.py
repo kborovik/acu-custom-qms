@@ -8,8 +8,10 @@ import unittest
 from datetime import date
 
 from e2e.helper import (
+    DB_NAME,
     FAIL_ORDER,
     ITEM_CD,
+    company_id,
     LINE_FAIL,
     LINE_PASS,
     MIN_PDF,
@@ -29,6 +31,7 @@ from e2e.helper import (
     qms_get,
     qms_invoke,
     qms_put,
+    sqlcmd,
     unwrap,
     wrap,
 )
@@ -72,6 +75,27 @@ def _seed_ready(session) -> str | None:
     if vendor is None:
         return f"Vendor {VENDOR_CD} missing — seed tenant from acu-gitops-qms"
     return None
+
+
+def _set_item_min_shelf_life_days(days: int) -> None:
+    sqlcmd(
+        f"UPDATE {DB_NAME}.dbo.InventoryItem SET UsrMinShelfLifeDays = {int(days)} "
+        f"WHERE CompanyID = {company_id()} AND RTRIM(InventoryCD) = N'{ITEM_CD}'"
+    )
+
+
+def _reopen_order(nbr: str) -> None:
+    sqlcmd(
+        f"UPDATE {DB_NAME}.dbo.UsrQMSInspectionOrder SET Status = N'O' "
+        f"WHERE InspectionOrderNbr = N'{nbr}'"
+    )
+
+
+def _reset_plan_tests(plan_id: str) -> None:
+    sqlcmd(
+        f"DELETE FROM {DB_NAME}.dbo.UsrQMSInspectionPlanTest "
+        f"WHERE PlanID = N'{plan_id}'"
+    )
 
 
 def _plan_record() -> dict:
@@ -327,13 +351,19 @@ class TestSeedGate(unittest.TestCase):
 class TestCoaIngest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
+        _set_item_min_shelf_life_days(0)
         ensure_published()
         with client() as session:
             reason = _seed_ready(session)
             if reason:
                 raise unittest.SkipTest(reason)
             ensure_numbering_and_role(session)
+            _reset_plan_tests(PLAN_ID)
             qms_put(session, "InspectionPlan", _plan_record())
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        _set_item_min_shelf_life_days(180)
 
     def test_get_plan_expand_tests(self) -> None:
         with client() as session:
@@ -391,6 +421,7 @@ class TestCoaIngest(unittest.TestCase):
             self.assertIn(".pdf", joined)
             self.assertIn(".json", joined)
 
+            _reopen_order(PASS_ORDER)
             qms_invoke(session, "EvaluateResults", {"InspectionOrderNbr": PASS_ORDER})
             evaluated = unwrap(
                 qms_get(
@@ -402,12 +433,7 @@ class TestCoaIngest(unittest.TestCase):
             )
             results = {row.get("LineNbr"): row for row in (evaluated.get("Results") or [])}
             self.assertIn((results.get(10) or {}).get("Evaluation"), {LINE_PASS, "Pass"})
-            overall = evaluated.get("OverallEvaluation")
-            if overall not in {OVERALL_PASS, "Pass"}:
-                self.skipTest(
-                    f"OverallEvaluation={overall}; RAW-ECH-EXT4 UsrMinShelfLifeDays=180 "
-                    "and the e2e lot has no expiry"
-                )
+            self.assertIn(evaluated.get("OverallEvaluation"), {OVERALL_PASS, "Pass"})
 
             qms_invoke(session, "ReleaseLotDecision", {"InspectionOrderNbr": PASS_ORDER})
             released = unwrap(qms_get(session, "InspectionOrder", [PASS_ORDER]))
@@ -421,6 +447,7 @@ class TestCoaIngest(unittest.TestCase):
                 "InspectionOrder",
                 _order_record(FAIL_ORDER, 0.4, "FAIL dark"),
             )
+            _reopen_order(FAIL_ORDER)
             qms_invoke(session, "EvaluateResults", {"InspectionOrderNbr": FAIL_ORDER})
             evaluated = unwrap(
                 qms_get(
@@ -434,10 +461,7 @@ class TestCoaIngest(unittest.TestCase):
             results = {row.get("LineNbr"): row for row in (evaluated.get("Results") or [])}
             self.assertIn((results.get(10) or {}).get("Evaluation"), {LINE_FAIL, "Fail"})
 
-            try:
-                qms_invoke(session, "ReleaseLotDecision", {"InspectionOrderNbr": FAIL_ORDER})
-            except RuntimeError as exc:
-                self.skipTest(f"ReleaseLotDecision needs an IN lot ({exc})")
+            qms_invoke(session, "ReleaseLotDecision", {"InspectionOrderNbr": FAIL_ORDER})
             ncrs = session.get_list(
                 "NonConformance",
                 {

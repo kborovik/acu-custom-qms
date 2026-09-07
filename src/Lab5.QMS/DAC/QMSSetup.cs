@@ -4,10 +4,6 @@ using PX.Objects.CS;
 
 namespace Lab5.QMS
 {
-    /// <summary>
-    /// PX schema-cache table name for <see cref="QMSSetup"/>.
-    /// Synonyms are not tables; PUT Locate/Insert looks up this name.
-    /// </summary>
     [PXTableName]
     [Serializable]
     public class UsrQMSSetup : PXBqlTable, IBqlTable

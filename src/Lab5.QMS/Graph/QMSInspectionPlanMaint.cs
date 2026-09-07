@@ -53,16 +53,34 @@ namespace Lab5.QMS
             {
                 return;
             }
-            existing.TestID = row.TestID;
-            existing.Description = row.Description;
-            existing.TestMethod = row.TestMethod;
-            existing.TargetValue = row.TargetValue;
-            existing.MinValue = row.MinValue;
-            existing.MaxValue = row.MaxValue;
-            existing.UOM = row.UOM;
-            existing.Criticality = row.Criticality;
+            CopyPendingTestFields(sender, row, existing);
             Tests.Update(existing);
             e.Cancel = true;
+        }
+
+        protected virtual void CopyPendingTestFields(
+            PXCache sender, QMSInspectionPlanTest src, QMSInspectionPlanTest dst)
+        {
+            CopyPendingField<QMSInspectionPlanTest.testID>(sender, src, dst);
+            CopyPendingField<QMSInspectionPlanTest.description>(sender, src, dst);
+            CopyPendingField<QMSInspectionPlanTest.testMethod>(sender, src, dst);
+            CopyPendingField<QMSInspectionPlanTest.targetValue>(sender, src, dst);
+            CopyPendingField<QMSInspectionPlanTest.minValue>(sender, src, dst);
+            CopyPendingField<QMSInspectionPlanTest.maxValue>(sender, src, dst);
+            CopyPendingField<QMSInspectionPlanTest.uOM>(sender, src, dst);
+            CopyPendingField<QMSInspectionPlanTest.criticality>(sender, src, dst);
+            CopyPendingField<QMSInspectionPlanTest.isRequired>(sender, src, dst);
+        }
+
+        protected virtual void CopyPendingField<TField>(PXCache sender, object src, object dst)
+            where TField : IBqlField
+        {
+            object pending = sender.GetValuePending<TField>(src);
+            if (ReferenceEquals(pending, PXCache.NotSetValue))
+            {
+                return;
+            }
+            sender.SetValue<TField>(dst, sender.GetValue<TField>(src));
         }
 
         protected virtual QMSInspectionPlanTest FindPersistedTest(int? lineNbr)

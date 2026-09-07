@@ -19,8 +19,21 @@ namespace Lab5.QMS
         protected virtual void QMSInspectionOrderResult_RowInserting(PXCache sender, PXRowInsertingEventArgs e)
         {
             QMSInspectionOrderResult row = e.Row as QMSInspectionOrderResult;
-            if (row == null || row.LineNbr == null || row.LineNbr == 0)
+            if (row == null)
             {
+                return;
+            }
+            if (row.LineNbr == null || row.LineNbr == 0)
+            {
+                int max = 0;
+                foreach (QMSInspectionOrderResult result in Results.Select())
+                {
+                    if (result.LineNbr != null && result.LineNbr.Value > max)
+                    {
+                        max = result.LineNbr.Value;
+                    }
+                }
+                row.LineNbr = max + 10;
                 return;
             }
             QMSInspectionOrderResult existing = FindPersistedResult(row.LineNbr);
@@ -28,15 +41,32 @@ namespace Lab5.QMS
             {
                 return;
             }
-            existing.TestID = row.TestID;
-            existing.TestMethod = row.TestMethod;
-            existing.TargetSpec = row.TargetSpec;
-            existing.ActualNumericValue = row.ActualNumericValue;
-            existing.ActualTextValue = row.ActualTextValue;
-            existing.Evaluation = row.Evaluation;
-            existing.Notes = row.Notes;
+            CopyPendingResultFields(sender, row, existing);
             Results.Update(existing);
             e.Cancel = true;
+        }
+
+        protected virtual void CopyPendingResultFields(
+            PXCache sender, QMSInspectionOrderResult src, QMSInspectionOrderResult dst)
+        {
+            CopyPendingField<QMSInspectionOrderResult.testID>(sender, src, dst);
+            CopyPendingField<QMSInspectionOrderResult.testMethod>(sender, src, dst);
+            CopyPendingField<QMSInspectionOrderResult.targetSpec>(sender, src, dst);
+            CopyPendingField<QMSInspectionOrderResult.actualNumericValue>(sender, src, dst);
+            CopyPendingField<QMSInspectionOrderResult.actualTextValue>(sender, src, dst);
+            CopyPendingField<QMSInspectionOrderResult.evaluation>(sender, src, dst);
+            CopyPendingField<QMSInspectionOrderResult.notes>(sender, src, dst);
+        }
+
+        protected virtual void CopyPendingField<TField>(PXCache sender, object src, object dst)
+            where TField : IBqlField
+        {
+            object pending = sender.GetValuePending<TField>(src);
+            if (ReferenceEquals(pending, PXCache.NotSetValue))
+            {
+                return;
+            }
+            sender.SetValue<TField>(dst, sender.GetValue<TField>(src));
         }
 
         public PXAction<QMSInspectionOrder> EvaluateResults;

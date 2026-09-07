@@ -3,10 +3,6 @@ using PX.Data;
 
 namespace Lab5.QMS
 {
-    /// <summary>
-    /// PX schema-cache table name for <see cref="QMSInspectionOrderResult"/>.
-    /// Synonyms are not tables; PUT Locate/Insert looks up this name.
-    /// </summary>
     [PXTableName]
     [Serializable]
     public class UsrQMSInspectionOrderResult : PXBqlTable, IBqlTable

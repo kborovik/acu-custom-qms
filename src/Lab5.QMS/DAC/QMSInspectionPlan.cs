@@ -4,10 +4,7 @@ using PX.Objects.IN;
 
 namespace Lab5.QMS
 {
-    /// <summary>
-    /// PX schema-cache table name for <see cref="QMSInspectionPlan"/>.
-    /// Synonyms are not tables; PUT Locate/Insert looks up this name.
-    /// </summary>
+    /// <summary>[PXTableName] binds persist to physical UsrQMS* table.</summary>
     [PXTableName]
     [Serializable]
     public class UsrQMSInspectionPlan : PXBqlTable, IBqlTable

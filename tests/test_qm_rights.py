@@ -10,6 +10,7 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -24,6 +25,13 @@ from e2e.helper import (  # noqa: E402
     ROLES_IN_GRAPH_COMPANY_ID,
     roles_in_graph_merge_sql,
     roles_in_graph_rows,
+)
+from lab5_qms.publish import (  # noqa: E402
+    QMS_DETAIL_MAPPINGS,
+    _parse_mapping_seed_counts,
+    expected_qms_detail_mapping_count,
+    qms_detail_mapping_sql,
+    seed_qm_rights,
 )
 
 HELPER = ROOT / "e2e" / "helper.py"
@@ -80,7 +88,64 @@ class TestRolesInGraphSeedV10(unittest.TestCase):
         self.assertIn("_ensure_qm_roles_in_graph", publish)
         self.assertIn("roles_in_graph_company_ids()", publish)
         self.assertIn("_ensure_qms_detail_mappings", publish)
-        self.assertIn("E/{parent}/{collectionField}/{detail}/{field}", publish)
+        self.assertIn("_recycle_app_pool", publish)
+
+
+class TestQmsDetailMappingSeedV12(unittest.TestCase):
+    def test_merge_sql_covers_plan_and_order_fields(self) -> None:
+        sql = qms_detail_mapping_sql(14)
+        self.assertIn("MERGE", sql)
+        self.assertIn("EntityMapping", sql)
+        self.assertIn("InterfaceName = N'QMS'", sql)
+        self.assertIn("CompanyID IN (@cid, 1)", sql)
+        self.assertIn("InspectionPlan", sql)
+        self.assertIn("InspectionOrder", sql)
+        self.assertIn("N'Tests'", sql)
+        self.assertIn("N'Results'", sql)
+        for parent, collection, detail, fields in QMS_DETAIL_MAPPINGS:
+            self.assertIn(f"N'{parent}'", sql, parent)
+            self.assertIn(f"N'{collection}'", sql, collection)
+            self.assertIn(f"N'{detail}'", sql, detail)
+            for name in fields:
+                self.assertIn(f"N'{name}'", sql, name)
+        self.assertEqual(expected_qms_detail_mapping_count(), 17)
+
+    def test_mapping_seed_recycles_when_maps_were_missing(self) -> None:
+        session = MagicMock()
+        with (
+            patch(
+                "lab5_qms.publish.bootstrap_endpoint",
+                return_value="Bootstrap/1.4.0",
+            ),
+            patch("lab5_qms.publish._ensure_quality_manager_role_row"),
+            patch("lab5_qms.publish._ensure_qm_roles_in_graph"),
+            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=1),
+            patch("lab5_qms.publish._recycle_app_pool") as recycle,
+        ):
+            seed_qm_rights(session)
+        recycle.assert_called_once()
+
+    def test_mapping_seed_skips_recycle_when_maps_present(self) -> None:
+        session = MagicMock()
+        with (
+            patch(
+                "lab5_qms.publish.bootstrap_endpoint",
+                return_value="Bootstrap/1.4.0",
+            ),
+            patch("lab5_qms.publish._ensure_quality_manager_role_row"),
+            patch("lab5_qms.publish._ensure_qm_roles_in_graph"),
+            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("lab5_qms.publish._recycle_app_pool") as recycle,
+        ):
+            seed_qm_rights(session)
+        recycle.assert_not_called()
+
+    def test_parse_mapping_counts_rejects_non_int(self) -> None:
+        self.assertEqual(_parse_mapping_seed_counts("0|17|17\n"), (0, 17, 17))
+        with self.assertRaises(RuntimeError):
+            _parse_mapping_seed_counts("ok")
+        with self.assertRaises(RuntimeError):
+            _parse_mapping_seed_counts("")
 
 
 class TestNoInspectionPlan403SkipV10(unittest.TestCase):

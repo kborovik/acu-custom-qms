@@ -325,9 +325,7 @@ def _ensure_qm_roles_in_graph() -> None:
     sqlcmd(roles_in_graph_merge_sql(roles_in_graph_company_ids()))
 
 
-# Parent collection field → detail entity fields. Customization XML nested
-# Mapping items round-trip in the project but 26.101 does not materialize
-# EntityMapping E/{parent}/{collectionField}/{detail}/{field} rows.
+# 26.101 does not insert nested EntityMapping rows.
 QMS_DETAIL_MAPPINGS: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (
     (
         "InspectionPlan",
@@ -363,6 +361,10 @@ QMS_DETAIL_MAPPINGS: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (
 )
 
 
+def expected_qms_detail_mapping_count() -> int:
+    return sum(len(fields) for _parent, _coll, _detail, fields in QMS_DETAIL_MAPPINGS)
+
+
 def qms_detail_mapping_sql(cid: int) -> str:
     """MERGE nested EntityMapping rows for Tests/Results expand and PUT."""
     spec_unions: list[str] = []
@@ -373,50 +375,82 @@ def qms_detail_mapping_sql(cid: int) -> str:
             "AS v(Parent, Collection, Detail, FieldName)"
         )
     spec = " UNION ALL ".join(spec_unions)
+    db = DB_NAME
     return (
         f"DECLARE @cid int = {cid}; "
         "DECLARE @mask varbinary(32); "
-        f"SELECT TOP 1 @mask = CompanyMask FROM {DB_NAME}.dbo.EntityMapping "
+        f"SELECT TOP 1 @mask = CompanyMask FROM {db}.dbo.EntityMapping "
         "WHERE CompanyID = @cid; "
         "IF @mask IS NULL SET @mask = 0xAAAAAAAA; "
-        "DECLARE @inserted int = 0; "
-        f"MERGE {DB_NAME}.dbo.EntityMapping AS t "
-        "USING ( "
-        "SELECT @cid AS CompanyID, "
+        "DECLARE @src TABLE ("
+        "CompanyID int, MappingKey nvarchar(255), "
+        "MappedObject nvarchar(128), MappedField nvarchar(128)); "
+        "INSERT INTO @src (CompanyID, MappingKey, MappedObject, MappedField) "
+        "SELECT @cid, "
         "N'E/' + CAST(p.EntityId AS varchar(20)) + N'/' "
         "+ CAST(cf.EntityFieldId AS varchar(20)) + N'/' "
         "+ CAST(d.EntityId AS varchar(20)) + N'/' "
-        "+ CAST(df.EntityFieldId AS varchar(20)) AS MappingKey, "
-        "s.Collection AS MappedObject, s.FieldName AS MappedField "
+        "+ CAST(df.EntityFieldId AS varchar(20)), "
+        "s.Collection, s.FieldName "
         f"FROM ({spec}) AS s "
-        f"INNER JOIN {DB_NAME}.dbo.EntityDescription p "
-        "ON p.CompanyID = @cid AND p.InterfaceName = N'QMS' "
-        "AND p.ObjectName = s.Parent "
-        f"INNER JOIN {DB_NAME}.dbo.EntityDescription d "
-        "ON d.CompanyID = @cid AND d.InterfaceName = N'QMS' "
-        "AND d.ObjectName = s.Detail "
-        f"INNER JOIN {DB_NAME}.dbo.EntityFieldDescription cf "
-        "ON cf.CompanyID = @cid AND cf.EntityId = p.EntityId "
-        "AND cf.FieldName = s.Collection "
-        f"INNER JOIN {DB_NAME}.dbo.EntityFieldDescription df "
-        "ON df.CompanyID = @cid AND df.EntityId = d.EntityId "
-        "AND df.FieldName = s.FieldName "
-        ") AS s ON t.CompanyID = s.CompanyID AND t.MappingKey = s.MappingKey "
+        f"CROSS APPLY (SELECT TOP 1 EntityId FROM {db}.dbo.EntityDescription "
+        "WHERE InterfaceName = N'QMS' AND ObjectName = s.Parent "
+        "AND CompanyID IN (@cid, 1) "
+        "ORDER BY CASE WHEN CompanyID = @cid THEN 0 ELSE 1 END) p "
+        f"CROSS APPLY (SELECT TOP 1 EntityId FROM {db}.dbo.EntityDescription "
+        "WHERE InterfaceName = N'QMS' AND ObjectName = s.Detail "
+        "AND CompanyID IN (@cid, 1) "
+        "ORDER BY CASE WHEN CompanyID = @cid THEN 0 ELSE 1 END) d "
+        f"CROSS APPLY (SELECT TOP 1 EntityFieldId FROM {db}.dbo.EntityFieldDescription "
+        "WHERE EntityId = p.EntityId AND FieldName = s.Collection "
+        "AND CompanyID IN (@cid, 1) "
+        "ORDER BY CASE WHEN CompanyID = @cid THEN 0 ELSE 1 END) cf "
+        f"CROSS APPLY (SELECT TOP 1 EntityFieldId FROM {db}.dbo.EntityFieldDescription "
+        "WHERE EntityId = d.EntityId AND FieldName = s.FieldName "
+        "AND CompanyID IN (@cid, 1) "
+        "ORDER BY CASE WHEN CompanyID = @cid THEN 0 ELSE 1 END) df; "
+        f"DECLARE @before int = (SELECT COUNT(*) FROM {db}.dbo.EntityMapping t "
+        "INNER JOIN @src s ON t.CompanyID = s.CompanyID AND t.MappingKey = s.MappingKey); "
+        f"MERGE {db}.dbo.EntityMapping AS t "
+        "USING @src AS s ON t.CompanyID = s.CompanyID AND t.MappingKey = s.MappingKey "
         "WHEN NOT MATCHED THEN INSERT ("
         "CompanyID, CompanyMask, MappingKey, MappedObject, MappedField"
         ") VALUES (s.CompanyID, @mask, s.MappingKey, s.MappedObject, s.MappedField); "
-        "SET @inserted = @@ROWCOUNT; "
-        "SELECT @inserted;"
+        "DECLARE @inserted int = @@ROWCOUNT; "
+        f"DECLARE @after int = (SELECT COUNT(*) FROM {db}.dbo.EntityMapping t "
+        "INNER JOIN @src s ON t.CompanyID = s.CompanyID AND t.MappingKey = s.MappingKey); "
+        "SELECT @before, @inserted, @after;"
     )
 
 
-def _ensure_qms_detail_mappings() -> int:
-    """Insert nested Tests/Results EntityMapping rows. Return inserted count."""
-    out = sqlcmd(qms_detail_mapping_sql(company_id())).strip()
+def _parse_mapping_seed_counts(out: str) -> tuple[int, int, int]:
+    lines = [ln.strip() for ln in out.splitlines() if ln.strip()]
+    if not lines:
+        raise RuntimeError("EntityMapping seed: empty sqlcmd output")
+    parts = lines[-1].split("|")
+    if len(parts) != 3:
+        raise RuntimeError(
+            f"EntityMapping seed: expected before|inserted|after, got {out!r}"
+        )
     try:
-        return int(out.splitlines()[-1])
-    except (ValueError, IndexError):
-        return 0
+        return int(parts[0]), int(parts[1]), int(parts[2])
+    except ValueError as exc:
+        raise RuntimeError(
+            f"EntityMapping seed: non-int sqlcmd output {out!r}"
+        ) from exc
+
+
+def _ensure_qms_detail_mappings() -> int:
+    """Insert nested Tests/Results EntityMapping rows. Return 1 if recycle needed."""
+    expected = expected_qms_detail_mapping_count()
+    before, _inserted, after = _parse_mapping_seed_counts(
+        sqlcmd(qms_detail_mapping_sql(company_id()))
+    )
+    if after < expected:
+        raise RuntimeError(
+            f"EntityMapping seed: {after}/{expected} Tests/Results maps present"
+        )
+    return 1 if before < expected else 0
 
 
 def _recycle_app_pool() -> None:
@@ -440,6 +474,5 @@ def seed_qm_rights(session: AcumaticaClient) -> None:
     with progress("seed RolesInGraph", ",".join(QM_SCREENS)):
         _ensure_qm_roles_in_graph()
     with progress("seed EntityMapping", "Tests,Results"):
-        inserted = _ensure_qms_detail_mappings()
-        if inserted:
+        if _ensure_qms_detail_mappings():
             _recycle_app_pool()

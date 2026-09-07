@@ -59,7 +59,7 @@ def publish_cmd(timeout: float) -> None:
 
 @cli.command("seed")
 def seed_cmd() -> None:
-    """Post-publish Role Quality Manager + RolesInGraph Delete on QM* screens."""
+    """Post-publish Role Quality Manager, RolesInGraph Delete on QM*, EntityMapping Tests/Results."""
     with publish.client() as session:
         publish.seed_qm_rights(session)
     click.echo("seeded")
@@ -75,7 +75,7 @@ def seed_cmd() -> None:
 )
 @click.option("--timeout", type=float, default=600.0, show_default=True)
 def deploy(output: Path | None, timeout: float) -> None:
-    """Pack, CustomizationApi publish, and post-publish Role seed."""
+    """Pack, CustomizationApi publish, and post-publish Role + EntityMapping seed."""
     path = _write_zip(output)
     click.echo(str(path))
     status = publish.publish_package(path.read_bytes(), timeout=timeout)

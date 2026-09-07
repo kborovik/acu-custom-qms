@@ -8,10 +8,6 @@ using PX.SM;
 
 namespace Lab5.QMS
 {
-    /// <summary>
-    /// PX schema-cache table name for <see cref="QMSInspectionOrder"/>.
-    /// Synonyms are not tables; PUT Locate/Insert looks up this name.
-    /// </summary>
     [PXTableName]
     [Serializable]
     public class UsrQMSInspectionOrder : PXBqlTable, IBqlTable

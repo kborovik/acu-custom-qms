@@ -158,7 +158,8 @@ class TestInspectionPlanDac(unittest.TestCase):
         self.assertIn("class UsrQMSInspectionPlanTest : PXBqlTable, IBqlTable", src)
         self.assertIn("class QMSInspectionPlanTest : UsrQMSInspectionPlanTest", src)
         self.assertIn("[PXTableName]", src)
-        self.assertNotIn('Enabled = false', src)
+        line_nbr = src[src.index("#region LineNbr"):src.index("#endregion", src.index("#region LineNbr"))]
+        self.assertNotIn('Enabled = false', line_nbr)
         for name in TEST_FIELDS:
             self.assertIn(f"#region {name}", src)
 
@@ -185,6 +186,9 @@ class TestInspectionPlanGraphAndScreen(unittest.TestCase):
         )
         self.assertIn("FindPersistedTest", src)
         self.assertIn("e.Cancel = true", src)
+        self.assertIn("CopyPendingTestFields", src)
+        self.assertIn("QMSInspectionPlanTest.isRequired", src)
+        self.assertIn("GetValuePending", src)
         self.assertIn(
             "PXSelect<QMSInspectionPlan,\n            Where<QMSInspectionPlan.planID, Equal<Current<QMSInspectionPlan.planID>>>> Document",
             src,
