@@ -142,7 +142,10 @@ class TestProjectXmlPackedItems(unittest.TestCase):
             tops = {
                 entity.get("name") for entity in endpoint.findall("TopLevelEntity")
             }
-        self.assertEqual(tops, {"InspectionPlan", "InspectionOrder", "NonConformance"})
+        self.assertEqual(
+            tops,
+            {"InspectionPlan", "InspectionOrder", "NonConformance", "StockItem"},
+        )
 
     def test_code_items_lab5_namespace(self) -> None:
         src = ROOT / "src" / "Lab5.QMS"

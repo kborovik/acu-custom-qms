@@ -65,7 +65,7 @@ T18|x|swap `lab5_qms` `dll.py` `e2e` `import acumatica_cli` → PATH `acu` CLI|V
 T19|x|preflight Makefile AGENTS.md README: `acu config check` not `uv run acu`; `uv tool install` released `acu`|V11,I.cli
 T20|x|map InspectionPlan PUT + Tests detail on `QMS/22.200.001`; PUT w/ Tests → 200 create/update; GET `$expand=Tests` returns test lines|V12,V2,I.rest
 T21|x|e2e drop InspectionPlan PUT-unavailable skip; prove PUT 200 + GET expand Tests; GitOps six-plan PUT shape no 500|V12,V2,I.rest,T20
-T22|.|map `UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays` on REST StockItem (extend Default or QMS entity writing `InventoryItemExt`)|V13,I.stock,I.dac
+T22|x|map `UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays` on REST StockItem (extend Default or QMS entity writing `InventoryItemExt`)|V13,I.stock,I.dac
 T23|.|e2e prove PARTS StockItem PUT persist + GET roundtrip; GitOps six-item `config/qms/20-stock-item-qms.yaml` apply no SQL|V13,I.stock,T22
 
 ## §B BUGS
