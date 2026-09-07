@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [v0.3.0] - 2026-09-07
+
 ### Fixed
 
 - **StockItem REST usr fields (V13):** `QMS/22.200.001` maps `StockItem` on
