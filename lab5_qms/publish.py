@@ -27,6 +27,7 @@ from lab5_qms.acu import (
     client,
     list_tenants,
     load_instance,
+    ssh_run,
 )
 from lab5_qms.progress import progress
 
@@ -324,6 +325,108 @@ def _ensure_qm_roles_in_graph() -> None:
     sqlcmd(roles_in_graph_merge_sql(roles_in_graph_company_ids()))
 
 
+# Parent collection field → detail entity fields. Customization XML nested
+# Mapping items round-trip in the project but 26.101 does not materialize
+# EntityMapping E/{parent}/{collectionField}/{detail}/{field} rows.
+QMS_DETAIL_MAPPINGS: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (
+    (
+        "InspectionPlan",
+        "Tests",
+        "InspectionPlanTest",
+        (
+            "LineNbr",
+            "TestID",
+            "Description",
+            "TestMethod",
+            "TargetValue",
+            "MinValue",
+            "MaxValue",
+            "UOM",
+            "Criticality",
+        ),
+    ),
+    (
+        "InspectionOrder",
+        "Results",
+        "InspectionOrderResult",
+        (
+            "LineNbr",
+            "TestID",
+            "TestMethod",
+            "TargetSpec",
+            "ActualNumericValue",
+            "ActualTextValue",
+            "Evaluation",
+            "Notes",
+        ),
+    ),
+)
+
+
+def qms_detail_mapping_sql(cid: int) -> str:
+    """MERGE nested EntityMapping rows for Tests/Results expand and PUT."""
+    spec_unions: list[str] = []
+    for parent, collection, detail, fields in QMS_DETAIL_MAPPINGS:
+        values = ", ".join(f"(N'{parent}', N'{collection}', N'{detail}', N'{name}')" for name in fields)
+        spec_unions.append(
+            f"SELECT Parent, Collection, Detail, FieldName FROM (VALUES {values}) "
+            "AS v(Parent, Collection, Detail, FieldName)"
+        )
+    spec = " UNION ALL ".join(spec_unions)
+    return (
+        f"DECLARE @cid int = {cid}; "
+        "DECLARE @mask varbinary(32); "
+        f"SELECT TOP 1 @mask = CompanyMask FROM {DB_NAME}.dbo.EntityMapping "
+        "WHERE CompanyID = @cid; "
+        "IF @mask IS NULL SET @mask = 0xAAAAAAAA; "
+        "DECLARE @inserted int = 0; "
+        f"MERGE {DB_NAME}.dbo.EntityMapping AS t "
+        "USING ( "
+        "SELECT @cid AS CompanyID, "
+        "N'E/' + CAST(p.EntityId AS varchar(20)) + N'/' "
+        "+ CAST(cf.EntityFieldId AS varchar(20)) + N'/' "
+        "+ CAST(d.EntityId AS varchar(20)) + N'/' "
+        "+ CAST(df.EntityFieldId AS varchar(20)) AS MappingKey, "
+        "s.Collection AS MappedObject, s.FieldName AS MappedField "
+        f"FROM ({spec}) AS s "
+        f"INNER JOIN {DB_NAME}.dbo.EntityDescription p "
+        "ON p.CompanyID = @cid AND p.InterfaceName = N'QMS' "
+        "AND p.ObjectName = s.Parent "
+        f"INNER JOIN {DB_NAME}.dbo.EntityDescription d "
+        "ON d.CompanyID = @cid AND d.InterfaceName = N'QMS' "
+        "AND d.ObjectName = s.Detail "
+        f"INNER JOIN {DB_NAME}.dbo.EntityFieldDescription cf "
+        "ON cf.CompanyID = @cid AND cf.EntityId = p.EntityId "
+        "AND cf.FieldName = s.Collection "
+        f"INNER JOIN {DB_NAME}.dbo.EntityFieldDescription df "
+        "ON df.CompanyID = @cid AND df.EntityId = d.EntityId "
+        "AND df.FieldName = s.FieldName "
+        ") AS s ON t.CompanyID = s.CompanyID AND t.MappingKey = s.MappingKey "
+        "WHEN NOT MATCHED THEN INSERT ("
+        "CompanyID, CompanyMask, MappingKey, MappedObject, MappedField"
+        ") VALUES (s.CompanyID, @mask, s.MappingKey, s.MappedObject, s.MappedField); "
+        "SET @inserted = @@ROWCOUNT; "
+        "SELECT @inserted;"
+    )
+
+
+def _ensure_qms_detail_mappings() -> int:
+    """Insert nested Tests/Results EntityMapping rows. Return inserted count."""
+    out = sqlcmd(qms_detail_mapping_sql(company_id())).strip()
+    try:
+        return int(out.splitlines()[-1])
+    except (ValueError, IndexError):
+        return 0
+
+
+def _recycle_app_pool() -> None:
+    inst = instance()
+    if not inst.ssh:
+        return
+    ssh_run("Restart-WebAppPool -Name AcumaticaERP")
+    wait_published(timeout=120.0)
+
+
 def seed_qm_rights(session: AcumaticaClient) -> None:
     """Post-publish Role Quality Manager + QM RolesInGraph. No ACU_USER attach."""
     with progress("seed Role", QUALITY_MANAGER_ROLE):
@@ -336,3 +439,7 @@ def seed_qm_rights(session: AcumaticaClient) -> None:
         _ensure_quality_manager_role_row()
     with progress("seed RolesInGraph", ",".join(QM_SCREENS)):
         _ensure_qm_roles_in_graph()
+    with progress("seed EntityMapping", "Tests,Results"):
+        inserted = _ensure_qms_detail_mappings()
+        if inserted:
+            _recycle_app_pool()

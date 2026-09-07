@@ -44,6 +44,33 @@
         </Mapping>
         <Mapping field="Tests">
           <To object="Tests" field="" />
+          <Mapping field="LineNbr">
+            <To object="Tests" field="LineNbr" />
+          </Mapping>
+          <Mapping field="TestID">
+            <To object="Tests" field="TestID" />
+          </Mapping>
+          <Mapping field="Description">
+            <To object="Tests" field="Description" />
+          </Mapping>
+          <Mapping field="TestMethod">
+            <To object="Tests" field="TestMethod" />
+          </Mapping>
+          <Mapping field="TargetValue">
+            <To object="Tests" field="TargetValue" />
+          </Mapping>
+          <Mapping field="MinValue">
+            <To object="Tests" field="MinValue" />
+          </Mapping>
+          <Mapping field="MaxValue">
+            <To object="Tests" field="MaxValue" />
+          </Mapping>
+          <Mapping field="UOM">
+            <To object="Tests" field="UOM" />
+          </Mapping>
+          <Mapping field="Criticality">
+            <To object="Tests" field="Criticality" />
+          </Mapping>
         </Mapping>
       </Mappings>
     </TopLevelEntity>
@@ -59,35 +86,6 @@
         <Field name="UOM" type="StringValue" />
         <Field name="Criticality" type="StringValue" />
       </Fields>
-      <Mappings>
-        <Mapping field="LineNbr">
-          <To object="Tests" field="LineNbr" />
-        </Mapping>
-        <Mapping field="TestID">
-          <To object="Tests" field="TestID" />
-        </Mapping>
-        <Mapping field="Description">
-          <To object="Tests" field="Description" />
-        </Mapping>
-        <Mapping field="TestMethod">
-          <To object="Tests" field="TestMethod" />
-        </Mapping>
-        <Mapping field="TargetValue">
-          <To object="Tests" field="TargetValue" />
-        </Mapping>
-        <Mapping field="MinValue">
-          <To object="Tests" field="MinValue" />
-        </Mapping>
-        <Mapping field="MaxValue">
-          <To object="Tests" field="MaxValue" />
-        </Mapping>
-        <Mapping field="UOM">
-          <To object="Tests" field="UOM" />
-        </Mapping>
-        <Mapping field="Criticality">
-          <To object="Tests" field="Criticality" />
-        </Mapping>
-      </Mappings>
     </Detail>
     <TopLevelEntity name="InspectionOrder" screen="QM301000">
       <Fields>
@@ -144,6 +142,30 @@
         </Mapping>
         <Mapping field="Results">
           <To object="Results" field="" />
+          <Mapping field="LineNbr">
+            <To object="Results" field="LineNbr" />
+          </Mapping>
+          <Mapping field="TestID">
+            <To object="Results" field="TestID" />
+          </Mapping>
+          <Mapping field="TestMethod">
+            <To object="Results" field="TestMethod" />
+          </Mapping>
+          <Mapping field="TargetSpec">
+            <To object="Results" field="TargetSpec" />
+          </Mapping>
+          <Mapping field="ActualNumericValue">
+            <To object="Results" field="ActualNumericValue" />
+          </Mapping>
+          <Mapping field="ActualTextValue">
+            <To object="Results" field="ActualTextValue" />
+          </Mapping>
+          <Mapping field="Evaluation">
+            <To object="Results" field="Evaluation" />
+          </Mapping>
+          <Mapping field="Notes">
+            <To object="Results" field="Notes" />
+          </Mapping>
         </Mapping>
       </Mappings>
       <Actions>
@@ -162,32 +184,6 @@
         <Field name="Evaluation" type="StringValue" />
         <Field name="Notes" type="StringValue" />
       </Fields>
-      <Mappings>
-        <Mapping field="LineNbr">
-          <To object="Results" field="LineNbr" />
-        </Mapping>
-        <Mapping field="TestID">
-          <To object="Results" field="TestID" />
-        </Mapping>
-        <Mapping field="TestMethod">
-          <To object="Results" field="TestMethod" />
-        </Mapping>
-        <Mapping field="TargetSpec">
-          <To object="Results" field="TargetSpec" />
-        </Mapping>
-        <Mapping field="ActualNumericValue">
-          <To object="Results" field="ActualNumericValue" />
-        </Mapping>
-        <Mapping field="ActualTextValue">
-          <To object="Results" field="ActualTextValue" />
-        </Mapping>
-        <Mapping field="Evaluation">
-          <To object="Results" field="Evaluation" />
-        </Mapping>
-        <Mapping field="Notes">
-          <To object="Results" field="Notes" />
-        </Mapping>
-      </Mappings>
     </Detail>
     <TopLevelEntity name="NonConformance" screen="QM302000">
       <Fields>

@@ -391,6 +391,8 @@ class TestInspectionOrderGraphAndScreen(unittest.TestCase):
         )
         self.assertIn("public PXAction<QMSInspectionOrder> EvaluateResults;", src)
         self.assertIn("QMSInspectionOrderRules.EvaluateLine", src)
+        self.assertIn("FindPersistedResult", src)
+        self.assertIn("QMSInspectionOrderResult_RowInserting", src)
         self.assertIn("QMSInspectionOrderRules.ShelfLifePass", src)
         self.assertIn("QMSInspectionOrderRules.Rollup", src)
         self.assertIn("ext.UsrMinShelfLifeDays", src)

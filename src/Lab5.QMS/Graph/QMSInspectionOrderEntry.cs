@@ -16,6 +16,29 @@ namespace Lab5.QMS
 
         public PXSetup<QMSSetup> QMSSetup;
 
+        protected virtual void QMSInspectionOrderResult_RowInserting(PXCache sender, PXRowInsertingEventArgs e)
+        {
+            QMSInspectionOrderResult row = e.Row as QMSInspectionOrderResult;
+            if (row == null || row.LineNbr == null || row.LineNbr == 0)
+            {
+                return;
+            }
+            QMSInspectionOrderResult existing = FindPersistedResult(row.LineNbr);
+            if (existing == null || ReferenceEquals(existing, row))
+            {
+                return;
+            }
+            existing.TestID = row.TestID;
+            existing.TestMethod = row.TestMethod;
+            existing.TargetSpec = row.TargetSpec;
+            existing.ActualNumericValue = row.ActualNumericValue;
+            existing.ActualTextValue = row.ActualTextValue;
+            existing.Evaluation = row.Evaluation;
+            existing.Notes = row.Notes;
+            Results.Update(existing);
+            e.Cancel = true;
+        }
+
         public PXAction<QMSInspectionOrder> EvaluateResults;
         public PXAction<QMSInspectionOrder> ReleaseLotDecision;
 
@@ -153,6 +176,27 @@ namespace Lab5.QMS
                 order.ReceiptNbr);
             graph.Document.Insert(ncr);
             graph.Actions.PressSave();
+        }
+
+        protected virtual QMSInspectionOrderResult FindPersistedResult(int? lineNbr)
+        {
+            if (lineNbr == null)
+            {
+                return null;
+            }
+            foreach (QMSInspectionOrderResult row in Results.Select())
+            {
+                if (row.LineNbr != null
+                    && row.LineNbr.Value == lineNbr.Value
+                    && Results.Cache.GetStatus(row) != PXEntryStatus.Inserted)
+                {
+                    return row;
+                }
+            }
+            return PXSelect<QMSInspectionOrderResult,
+                Where<QMSInspectionOrderResult.inspectionOrderNbr, Equal<Current<QMSInspectionOrder.inspectionOrderNbr>>,
+                    And<QMSInspectionOrderResult.lineNbr, Equal<Required<QMSInspectionOrderResult.lineNbr>>>>>
+                .Select(this, lineNbr);
         }
 
         protected virtual QMSInspectionOrderResult FindResult(int? lineNbr)

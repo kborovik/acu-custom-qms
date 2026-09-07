@@ -46,7 +46,44 @@ namespace Lab5.QMS
                     }
                 }
                 row.LineNbr = max + 10;
+                return;
             }
+            QMSInspectionPlanTest existing = FindPersistedTest(row.LineNbr);
+            if (existing == null || ReferenceEquals(existing, row))
+            {
+                return;
+            }
+            existing.TestID = row.TestID;
+            existing.Description = row.Description;
+            existing.TestMethod = row.TestMethod;
+            existing.TargetValue = row.TargetValue;
+            existing.MinValue = row.MinValue;
+            existing.MaxValue = row.MaxValue;
+            existing.UOM = row.UOM;
+            existing.Criticality = row.Criticality;
+            Tests.Update(existing);
+            e.Cancel = true;
+        }
+
+        protected virtual QMSInspectionPlanTest FindPersistedTest(int? lineNbr)
+        {
+            if (lineNbr == null)
+            {
+                return null;
+            }
+            foreach (QMSInspectionPlanTest test in Tests.Select())
+            {
+                if (test.LineNbr != null
+                    && test.LineNbr.Value == lineNbr.Value
+                    && Tests.Cache.GetStatus(test) != PXEntryStatus.Inserted)
+                {
+                    return test;
+                }
+            }
+            return PXSelect<QMSInspectionPlanTest,
+                Where<QMSInspectionPlanTest.planID, Equal<Current<QMSInspectionPlan.planID>>,
+                    And<QMSInspectionPlanTest.lineNbr, Equal<Required<QMSInspectionPlanTest.lineNbr>>>>>
+                .Select(this, lineNbr);
         }
 
         protected virtual void QMSInspectionPlanTest_RowPersisting(PXCache sender, PXRowPersistingEventArgs e)

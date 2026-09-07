@@ -79,6 +79,8 @@ class TestRolesInGraphSeedV10(unittest.TestCase):
         self.assertIn("def seed_qm_rights", publish)
         self.assertIn("_ensure_qm_roles_in_graph", publish)
         self.assertIn("roles_in_graph_company_ids()", publish)
+        self.assertIn("_ensure_qms_detail_mappings", publish)
+        self.assertIn("E/{parent}/{collectionField}/{detail}/{field}", publish)
 
 
 class TestNoInspectionPlan403SkipV10(unittest.TestCase):
@@ -89,12 +91,12 @@ class TestNoInspectionPlan403SkipV10(unittest.TestCase):
 
     def test_functional_plan_put_does_not_skip_403(self) -> None:
         src = FUNCTIONAL_E2E.read_text(encoding="utf-8")
-        self.assertIn('if "403" in text or "insufficient rights"', src)
-        self.assertIn("raise", src)
+        self.assertNotIn("InspectionPlan PUT unavailable", src)
         skipped = [
             line
             for line in src.splitlines()
-            if "skipTest" in line and "403" in line
+            if "skipTest" in line
+            and ("403" in line or "PUT unavailable" in line)
         ]
         self.assertEqual(skipped, [])
 

@@ -8,7 +8,11 @@
   with Tests creates or updates a plan. GET `{PlanID}?$expand=Tests` returns
   test lines. Persist DACs bind to `UsrQMS*` via `[PXTableName]` because
   SQL synonyms are not in the PX schema cache (PUT 500
-  `QMSInspectionPlan` does not exist).
+  `QMSInspectionPlan` does not exist). Detail field maps nest under the
+  parent `Tests` / `Results` Mapping (`Detail` has Fields only). Post-publish
+  seed writes `EntityMapping` `E/{parent}/{collectionField}/{detail}/{field}`
+  rows so `$expand=Tests` returns lines. LineNbr re-PUT upserts existing
+  test/result rows.
 
 ## [v0.2.0] - 2026-09-06
 

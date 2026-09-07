@@ -183,6 +183,8 @@ class TestInspectionPlanGraphAndScreen(unittest.TestCase):
             "class QMSInspectionPlanMaint : PXGraph<QMSInspectionPlanMaint, QMSInspectionPlan>",
             src,
         )
+        self.assertIn("FindPersistedTest", src)
+        self.assertIn("e.Cancel = true", src)
         self.assertIn(
             "PXSelect<QMSInspectionPlan,\n            Where<QMSInspectionPlan.planID, Equal<Current<QMSInspectionPlan.planID>>>> Document",
             src,
