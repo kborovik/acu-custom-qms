@@ -69,7 +69,9 @@ class TestQmsSetupNumbering(unittest.TestCase):
     def test_setup_dac_defaults_and_selector(self) -> None:
         src = SETUP_CS.read_text(encoding="utf-8")
         self.assertIn("namespace Lab5.QMS", src)
-        self.assertIn("class QMSSetup : PXBqlTable, IBqlTable", src)
+        self.assertIn("class UsrQMSSetup : PXBqlTable, IBqlTable", src)
+        self.assertIn("class QMSSetup : UsrQMSSetup", src)
+        self.assertIn("[PXTableName]", src)
         self.assertIn("[PXPrimaryGraph(typeof(QMSSetupMaint))]", src)
         order = _region(src, "InspectionOrderNumberingID")
         self.assertIn("[PXDBString(10, IsUnicode = true)]", order)

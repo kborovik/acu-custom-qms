@@ -172,7 +172,9 @@ class TestNonConformanceDac(unittest.TestCase):
     def test_dac_fields(self) -> None:
         src = DAC_CS.read_text(encoding="utf-8")
         self.assertIn("namespace Lab5.QMS", src)
-        self.assertIn("class QMSNonConformance : PXBqlTable, IBqlTable", src)
+        self.assertIn("class UsrQMSNonConformance : PXBqlTable, IBqlTable", src)
+        self.assertIn("class QMSNonConformance : UsrQMSNonConformance", src)
+        self.assertIn("[PXTableName]", src)
         self.assertIn("[PXPrimaryGraph(typeof(QMSNonConformanceEntry))]", src)
         for name in NCR_FIELDS:
             self.assertIn(f"#region {name}", src)

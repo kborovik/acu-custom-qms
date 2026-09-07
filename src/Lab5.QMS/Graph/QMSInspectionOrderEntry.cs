@@ -16,6 +16,59 @@ namespace Lab5.QMS
 
         public PXSetup<QMSSetup> QMSSetup;
 
+        protected virtual void QMSInspectionOrderResult_RowInserting(PXCache sender, PXRowInsertingEventArgs e)
+        {
+            QMSInspectionOrderResult row = e.Row as QMSInspectionOrderResult;
+            if (row == null)
+            {
+                return;
+            }
+            if (row.LineNbr == null || row.LineNbr == 0)
+            {
+                int max = 0;
+                foreach (QMSInspectionOrderResult result in Results.Select())
+                {
+                    if (result.LineNbr != null && result.LineNbr.Value > max)
+                    {
+                        max = result.LineNbr.Value;
+                    }
+                }
+                row.LineNbr = max + 10;
+                return;
+            }
+            QMSInspectionOrderResult existing = FindPersistedResult(row.LineNbr);
+            if (existing == null || ReferenceEquals(existing, row))
+            {
+                return;
+            }
+            CopyPendingResultFields(sender, row, existing);
+            Results.Update(existing);
+            e.Cancel = true;
+        }
+
+        protected virtual void CopyPendingResultFields(
+            PXCache sender, QMSInspectionOrderResult src, QMSInspectionOrderResult dst)
+        {
+            CopyPendingField<QMSInspectionOrderResult.testID>(sender, src, dst);
+            CopyPendingField<QMSInspectionOrderResult.testMethod>(sender, src, dst);
+            CopyPendingField<QMSInspectionOrderResult.targetSpec>(sender, src, dst);
+            CopyPendingField<QMSInspectionOrderResult.actualNumericValue>(sender, src, dst);
+            CopyPendingField<QMSInspectionOrderResult.actualTextValue>(sender, src, dst);
+            CopyPendingField<QMSInspectionOrderResult.evaluation>(sender, src, dst);
+            CopyPendingField<QMSInspectionOrderResult.notes>(sender, src, dst);
+        }
+
+        protected virtual void CopyPendingField<TField>(PXCache sender, object src, object dst)
+            where TField : IBqlField
+        {
+            object pending = sender.GetValuePending<TField>(src);
+            if (ReferenceEquals(pending, PXCache.NotSetValue))
+            {
+                return;
+            }
+            sender.SetValue<TField>(dst, sender.GetValue<TField>(src));
+        }
+
         public PXAction<QMSInspectionOrder> EvaluateResults;
         public PXAction<QMSInspectionOrder> ReleaseLotDecision;
 
@@ -153,6 +206,27 @@ namespace Lab5.QMS
                 order.ReceiptNbr);
             graph.Document.Insert(ncr);
             graph.Actions.PressSave();
+        }
+
+        protected virtual QMSInspectionOrderResult FindPersistedResult(int? lineNbr)
+        {
+            if (lineNbr == null)
+            {
+                return null;
+            }
+            foreach (QMSInspectionOrderResult row in Results.Select())
+            {
+                if (row.LineNbr != null
+                    && row.LineNbr.Value == lineNbr.Value
+                    && Results.Cache.GetStatus(row) != PXEntryStatus.Inserted)
+                {
+                    return row;
+                }
+            }
+            return PXSelect<QMSInspectionOrderResult,
+                Where<QMSInspectionOrderResult.inspectionOrderNbr, Equal<Current<QMSInspectionOrder.inspectionOrderNbr>>,
+                    And<QMSInspectionOrderResult.lineNbr, Equal<Required<QMSInspectionOrderResult.lineNbr>>>>>
+                .Select(this, lineNbr);
         }
 
         protected virtual QMSInspectionOrderResult FindResult(int? lineNbr)

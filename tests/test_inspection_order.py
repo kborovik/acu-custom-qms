@@ -339,13 +339,17 @@ class TestInspectionOrderDac(unittest.TestCase):
     def test_order_dac_fields(self) -> None:
         src = ORDER_CS.read_text(encoding="utf-8")
         self.assertIn("namespace Lab5.QMS", src)
-        self.assertIn("class QMSInspectionOrder : PXBqlTable, IBqlTable", src)
+        self.assertIn("class UsrQMSInspectionOrder : PXBqlTable, IBqlTable", src)
+        self.assertIn("class QMSInspectionOrder : UsrQMSInspectionOrder", src)
+        self.assertIn("[PXTableName]", src)
         for name in ORDER_FIELDS:
             self.assertIn(f"#region {name}", src)
 
     def test_result_dac_fields(self) -> None:
         src = RESULT_CS.read_text(encoding="utf-8")
-        self.assertIn("class QMSInspectionOrderResult : PXBqlTable, IBqlTable", src)
+        self.assertIn("class UsrQMSInspectionOrderResult : PXBqlTable, IBqlTable", src)
+        self.assertIn("class QMSInspectionOrderResult : UsrQMSInspectionOrderResult", src)
+        self.assertIn("[PXTableName]", src)
         for name in RESULT_FIELDS:
             self.assertIn(f"#region {name}", src)
 
@@ -387,6 +391,11 @@ class TestInspectionOrderGraphAndScreen(unittest.TestCase):
         )
         self.assertIn("public PXAction<QMSInspectionOrder> EvaluateResults;", src)
         self.assertIn("QMSInspectionOrderRules.EvaluateLine", src)
+        self.assertIn("FindPersistedResult", src)
+        self.assertIn("QMSInspectionOrderResult_RowInserting", src)
+        self.assertIn("CopyPendingResultFields", src)
+        self.assertIn("row.LineNbr = max + 10", src)
+        self.assertIn("GetValuePending", src)
         self.assertIn("QMSInspectionOrderRules.ShelfLifePass", src)
         self.assertIn("QMSInspectionOrderRules.Rollup", src)
         self.assertIn("ext.UsrMinShelfLifeDays", src)

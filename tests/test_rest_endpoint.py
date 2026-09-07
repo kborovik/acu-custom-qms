@@ -3,7 +3,7 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""T8 / V2: REST endpoint QMS/22.200.001 InspectionPlan GET, InspectionOrder GET/PUT, NonConformance GET/POST."""
+"""T8 / T20 / V2 / V12: REST endpoint QMS/22.200.001 InspectionPlan GET/PUT, InspectionOrder GET/PUT, NonConformance GET/POST."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ QMS_CS = ROOT / "src" / "Lab5.QMS" / "QMS.cs"
 NS = "{http://www.acumatica.com/entity/maintenance/5.31}"
 
 ENTITY_VERBS = {
-    "InspectionPlan": ("GET",),
+    "InspectionPlan": ("GET", "PUT"),
     "InspectionOrder": ("GET", "PUT"),
     "NonConformance": ("GET", "POST"),
 }
@@ -115,6 +115,21 @@ def _mappings(entity: ET.Element) -> dict[str, tuple[str | None, str | None]]:
     return out
 
 
+def _nested_mappings(entity: ET.Element, field: str) -> dict[str, tuple[str | None, str | None]]:
+    """Detail field maps nest under the parent collection Mapping (Detail has no Mappings)."""
+    out: dict[str, tuple[str | None, str | None]] = {}
+    for mapping in entity.findall(f"{NS}Mappings/{NS}Mapping"):
+        if mapping.get("field") != field:
+            continue
+        for child in mapping.findall(f"{NS}Mapping"):
+            to = child.find(f"{NS}To")
+            out[child.get("field")] = (
+                None if to is None else to.get("object"),
+                None if to is None else to.get("field"),
+            )
+    return out
+
+
 def _top(name: str) -> ET.Element:
     endpoint = _endpoint()
     for entity in endpoint.findall(f"{NS}TopLevelEntity"):
@@ -151,7 +166,7 @@ class TestQmsEndpointIdentityV2(unittest.TestCase):
             self.assertIn(" ".join(verbs), xml)
 
 
-class TestInspectionPlanGetV2(unittest.TestCase):
+class TestInspectionPlanGetPutV12(unittest.TestCase):
     def test_screen_and_plan_fields(self) -> None:
         plan = _top("InspectionPlan")
         self.assertEqual(plan.get("screen"), "QM201000")
@@ -163,7 +178,8 @@ class TestInspectionPlanGetV2(unittest.TestCase):
         self.assertEqual(mappings["Tests"], ("Tests", ""))
         tests = _detail("InspectionPlanTest")
         self.assertEqual(_fields(tests), INSPECTION_PLAN_TEST_FIELDS)
-        test_maps = _mappings(tests)
+        self.assertEqual(_mappings(tests), {})
+        test_maps = _nested_mappings(plan, "Tests")
         for name in INSPECTION_PLAN_TEST_FIELDS:
             self.assertEqual(test_maps[name], ("Tests", name))
 
@@ -205,7 +221,8 @@ class TestInspectionOrderPutV2(unittest.TestCase):
         )
         results = _detail("InspectionOrderResult")
         self.assertEqual(_fields(results), INSPECTION_ORDER_RESULT_FIELDS)
-        result_maps = _mappings(results)
+        self.assertEqual(_mappings(results), {})
+        result_maps = _nested_mappings(order, "Results")
         for name in INSPECTION_ORDER_RESULT_FIELDS:
             self.assertEqual(result_maps[name], ("Results", name))
 

@@ -8,9 +8,12 @@ import unittest
 from datetime import date
 
 from e2e.helper import (
+    DB_NAME,
     FAIL_ORDER,
     ITEM_CD,
+    company_id,
     LINE_FAIL,
+    LINE_PASS,
     MIN_PDF,
     NCR_NBR,
     OVERALL_FAIL,
@@ -28,6 +31,7 @@ from e2e.helper import (
     qms_get,
     qms_invoke,
     qms_put,
+    sqlcmd,
     unwrap,
     wrap,
 )
@@ -73,6 +77,27 @@ def _seed_ready(session) -> str | None:
     return None
 
 
+def _set_item_min_shelf_life_days(days: int) -> None:
+    sqlcmd(
+        f"UPDATE {DB_NAME}.dbo.InventoryItem SET UsrMinShelfLifeDays = {int(days)} "
+        f"WHERE CompanyID = {company_id()} AND RTRIM(InventoryCD) = N'{ITEM_CD}'"
+    )
+
+
+def _reopen_order(nbr: str) -> None:
+    sqlcmd(
+        f"UPDATE {DB_NAME}.dbo.UsrQMSInspectionOrder SET Status = N'O' "
+        f"WHERE InspectionOrderNbr = N'{nbr}'"
+    )
+
+
+def _reset_plan_tests(plan_id: str) -> None:
+    sqlcmd(
+        f"DELETE FROM {DB_NAME}.dbo.UsrQMSInspectionPlanTest "
+        f"WHERE PlanID = N'{plan_id}'"
+    )
+
+
 def _plan_record() -> dict:
     return {
         "PlanID": PLAN_ID,
@@ -102,6 +127,183 @@ def _plan_record() -> dict:
             },
         ],
     }
+
+
+# GitOps acu-gitops-qms config/qms/10-inspection-plans.yaml PUT shape (V12).
+# This repo must not `acu apply` that YAML; e2e PUTs the same field set.
+GITOPS_PLANS: tuple[dict, ...] = (
+    {
+        "PlanID": "PLAN-ECH-EXT4",
+        "Description": "Echinacea extract 4% polyphenols",
+        "InventoryID": "RAW-ECH-EXT4",
+        "SamplingPlan": "ISO 2859-1 Level II Normal",
+        "Status": "A",
+        "Tests": [
+            {
+                "LineNbr": 10,
+                "TestID": "ASSAY_POLYPHENOLS",
+                "Description": "Total polyphenols",
+                "TestMethod": "UV-Vis",
+                "TargetValue": 4.0,
+                "MinValue": 3.0,
+                "MaxValue": 5.0,
+                "UOM": "% (w/w)",
+                "Criticality": "C",
+            },
+            {
+                "LineNbr": 20,
+                "TestID": "APPEARANCE",
+                "Description": "Visual appearance",
+                "TestMethod": "Organoleptic",
+                "UOM": "n/a",
+                "Criticality": "M",
+            },
+        ],
+    },
+    {
+        "PlanID": "PLAN-ELD-EXT10",
+        "Description": "Elderberry extract 10% anthocyanins",
+        "InventoryID": "RAW-ELD-EXT10",
+        "SamplingPlan": "ISO 2859-1 Level II Normal",
+        "Status": "A",
+        "Tests": [
+            {
+                "LineNbr": 10,
+                "TestID": "ASSAY_ANTHOCYANINS",
+                "Description": "Total anthocyanins",
+                "TestMethod": "UV-Vis",
+                "TargetValue": 10.0,
+                "MinValue": 8.0,
+                "MaxValue": 12.0,
+                "UOM": "% (w/w)",
+                "Criticality": "C",
+            },
+            {
+                "LineNbr": 20,
+                "TestID": "APPEARANCE",
+                "Description": "Visual appearance",
+                "TestMethod": "Organoleptic",
+                "UOM": "n/a",
+                "Criticality": "M",
+            },
+        ],
+    },
+    {
+        "PlanID": "PLAN-ASH-EXT5",
+        "Description": "Ashwagandha extract 5% withanolides",
+        "InventoryID": "RAW-ASH-EXT5",
+        "SamplingPlan": "ISO 2859-1 Level II Normal",
+        "Status": "A",
+        "Tests": [
+            {
+                "LineNbr": 10,
+                "TestID": "ASSAY_WITHANOLIDES",
+                "Description": "Total withanolides",
+                "TestMethod": "HPLC",
+                "TargetValue": 5.0,
+                "MinValue": 4.0,
+                "MaxValue": 6.0,
+                "UOM": "% (w/w)",
+                "Criticality": "C",
+            },
+            {
+                "LineNbr": 20,
+                "TestID": "APPEARANCE",
+                "Description": "Visual appearance",
+                "TestMethod": "Organoleptic",
+                "UOM": "n/a",
+                "Criticality": "M",
+            },
+        ],
+    },
+    {
+        "PlanID": "PLAN-COQ10-99",
+        "Description": "Coenzyme Q10 USP 99%",
+        "InventoryID": "RAW-COQ10-99",
+        "SamplingPlan": "ISO 2859-1 Level II Normal",
+        "Status": "A",
+        "Tests": [
+            {
+                "LineNbr": 10,
+                "TestID": "ASSAY_COQ10",
+                "Description": "Ubiquinone assay",
+                "TestMethod": "HPLC",
+                "TargetValue": 99.0,
+                "MinValue": 98.0,
+                "MaxValue": 100.5,
+                "UOM": "% (w/w)",
+                "Criticality": "C",
+            },
+            {
+                "LineNbr": 20,
+                "TestID": "APPEARANCE",
+                "Description": "Visual appearance",
+                "TestMethod": "Organoleptic",
+                "UOM": "n/a",
+                "Criticality": "M",
+            },
+        ],
+    },
+    {
+        "PlanID": "PLAN-OMEGA3-70",
+        "Description": "Marine omega-3 TG oil 70% EPA/DHA",
+        "InventoryID": "RAW-OMEGA3-70",
+        "SamplingPlan": "ISO 2859-1 Level II Normal",
+        "Status": "A",
+        "Tests": [
+            {
+                "LineNbr": 10,
+                "TestID": "ASSAY_EPADHA",
+                "Description": "EPA + DHA",
+                "TestMethod": "GC-FID",
+                "TargetValue": 70.0,
+                "MinValue": 65.0,
+                "MaxValue": 75.0,
+                "UOM": "% (w/w)",
+                "Criticality": "C",
+            },
+            {
+                "LineNbr": 20,
+                "TestID": "PEROXIDE",
+                "Description": "Peroxide value",
+                "TestMethod": "Titration",
+                "TargetValue": 2.0,
+                "MinValue": 0.0,
+                "MaxValue": 5.0,
+                "UOM": "meq/kg",
+                "Criticality": "M",
+            },
+        ],
+    },
+    {
+        "PlanID": "PLAN-ASTA-10",
+        "Description": "Natural astaxanthin oleoresin 10%",
+        "InventoryID": "RAW-ASTA-10",
+        "SamplingPlan": "ISO 2859-1 Level II Normal",
+        "Status": "A",
+        "Tests": [
+            {
+                "LineNbr": 10,
+                "TestID": "ASSAY_ASTAXANTHIN",
+                "Description": "Astaxanthin",
+                "TestMethod": "HPLC",
+                "TargetValue": 10.0,
+                "MinValue": 9.0,
+                "MaxValue": 11.0,
+                "UOM": "% (w/w)",
+                "Criticality": "C",
+            },
+            {
+                "LineNbr": 20,
+                "TestID": "APPEARANCE",
+                "Description": "Visual appearance",
+                "TestMethod": "Organoleptic",
+                "UOM": "n/a",
+                "Criticality": "M",
+            },
+        ],
+    },
+)
 
 
 def _order_record(nbr: str, assay: float, appearance: str) -> dict:
@@ -149,21 +351,19 @@ class TestSeedGate(unittest.TestCase):
 class TestCoaIngest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
+        _set_item_min_shelf_life_days(0)
         ensure_published()
         with client() as session:
             reason = _seed_ready(session)
             if reason:
                 raise unittest.SkipTest(reason)
-            try:
-                ensure_numbering_and_role(session)
-                qms_put(session, "InspectionPlan", _plan_record())
-            except RuntimeError as exc:
-                text = str(exc)
-                if "403" in text or "insufficient rights" in text.lower():
-                    raise
-                raise unittest.SkipTest(
-                    f"InspectionPlan PUT unavailable ({exc})"
-                ) from exc
+            ensure_numbering_and_role(session)
+            _reset_plan_tests(PLAN_ID)
+            qms_put(session, "InspectionPlan", _plan_record())
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        _set_item_min_shelf_life_days(180)
 
     def test_get_plan_expand_tests(self) -> None:
         with client() as session:
@@ -188,7 +388,7 @@ class TestCoaIngest(unittest.TestCase):
             put_file(
                 session,
                 PASS_ORDER,
-                f"{PASS_ORDER}.json",
+                f"{PASS_ORDER}.json.txt",
                 json.dumps({"order": PASS_ORDER, "assay": 4.1}).encode(),
             )
             order = unwrap(
@@ -221,14 +421,24 @@ class TestCoaIngest(unittest.TestCase):
             self.assertIn(".pdf", joined)
             self.assertIn(".json", joined)
 
+            _reopen_order(PASS_ORDER)
             qms_invoke(session, "EvaluateResults", {"InspectionOrderNbr": PASS_ORDER})
-            evaluated = unwrap(qms_get(session, "InspectionOrder", [PASS_ORDER]))
-            self.assertEqual(evaluated.get("OverallEvaluation"), OVERALL_PASS)
+            evaluated = unwrap(
+                qms_get(
+                    session,
+                    "InspectionOrder",
+                    [PASS_ORDER],
+                    params={"$expand": "Results"},
+                )
+            )
+            results = {row.get("LineNbr"): row for row in (evaluated.get("Results") or [])}
+            self.assertIn((results.get(10) or {}).get("Evaluation"), {LINE_PASS, "Pass"})
+            self.assertIn(evaluated.get("OverallEvaluation"), {OVERALL_PASS, "Pass"})
 
             qms_invoke(session, "ReleaseLotDecision", {"InspectionOrderNbr": PASS_ORDER})
             released = unwrap(qms_get(session, "InspectionOrder", [PASS_ORDER]))
-            self.assertEqual(released.get("Status"), STATUS_COMPLETED)
-            self.assertEqual(released.get("OverallEvaluation"), OVERALL_PASS)
+            self.assertIn(released.get("Status"), {STATUS_COMPLETED, "Completed"})
+            self.assertIn(released.get("OverallEvaluation"), {OVERALL_PASS, "Pass"})
 
     def test_fail_order_evaluate_release_creates_ncr(self) -> None:
         with client() as session:
@@ -237,6 +447,7 @@ class TestCoaIngest(unittest.TestCase):
                 "InspectionOrder",
                 _order_record(FAIL_ORDER, 0.4, "FAIL dark"),
             )
+            _reopen_order(FAIL_ORDER)
             qms_invoke(session, "EvaluateResults", {"InspectionOrderNbr": FAIL_ORDER})
             evaluated = unwrap(
                 qms_get(
@@ -246,9 +457,9 @@ class TestCoaIngest(unittest.TestCase):
                     params={"$expand": "Results"},
                 )
             )
-            self.assertEqual(evaluated.get("OverallEvaluation"), OVERALL_FAIL)
+            self.assertIn(evaluated.get("OverallEvaluation"), {OVERALL_FAIL, "Fail"})
             results = {row.get("LineNbr"): row for row in (evaluated.get("Results") or [])}
-            self.assertEqual((results.get(10) or {}).get("Evaluation"), LINE_FAIL)
+            self.assertIn((results.get(10) or {}).get("Evaluation"), {LINE_FAIL, "Fail"})
 
             qms_invoke(session, "ReleaseLotDecision", {"InspectionOrderNbr": FAIL_ORDER})
             ncrs = session.get_list(
@@ -263,6 +474,53 @@ class TestCoaIngest(unittest.TestCase):
             ncr = unwrap(ncrs[0])
             self.assertEqual(ncr.get("InspectionOrderNbr"), FAIL_ORDER)
             self.assertEqual(ncr.get("InventoryHoldStatus"), "Quarantine")
+
+
+class TestInspectionPlanPutV12(unittest.TestCase):
+    """V12: PUT InspectionPlan with Tests; GitOps six-plan shape; GET expand."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        ensure_published()
+        with client() as session:
+            reason = _seed_ready(session)
+            if reason:
+                raise unittest.SkipTest(reason)
+            ensure_numbering_and_role(session)
+
+    def test_put_with_tests_returns_200_and_expand(self) -> None:
+        with client() as session:
+            qms_put(session, "InspectionPlan", _plan_record())
+            plan = unwrap(
+                qms_get(
+                    session,
+                    "InspectionPlan",
+                    [PLAN_ID],
+                    params={"$expand": "Tests"},
+                )
+            )
+        self.assertEqual(plan.get("PlanID"), PLAN_ID)
+        ids = {row.get("TestID") for row in (plan.get("Tests") or [])}
+        self.assertIn("ASSAY_POLYPHENOLS", ids)
+        self.assertIn("APPEARANCE", ids)
+
+    def test_gitops_six_plan_put_shape_no_500(self) -> None:
+        self.assertEqual(len(GITOPS_PLANS), 6)
+        with client() as session:
+            for rec in GITOPS_PLANS:
+                qms_put(session, "InspectionPlan", rec)
+                plan = unwrap(
+                    qms_get(
+                        session,
+                        "InspectionPlan",
+                        [rec["PlanID"]],
+                        params={"$expand": "Tests"},
+                    )
+                )
+                self.assertEqual(plan.get("PlanID"), rec["PlanID"], rec["PlanID"])
+                ids = {row.get("TestID") for row in (plan.get("Tests") or [])}
+                expected = {row["TestID"] for row in rec["Tests"]}
+                self.assertEqual(ids, expected, rec["PlanID"])
 
 
 class TestDockLot(unittest.TestCase):

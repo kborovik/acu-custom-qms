@@ -192,10 +192,19 @@ def qms_invoke(
         r = session._checked(session._http.get(status_url))
 
 
+_qm_roles_recycled = False
+
+
 def ensure_qm_rights(session: AcumaticaClient) -> None:
     """Post-publish Role seed plus e2e-only ACU_USER Quality Manager attach."""
     seed_qm_rights(session)
     _ensure_acu_user_quality_manager()
+    global _qm_roles_recycled
+    if not _qm_roles_recycled:
+        from lab5_qms.publish import _recycle_app_pool
+
+        _recycle_app_pool()
+        _qm_roles_recycled = True
 
 
 def ensure_numbering_and_role(session: AcumaticaClient) -> None:

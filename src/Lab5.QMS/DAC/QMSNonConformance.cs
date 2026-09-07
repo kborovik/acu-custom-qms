@@ -8,11 +8,17 @@ using PX.SM;
 
 namespace Lab5.QMS
 {
-    /// <summary>Non-conformance / quarantine ticket. Table UsrQMSNonConformance (SQL synonym QMSNonConformance).</summary>
+    [PXTableName]
+    [Serializable]
+    public class UsrQMSNonConformance : PXBqlTable, IBqlTable
+    {
+    }
+
+    /// <summary>Non-conformance / quarantine ticket. Table UsrQMSNonConformance.</summary>
     [Serializable]
     [PXCacheName("Non-Conformance")]
     [PXPrimaryGraph(typeof(QMSNonConformanceEntry))]
-    public class QMSNonConformance : PXBqlTable, IBqlTable
+    public class QMSNonConformance : UsrQMSNonConformance
     {
         #region NCRNbr
         [PXDBString(15, IsUnicode = true, IsKey = true, InputMask = ">CCCCCCCCCCCCCCC")]

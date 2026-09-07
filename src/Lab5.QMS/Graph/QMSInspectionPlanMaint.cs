@@ -46,7 +46,62 @@ namespace Lab5.QMS
                     }
                 }
                 row.LineNbr = max + 10;
+                return;
             }
+            QMSInspectionPlanTest existing = FindPersistedTest(row.LineNbr);
+            if (existing == null || ReferenceEquals(existing, row))
+            {
+                return;
+            }
+            CopyPendingTestFields(sender, row, existing);
+            Tests.Update(existing);
+            e.Cancel = true;
+        }
+
+        protected virtual void CopyPendingTestFields(
+            PXCache sender, QMSInspectionPlanTest src, QMSInspectionPlanTest dst)
+        {
+            CopyPendingField<QMSInspectionPlanTest.testID>(sender, src, dst);
+            CopyPendingField<QMSInspectionPlanTest.description>(sender, src, dst);
+            CopyPendingField<QMSInspectionPlanTest.testMethod>(sender, src, dst);
+            CopyPendingField<QMSInspectionPlanTest.targetValue>(sender, src, dst);
+            CopyPendingField<QMSInspectionPlanTest.minValue>(sender, src, dst);
+            CopyPendingField<QMSInspectionPlanTest.maxValue>(sender, src, dst);
+            CopyPendingField<QMSInspectionPlanTest.uOM>(sender, src, dst);
+            CopyPendingField<QMSInspectionPlanTest.criticality>(sender, src, dst);
+            CopyPendingField<QMSInspectionPlanTest.isRequired>(sender, src, dst);
+        }
+
+        protected virtual void CopyPendingField<TField>(PXCache sender, object src, object dst)
+            where TField : IBqlField
+        {
+            object pending = sender.GetValuePending<TField>(src);
+            if (ReferenceEquals(pending, PXCache.NotSetValue))
+            {
+                return;
+            }
+            sender.SetValue<TField>(dst, sender.GetValue<TField>(src));
+        }
+
+        protected virtual QMSInspectionPlanTest FindPersistedTest(int? lineNbr)
+        {
+            if (lineNbr == null)
+            {
+                return null;
+            }
+            foreach (QMSInspectionPlanTest test in Tests.Select())
+            {
+                if (test.LineNbr != null
+                    && test.LineNbr.Value == lineNbr.Value
+                    && Tests.Cache.GetStatus(test) != PXEntryStatus.Inserted)
+                {
+                    return test;
+                }
+            }
+            return PXSelect<QMSInspectionPlanTest,
+                Where<QMSInspectionPlanTest.planID, Equal<Current<QMSInspectionPlan.planID>>,
+                    And<QMSInspectionPlanTest.lineNbr, Equal<Required<QMSInspectionPlanTest.lineNbr>>>>>
+                .Select(this, lineNbr);
         }
 
         protected virtual void QMSInspectionPlanTest_RowPersisting(PXCache sender, PXRowPersistingEventArgs e)

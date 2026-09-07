@@ -4,16 +4,23 @@ using PX.Objects.IN;
 
 namespace Lab5.QMS
 {
-    /// <summary>Inspection plan master. Table UsrQMSInspectionPlan (SQL synonym QMSInspectionPlan).</summary>
+    /// <summary>[PXTableName] binds persist to physical UsrQMS* table.</summary>
+    [PXTableName]
+    [Serializable]
+    public class UsrQMSInspectionPlan : PXBqlTable, IBqlTable
+    {
+    }
+
+    /// <summary>Inspection plan master. Table UsrQMSInspectionPlan.</summary>
     [Serializable]
     [PXCacheName("Inspection Plan")]
     [PXPrimaryGraph(typeof(QMSInspectionPlanMaint))]
-    public class QMSInspectionPlan : PXBqlTable, IBqlTable
+    public class QMSInspectionPlan : UsrQMSInspectionPlan
     {
         #region PlanID
         [PXDBString(30, IsUnicode = true, IsKey = true, InputMask = ">CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")]
         [PXDefault]
-        [PXSelector(typeof(Search<QMSInspectionPlan.planID>))]
+        [PXSelector(typeof(Search<QMSInspectionPlan.planID>), ValidateValue = false)]
         [PXUIField(DisplayName = "Plan ID", Visibility = PXUIVisibility.SelectorVisible)]
         public virtual string PlanID { get; set; }
         public abstract class planID : PX.Data.BQL.BqlString.Field<planID> { }

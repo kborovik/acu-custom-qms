@@ -220,6 +220,7 @@ class TestReleaseGateIRoleV3(unittest.TestCase):
         access = (ROOT / "src" / "Lab5.QMS" / "QMSAccess.cs").read_text(encoding="utf-8")
         self.assertIn("PXAccess.GetRoles(PXAccess.GetUserName())", access)
         self.assertIn("list.Common", access)
+        self.assertIn("PXSelect<UsersInRoles", access)
         self.assertIn(
             "QC Hold to Released requires Quality Manager role or the ingestion service account.",
             graph,

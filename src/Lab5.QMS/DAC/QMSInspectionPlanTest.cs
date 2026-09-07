@@ -3,10 +3,16 @@ using PX.Data;
 
 namespace Lab5.QMS
 {
-    /// <summary>Plan test criteria line. Table UsrQMSInspectionPlanTest (SQL synonym QMSInspectionPlanTest).</summary>
+    [PXTableName]
+    [Serializable]
+    public class UsrQMSInspectionPlanTest : PXBqlTable, IBqlTable
+    {
+    }
+
+    /// <summary>Plan test criteria line. Table UsrQMSInspectionPlanTest.</summary>
     [Serializable]
     [PXCacheName("Inspection Plan Test")]
-    public class QMSInspectionPlanTest : PXBqlTable, IBqlTable
+    public class QMSInspectionPlanTest : UsrQMSInspectionPlanTest
     {
         #region PlanID
         [PXDBString(30, IsUnicode = true, IsKey = true)]
@@ -20,7 +26,7 @@ namespace Lab5.QMS
 
         #region LineNbr
         [PXDBInt(IsKey = true)]
-        [PXUIField(DisplayName = "Line Nbr", Enabled = false)]
+        [PXUIField(DisplayName = "Line Nbr")]
         public virtual int? LineNbr { get; set; }
         public abstract class lineNbr : PX.Data.BQL.BqlInt.Field<lineNbr> { }
         #endregion
