@@ -37,10 +37,14 @@ class TestPublishAndPresence(unittest.TestCase):
             )
         self.assertEqual(r.status_code, 200)
         body = r.json()
+        paths = str(body.get("paths", {}))
         self.assertTrue(
-            "InspectionPlan" in r.text
-            or "InspectionPlan" in str(body.get("paths", {})),
+            "InspectionPlan" in r.text or "InspectionPlan" in paths,
             "swagger missing InspectionPlan",
+        )
+        self.assertTrue(
+            "StockItem" in r.text or "StockItem" in paths,
+            "swagger missing StockItem",
         )
 
     def test_inspection_plan_list(self) -> None:
@@ -51,6 +55,9 @@ class TestPublishAndPresence(unittest.TestCase):
 
     def test_non_conformance_list(self) -> None:
         self._assert_entity_list("NonConformance")
+
+    def test_stock_item_list(self) -> None:
+        self._assert_entity_list("StockItem")
 
     def _assert_entity_list(self, entity: str) -> None:
         with client() as session:
