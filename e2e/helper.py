@@ -275,5 +275,4 @@ def _ensure_acu_user_quality_manager() -> None:
 
 
 def _ensure_setup_row() -> None:
-    """Delegate to post-publish seed (V14). Kept for e2e numbering helper."""
     _ensure_qms_setup_rows()
