@@ -76,7 +76,7 @@ T26|x|e2e prove QMSSetup GET PUT; GitOps PUT Quality Preferences no UI/SQL; PO r
 T27|x|add Kit Assembly IN307000 + BOM/issue graph extensions: refuse `UsrQMSLotStatus` QC Hold or Quarantine; allow issue only when Released|V15,V1,I.lot,I.graph
 T28|x|e2e or GitOps scenario fail when QC Hold lot allocated on kit|V15,I.lot,T27
 T29|x|assign QM* Site Map rows to Quality Management workspace in `_project/SiteMap.xml` (not SelectedUI=E folder-only empty Workspaces)|V16,I.screen,I.pkg
-T30|.|e2e prove after publish: modern UI workspace bar or More Items shows Quality Management; Search finds Quality Preferences Inspection Plans Inspection Orders Non-Conformance Reports; Site Map Workspaces populated `QM.00.00.00` `QM.10.10.00` `QM.20.10.00` `QM.30.10.00` `QM.30.20.00`; ScreenId URLs keep working|V16,I.screen,T29
+T30|x|e2e prove after publish: modern UI workspace bar or More Items shows Quality Management; Search finds Quality Preferences Inspection Plans Inspection Orders Non-Conformance Reports; Site Map Workspaces populated `QM.00.00.00` `QM.10.10.00` `QM.20.10.00` `QM.30.10.00` `QM.30.20.00`; ScreenId URLs keep working|V16,I.screen,T29
 
 ## §B BUGS
 id|date|cause|fix
