@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Added
+
+- **QMSSetup seed + REST (V14):** after `Lab5.QMS` publish, seed inserts
+  `UsrQMSSetup` (QORD / QNCR) per company when missing. `QMS/22.200.001`
+  maps QMSSetup GET/PUT on Quality Preferences (`QM101000`). GitOps can
+  PUT preferences without a UI Save or SQL; PO receipt Release on a tenant
+  with no prior QM101000 Save creates a draft InspectionOrder (not 422
+  PXSetup empty).
+- **Cannot-issue unreleased lot (V15):** Kit Assembly IN307000 and BOM/
+  issue graph extensions refuse lots with `UsrQMSLotStatus` QC Hold or
+  Quarantine. Issue is allowed only when Released.
+
+### Fixed
+
+- **Modern Quality Management workspace (V16):** `_project/SiteMap.xml`
+  assigns QM* screens to the Quality Management workspace (not a classic
+  SelectedUI=E folder with empty Workspaces). After publish, modern UI
+  shows the workspace tile / More Items entry and Search finds Quality
+  Preferences, Inspection Plans, Inspection Orders, and Non-Conformance
+  Reports. ScreenId URLs keep working.
+
 ## [v0.3.0] - 2026-09-07
 
 ### Fixed
