@@ -144,7 +144,13 @@ class TestProjectXmlPackedItems(unittest.TestCase):
             }
         self.assertEqual(
             tops,
-            {"InspectionPlan", "InspectionOrder", "NonConformance", "StockItem"},
+            {
+                "InspectionPlan",
+                "InspectionOrder",
+                "NonConformance",
+                "StockItem",
+                "QMSSetup",
+            },
         )
 
     def test_code_items_lab5_namespace(self) -> None:
