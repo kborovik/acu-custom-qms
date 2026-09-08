@@ -36,13 +36,6 @@ SETUP_FIELDS = (
     "NCRNumberingID",
 )
 
-WORKSPACE_SCREENS = (
-    "QM000000",
-    "QM101000",
-    "QM201000",
-    "QM301000",
-    "QM302000",
-)
 WORKSPACE_TITLE = "Quality Management"
 SCREEN_TITLES = {
     "QM000000": "Quality Management",
@@ -155,10 +148,12 @@ class TestQmsSetupGraphAndScreen(unittest.TestCase):
             mui = row.find("{*}MUIScreen")
             if mui is None:
                 mui = row.find("MUIScreen")
-            self.assertIsNotNone(mui, f"{screen_id} missing MUIScreen workspace")
-            self.assertEqual(mui.get("WorkspaceID"), workspace_id, screen_id)
             if screen_id in SCREEN_URLS:
+                self.assertIsNotNone(mui, f"{screen_id} missing MUIScreen workspace")
+                self.assertEqual(mui.get("WorkspaceID"), workspace_id, screen_id)
                 self.assertEqual(row.get("Url"), SCREEN_URLS[screen_id], screen_id)
+            else:
+                self.assertIsNone(mui, f"{screen_id} folder must not be a MUIScreen")
 
 
 class TestAutoNumberWiring(unittest.TestCase):

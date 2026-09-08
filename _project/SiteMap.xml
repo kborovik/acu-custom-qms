@@ -27,11 +27,7 @@
     </layout>
     <data>
       <SiteMap>
-        <row Position="1" Title="Quality Management" Url="" Expanded="1" IsFolder="1" ScreenID="QM000000" NodeID="93AA892C-C7BA-4DE3-9317-EEA874B9ECD6" ParentID="00000000-0000-0000-0000-000000000000">
-          <MUIScreen IsPortal="0" WorkspaceID="C0A1B1E5-0110-4D16-8A00-51E0A1B1E500" Order="1.0" SubcategoryID="8A93637D-B507-4667-A739-ADAF6FB5F7EA">
-            <MUIPinnedScreen IsPinned="0" Username="" IsPortal="0" />
-          </MUIScreen>
-        </row>
+        <row Position="1" Title="Quality Management" Url="" Expanded="1" IsFolder="1" ScreenID="QM000000" NodeID="93AA892C-C7BA-4DE3-9317-EEA874B9ECD6" ParentID="00000000-0000-0000-0000-000000000000" />
         <row Position="1" Title="Configuration" Url="" Expanded="1" IsFolder="1" ScreenID="" NodeID="EC9FE51C-0D2A-4346-AF56-6584C61A1D3E" ParentID="93AA892C-C7BA-4DE3-9317-EEA874B9ECD6" />
         <row Position="1" Title="Quality Preferences" Url="~/Pages/QM/QM101000.aspx" Expanded="0" IsFolder="0" ScreenID="QM101000" NodeID="2E602620-2D0B-4492-879B-539750C3B711" ParentID="EC9FE51C-0D2A-4346-AF56-6584C61A1D3E">
           <MUIScreen IsPortal="0" WorkspaceID="C0A1B1E5-0110-4D16-8A00-51E0A1B1E500" Order="10.0" SubcategoryID="8A93637D-B507-4667-A739-ADAF6FB5F7EA">

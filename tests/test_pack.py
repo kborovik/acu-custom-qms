@@ -190,7 +190,10 @@ class TestProjectXmlPackedItems(unittest.TestCase):
         self.assertEqual(workspace.get("Title"), "Quality Management")
         self.assertEqual(workspace.get("ScreenID"), "QM000000")
         workspace_id = workspace.get("WorkspaceID")
-        for screen in ("QM000000", *SCREENS):
+        folder = screens["QM000000"]
+        self.assertNotEqual(folder.get("SelectedUI"), "E")
+        self.assertIsNone(folder.find("MUIScreen"))
+        for screen in SCREENS:
             self.assertIn(screen, screens, screen)
             row = screens[screen]
             self.assertNotEqual(
@@ -201,12 +204,11 @@ class TestProjectXmlPackedItems(unittest.TestCase):
             mui = row.find("MUIScreen")
             self.assertIsNotNone(mui, f"{screen} missing MUIScreen")
             self.assertEqual(mui.get("WorkspaceID"), workspace_id, screen)
-            if screen != "QM000000":
-                self.assertEqual(
-                    row.get("Url"),
-                    f"~/Pages/QM/{screen}.aspx",
-                    screen,
-                )
+            self.assertEqual(
+                row.get("Url"),
+                f"~/Pages/QM/{screen}.aspx",
+                screen,
+            )
 
 
 class TestPackDllFile(unittest.TestCase):

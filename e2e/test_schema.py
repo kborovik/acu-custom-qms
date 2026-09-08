@@ -255,6 +255,7 @@ class TestModernQmWorkspace(unittest.TestCase):
             f"Search/menu missing QM screens under {QM_WORKSPACE_TITLE}: "
             f"{missing} ({assigned})",
         )
+        self.assertNotIn("QM000000", assigned)
 
     def test_screenid_urls_keep_working(self) -> None:
         with client() as session:
@@ -266,11 +267,10 @@ class TestModernQmWorkspace(unittest.TestCase):
                         follow_redirects=True,
                     )
                 )
-                self.assertEqual(response.status_code, 200, screen_id)
-                self.assertIn(
-                    screen_id,
-                    f"{response.url} {response.text}",
-                    screen_id,
+                url = str(response.url)
+                self.assertTrue(
+                    f"ScreenId={screen_id}" in url or f"ScreenID={screen_id}" in url,
+                    f"{screen_id} dropped from url after redirects: {url}",
                 )
 
 
