@@ -41,7 +41,12 @@ PUBLISH_IMPORT_STEPS = (
     "poll publishEnd",
     "wait QMS/22.200.001",
 )
-SEED_STEPS = ("seed Role", "seed RolesInGraph", "seed EntityMapping")
+SEED_STEPS = (
+    "seed Role",
+    "seed RolesInGraph",
+    "seed EntityMapping",
+    "seed UsrQMSSetup",
+)
 
 
 def _tiny_zip() -> bytes:
@@ -277,6 +282,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
             patch("lab5_qms.publish._ensure_quality_manager_role_row"),
             patch("lab5_qms.publish._ensure_qm_roles_in_graph"),
             patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("lab5_qms.publish._ensure_qms_setup_rows"),
             patch("lab5_qms.progress.sys.stderr", err),
         ):
             seed_qm_rights(session)
@@ -285,6 +291,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
         self.assertEqual(rows[0][1], QUALITY_MANAGER_ROLE)
         self.assertEqual(rows[1][1], ",".join(QM_SCREENS))
         self.assertEqual(rows[2][1], "Tests,Results")
+        self.assertEqual(rows[3][1], "QORD,QNCR")
         session.put.assert_called_once()
         for row in rows:
             self.assertEqual(row[2], "ok")
@@ -314,6 +321,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 patch("lab5_qms.publish._ensure_quality_manager_role_row"),
                 patch("lab5_qms.publish._ensure_qm_roles_in_graph"),
                 patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
+                patch("lab5_qms.publish._ensure_qms_setup_rows"),
             ):
                 r = CliRunner().invoke(cli, ["deploy", "-o", str(dest)])
         self.assertEqual(r.exit_code, 0, r.output)

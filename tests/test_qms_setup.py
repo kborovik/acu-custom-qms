@@ -3,16 +3,19 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""T11 / I.screen: QMSSetupMaint, QM.10.10.00, numbering QORD / QNCR."""
+"""T11 / T25 / I.screen / I.cmd / V14: QMSSetupMaint, QM.10.10.00, numbering QORD / QNCR, post-publish UsrQMSSetup seed."""
 
 from __future__ import annotations
 
 import re
+import sys
 import unittest
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 SETUP_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSSetup.cs"
 GRAPH_CS = ROOT / "src" / "Lab5.QMS" / "Graph" / "QMSSetupMaint.cs"
 RULES_CS = ROOT / "src" / "Lab5.QMS" / "QMSSetupRules.cs"
@@ -142,6 +145,33 @@ class TestAutoNumberWiring(unittest.TestCase):
         )
         graph = NCR_GRAPH_CS.read_text(encoding="utf-8")
         self.assertIn("public PXSetup<QMSSetup> QMSSetup;", graph)
+
+
+class TestQmsSetupSeedV14(unittest.TestCase):
+    def test_insert_sql_qord_qncr_per_company_when_missing(self) -> None:
+        from lab5_qms.publish import QNCR, QORD, qms_setup_insert_sql
+
+        sql = qms_setup_insert_sql()
+        self.assertIn("INSERT INTO", sql)
+        self.assertIn("UsrQMSSetup", sql)
+        self.assertIn("FROM", sql)
+        self.assertIn(".dbo.Company", sql)
+        self.assertIn("NOT EXISTS", sql)
+        self.assertIn(f"N'{QORD}'", sql)
+        self.assertIn(f"N'{QNCR}'", sql)
+        self.assertIn("InspectionOrderNumberingID", sql)
+        self.assertIn("NCRNumberingID", sql)
+        self.assertIn("t.CompanyID = c.CompanyID", sql)
+
+    def test_seed_qm_rights_calls_setup_insert(self) -> None:
+        src = (ROOT / "lab5_qms" / "publish.py").read_text(encoding="utf-8")
+        start = src.index("def seed_qm_rights")
+        body = src[start:]
+        self.assertIn("_ensure_qms_setup_rows", body)
+        self.assertIn("seed UsrQMSSetup", body)
+        helper = (ROOT / "e2e" / "helper.py").read_text(encoding="utf-8")
+        self.assertIn("_ensure_qms_setup_rows()", helper)
+        self.assertNotIn("INSERT INTO", helper[helper.index("def _ensure_setup_row") :])
 
 
 if __name__ == "__main__":

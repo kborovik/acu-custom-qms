@@ -69,7 +69,7 @@ T21|x|e2e drop InspectionPlan PUT-unavailable skip; prove PUT 200 + GET expand T
 T22|x|map `UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays` on REST StockItem (extend Default or QMS entity writing `InventoryItemExt`)|V13,I.stock,I.dac
 T23|x|e2e prove PARTS StockItem PUT persist + GET roundtrip; GitOps six-item `config/qms/20-stock-item-qms.yaml` apply no SQL|V13,I.stock,T22
 T24|x|map QMSSetup GET PUT on `QMS/22.200.001` (QM101000)|V14,I.rest,I.dac,I.graph
-T25|.|post-publish seed insert `UsrQMSSetup` (QORD QNCR) per company when missing|V14,I.cmd
+T25|x|post-publish seed insert `UsrQMSSetup` (QORD QNCR) per company when missing|V14,I.cmd
 T26|.|e2e prove QMSSetup GET PUT; GitOps PUT Quality Preferences no UI/SQL; PO receipt Release no prior QM101000 Save → draft InspectionOrder not 422|V14,I.rest,T24,T25
 
 ## §B BUGS

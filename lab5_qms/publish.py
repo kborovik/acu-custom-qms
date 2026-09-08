@@ -1,7 +1,8 @@
-"""CustomizationApi publish + post-publish QM Role seed (T14 / T16 / V10 / V8).
+"""CustomizationApi publish + post-publish QM Role seed (T14 / T16 / T25 / V10 / V8 / V14).
 
 Zip never carries Role / UsersInRoles / RolesInGraph (V8 / I.pkg).
 `ACU_USER` Quality Manager attach stays e2e-only (V10).
+Post-publish seed inserts UsrQMSSetup (QORD QNCR) per company when missing (V14).
 Never prints ACU_PASSWORD.
 """
 
@@ -41,6 +42,8 @@ QM_RIGHTS_ROLES = ("Administrator", QUALITY_MANAGER_ROLE)
 ROLES_IN_GRAPH_COMPANY_ID = 1
 ROLES_IN_GRAPH_APPLICATION = "/"
 ACCESSRIGHTS_DELETE = 4
+QORD = "QORD"
+QNCR = "QNCR"
 
 
 def instance() -> Instance:
@@ -461,8 +464,30 @@ def _recycle_app_pool() -> None:
     wait_published(timeout=120.0)
 
 
+def qms_setup_insert_sql() -> str:
+    """INSERT UsrQMSSetup (QORD QNCR) per Company row when missing."""
+    nil = "00000000-0000-0000-0000-000000000000"
+    return (
+        f"INSERT INTO {DB_NAME}.dbo.UsrQMSSetup ("
+        "CompanyID, InspectionOrderNumberingID, NCRNumberingID, "
+        "CreatedByID, CreatedByScreenID, CreatedDateTime, "
+        "LastModifiedByID, LastModifiedByScreenID, LastModifiedDateTime"
+        f") SELECT c.CompanyID, N'{QORD}', N'{QNCR}', "
+        f"'{nil}', 'QM101000', GETDATE(), "
+        f"'{nil}', 'QM101000', GETDATE() "
+        f"FROM {DB_NAME}.dbo.Company c "
+        f"WHERE NOT EXISTS (SELECT 1 FROM {DB_NAME}.dbo.UsrQMSSetup t "
+        "WHERE t.CompanyID = c.CompanyID)"
+    )
+
+
+def _ensure_qms_setup_rows() -> None:
+    """Insert UsrQMSSetup (QORD QNCR) per company when missing."""
+    sqlcmd(qms_setup_insert_sql())
+
+
 def seed_qm_rights(session: AcumaticaClient) -> None:
-    """Post-publish Role Quality Manager + QM RolesInGraph. No ACU_USER attach."""
+    """Post-publish Role Quality Manager + QM RolesInGraph + UsrQMSSetup. No ACU_USER attach."""
     with progress("seed Role", QUALITY_MANAGER_ROLE):
         boot = bootstrap_endpoint(session)
         session.put(
@@ -476,3 +501,5 @@ def seed_qm_rights(session: AcumaticaClient) -> None:
     with progress("seed EntityMapping", "Tests,Results"):
         if _ensure_qms_detail_mappings():
             _recycle_app_pool()
+    with progress("seed UsrQMSSetup", f"{QORD},{QNCR}"):
+        _ensure_qms_setup_rows()
