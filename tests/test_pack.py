@@ -52,6 +52,8 @@ CODE_CLASSES = {
     "QMSNonConformanceEntry": "NewGraph",
     "QMSSetupMaint": "NewGraph",
     "POReceiptEntry_Extension": "ExistingGraph",
+    "KitAssemblyEntry_Extension": "ExistingGraph",
+    "INIssueEntry_Extension": "ExistingGraph",
     "QMS": "NewFile",
     "QMSAccess": "NewFile",
 }

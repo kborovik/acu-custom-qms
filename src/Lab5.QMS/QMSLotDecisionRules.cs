@@ -37,6 +37,21 @@ namespace Lab5.QMS
             return lotStatus == QMSLotStatus.Released;
         }
 
+        public static bool CanIssue(string lotStatus)
+        {
+            if (string.IsNullOrWhiteSpace(lotStatus))
+            {
+                return true;
+            }
+            return IsAllocatable(lotStatus);
+        }
+
+        public static string RefuseIssueMessage(string lotSerialNbr, string lotStatus)
+        {
+            return "Cannot issue lot '" + lotSerialNbr + "' with QMS lot status '" + lotStatus
+                + "'. QC Hold and Quarantine lots cannot be issued; issue is allowed only when Released.";
+        }
+
         public static string NcrNbr(string inspectionOrderNbr)
         {
             return "N" + QMSReceiptReleaseRules.CompactToken(inspectionOrderNbr, 14);

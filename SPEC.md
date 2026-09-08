@@ -72,7 +72,7 @@ T23|x|e2e prove PARTS StockItem PUT persist + GET roundtrip; GitOps six-item `co
 T24|x|map QMSSetup GET PUT on `QMS/22.200.001` (QM101000)|V14,I.rest,I.dac,I.graph
 T25|x|post-publish seed insert `UsrQMSSetup` (QORD QNCR) per company when missing|V14,I.cmd
 T26|x|e2e prove QMSSetup GET PUT; GitOps PUT Quality Preferences no UI/SQL; PO receipt Release no prior QM101000 Save → draft InspectionOrder not 422|V14,I.rest,T24,T25
-T27|.|add Kit Assembly IN307000 + BOM/issue graph extensions: refuse `UsrQMSLotStatus` QC Hold or Quarantine; allow issue only when Released|V15,V1,I.lot,I.graph
+T27|x|add Kit Assembly IN307000 + BOM/issue graph extensions: refuse `UsrQMSLotStatus` QC Hold or Quarantine; allow issue only when Released|V15,V1,I.lot,I.graph
 T28|.|e2e or GitOps scenario fail when QC Hold lot allocated on kit|V15,I.lot,T27
 
 ## §B BUGS
