@@ -3,7 +3,7 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""T8 / T20 / T22 / V2 / V12 / V13: REST endpoint QMS/22.200.001 InspectionPlan GET/PUT, InspectionOrder GET/PUT, NonConformance GET/POST, StockItem GET/PUT."""
+"""T8 / T20 / T22 / T24 / V2 / V12 / V13 / V14: REST endpoint QMS/22.200.001 InspectionPlan GET/PUT, InspectionOrder GET/PUT, NonConformance GET/POST, StockItem GET/PUT, QMSSetup GET/PUT."""
 
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ ENTITY_VERBS = {
     "InspectionOrder": ("GET", "PUT"),
     "NonConformance": ("GET", "POST"),
     "StockItem": ("GET", "PUT"),
+    "QMSSetup": ("GET", "PUT"),
 }
 
 INSPECTION_PLAN_FIELDS = {
@@ -98,6 +99,16 @@ STOCK_ITEM_MAPPINGS = {
     "UsrQMSInspectionRequired": ("Item", "UsrQMSInspectionRequired"),
     "UsrQMSInspectionPlanID": ("Item", "UsrQMSInspectionPlanID"),
     "UsrMinShelfLifeDays": ("Item", "UsrMinShelfLifeDays"),
+}
+
+QMS_SETUP_FIELDS = {
+    "InspectionOrderNumberingID": "StringValue",
+    "NCRNumberingID": "StringValue",
+}
+
+QMS_SETUP_MAPPINGS = {
+    "InspectionOrderNumberingID": ("Setup", "InspectionOrderNumberingID"),
+    "NCRNumberingID": ("Setup", "NCRNumberingID"),
 }
 
 
@@ -259,6 +270,16 @@ class TestStockItemUsrFieldsV13(unittest.TestCase):
         self.assertEqual(_fields(item), STOCK_ITEM_FIELDS)
         mappings = _mappings(item)
         for name, mapped in STOCK_ITEM_MAPPINGS.items():
+            self.assertEqual(mappings[name], mapped, name)
+
+
+class TestQmsSetupGetPutV14(unittest.TestCase):
+    def test_screen_and_numbering_fields(self) -> None:
+        setup = _top("QMSSetup")
+        self.assertEqual(setup.get("screen"), "QM101000")
+        self.assertEqual(_fields(setup), QMS_SETUP_FIELDS)
+        mappings = _mappings(setup)
+        for name, mapped in QMS_SETUP_MAPPINGS.items():
             self.assertEqual(mappings[name], mapped, name)
 
 

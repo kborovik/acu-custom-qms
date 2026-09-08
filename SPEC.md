@@ -16,12 +16,12 @@ Ship Acumatica xRP customization `Lab5.QMS`: cannot-pass lot gate + REST CoA ing
 
 ## §I INTERFACES
 - pkg: `Lab5_QMS_Customization.zip` → `_project/ProjectMetadata.xml` 22.200.001 + `Lab5.QMS.dll` + Pages_QM + `CreateQMSTables.sql`; ! Role `UsersInRoles` `RolesInGraph`
-- cmd: `lab5-qms` Click console script on installable `lab5-qms` → subcommands `pack` `publish` `seed` `deploy`; no subcommand → Click help exit 0 (not deploy); `deploy` pack `Lab5_QMS_Customization.zip` + CustomizationApi publish + post-publish Role seed; pack/publish/seed/deploy emit per-step progress on stderr (step, target, result, elapsed); stdout stays path / status / `seeded`
+- cmd: `lab5-qms` Click console script on installable `lab5-qms` → subcommands `pack` `publish` `seed` `deploy`; no subcommand → Click help exit 0 (not deploy); `deploy` pack `Lab5_QMS_Customization.zip` + CustomizationApi publish + post-publish Role seed + `UsrQMSSetup` (QORD QNCR) per company when missing; pack/publish/seed/deploy emit per-step progress on stderr (step, target, result, elapsed); stdout stays path / status / `seeded`
 - cli: `acu` PATH (released `uv tool install`) → `acu config check` `acu config show` `acu tenant list`; ! `uv run acu`; ! `acu check` (destructive rebuild); Python ! `import acumatica_cli`
-- dac: `QMSInspectionPlan` `QMSInspectionPlanTest` `QMSInspectionOrder` `QMSInspectionOrderResult` `QMSNonConformance` + `InventoryItemExt` (`UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays`)
-- graph: `QMSInspectionPlanMaint` `QMSInspectionOrderEntry` (`EvaluateResults` `ReleaseLotDecision`) `QMSNonConformanceEntry` (`CloseNCR` `DispositionRTV`) `POReceiptEntry_Extension` on `Release`
+- dac: `QMSSetup` (`InspectionOrderNumberingID` `NCRNumberingID`) `QMSInspectionPlan` `QMSInspectionPlanTest` `QMSInspectionOrder` `QMSInspectionOrderResult` `QMSNonConformance` + `InventoryItemExt` (`UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays`)
+- graph: `QMSSetupMaint` `QMSInspectionPlanMaint` `QMSInspectionOrderEntry` (`EvaluateResults` `ReleaseLotDecision`) `QMSNonConformanceEntry` (`CloseNCR` `DispositionRTV`) `POReceiptEntry_Extension` on `Release`
 - screen: Quality Management workspace — `QM.10.10.00` prefs, `QM.20.10.00` plans, `QM.30.10.00` orders, `QM.30.20.00` NCR
-- rest: `/entity/QMS/22.200.001/` — InspectionPlan GET PUT (`$expand=Tests`); InspectionOrder GET PUT; NonConformance GET POST
+- rest: `/entity/QMS/22.200.001/` — InspectionPlan GET PUT (`$expand=Tests`); InspectionOrder GET PUT; NonConformance GET POST; QMSSetup GET PUT (QM101000)
 - stock: REST PUT/GET StockItem persist `UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays` on `InventoryItemExt` (extend Default or QMS entity); GitOps `config/qms/20-stock-item-qms.yaml`
 - files: Acumatica `/files` attach CoA PDF + JSON on `QMSInspectionOrder.NoteID`
 - lot: `INLotSerialStatus.LotStatus` in {`QC Hold`, `Released`, `Quarantine`}
@@ -41,6 +41,7 @@ V10: post-publish-qm-rights — after `Lab5.QMS` publish, Role `Quality Manager`
 V11: released-acu-cli — project ! declare `acumatica-cli` (`pyproject.toml` deps / `[tool.uv.sources]` / lock); live e2e + publish + dll SSH invoke PATH `acu` from `uv tool install`; ! `uv run acu`; Python ! `import acumatica_cli`
 V12: inspection-plan-rest-write — PUT `/entity/QMS/22.200.001/InspectionPlan` w/ Tests → 200 create/update plan + test lines; GET `{PlanID}?$expand=Tests` returns those lines; GitOps `config/qms/10-inspection-plans.yaml` applies w/o 500
 V13: stock-item-qms-rest — PUT StockItem persists `UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays` on `InventoryItem`; GET same contract returns the three fields; GitOps `config/qms/20-stock-item-qms.yaml` apply sets flags on all six PARTS items w/o SQL
+V14: qms-setup-seed-rest — after `Lab5.QMS` publish, `UsrQMSSetup` row exists (QORD QNCR) per company when missing; `QMS/22.200.001` QMSSetup GET PUT mapped QM101000; GitOps PUT Quality Preferences w/o UI Save or SQL; PO receipt Release on tenant w/ no prior QM101000 Save → draft InspectionOrder (not 422 PXSetup empty)
 
 ## §T TASKS
 id|status|task|cites
@@ -67,8 +68,12 @@ T20|x|map InspectionPlan PUT + Tests detail on `QMS/22.200.001`; PUT w/ Tests �
 T21|x|e2e drop InspectionPlan PUT-unavailable skip; prove PUT 200 + GET expand Tests; GitOps six-plan PUT shape no 500|V12,V2,I.rest,T20
 T22|x|map `UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays` on REST StockItem (extend Default or QMS entity writing `InventoryItemExt`)|V13,I.stock,I.dac
 T23|x|e2e prove PARTS StockItem PUT persist + GET roundtrip; GitOps six-item `config/qms/20-stock-item-qms.yaml` apply no SQL|V13,I.stock,T22
+T24|x|map QMSSetup GET PUT on `QMS/22.200.001` (QM101000)|V14,I.rest,I.dac,I.graph
+T25|x|post-publish seed insert `UsrQMSSetup` (QORD QNCR) per company when missing|V14,I.cmd
+T26|x|e2e prove QMSSetup GET PUT; GitOps PUT Quality Preferences no UI/SQL; PO receipt Release no prior QM101000 Save → draft InspectionOrder not 422|V14,I.rest,T24,T25
 
 ## §B BUGS
 id|date|cause|fix
 B1|2026-09-07|InspectionPlan mapped GET-only; Tests expand empty despite `UsrQMSInspectionPlanTest` rows; PUT 500|V12
 B2|2026-09-07|Default StockItem PUT ignores UsrQMS* InventoryItemExt; SQL stays 0/NULL|V13
+B3|2026-09-08|publish leaves UsrQMSSetup empty; QMSSetup not on REST; PO receipt Release 422 PXSetup|V14

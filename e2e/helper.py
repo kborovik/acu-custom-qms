@@ -34,6 +34,7 @@ from lab5_qms.publish import (
     ROLES_IN_GRAPH_APPLICATION,
     ROLES_IN_GRAPH_COMPANY_ID,
     SSH_TIMEOUT,
+    _ensure_qms_setup_rows,
     bootstrap_endpoint,
     client,
     company_id,
@@ -274,16 +275,4 @@ def _ensure_acu_user_quality_manager() -> None:
 
 
 def _ensure_setup_row() -> None:
-    cid = company_id()
-    sqlcmd(
-        "IF NOT EXISTS (SELECT 1 FROM "
-        f"{DB_NAME}.dbo.UsrQMSSetup WHERE CompanyID = {cid}) "
-        f"INSERT INTO {DB_NAME}.dbo.UsrQMSSetup ("
-        "CompanyID, InspectionOrderNumberingID, NCRNumberingID, "
-        "CreatedByID, CreatedByScreenID, CreatedDateTime, "
-        "LastModifiedByID, LastModifiedByScreenID, LastModifiedDateTime"
-        ") VALUES ("
-        f"{cid}, N'QORD', N'QNCR', "
-        "'00000000-0000-0000-0000-000000000000', 'QM101000', GETDATE(), "
-        "'00000000-0000-0000-0000-000000000000', 'QM101000', GETDATE())"
-    )
+    _ensure_qms_setup_rows()

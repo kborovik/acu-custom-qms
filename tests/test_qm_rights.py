@@ -89,6 +89,8 @@ class TestRolesInGraphSeedV10(unittest.TestCase):
         self.assertIn("roles_in_graph_company_ids()", publish)
         self.assertIn("_ensure_qms_detail_mappings", publish)
         self.assertIn("_recycle_app_pool", publish)
+        self.assertIn("_ensure_qms_setup_rows", publish)
+        self.assertIn("qms_setup_insert_sql", publish)
 
 
 class TestQmsDetailMappingSeedV12(unittest.TestCase):
@@ -120,6 +122,7 @@ class TestQmsDetailMappingSeedV12(unittest.TestCase):
             patch("lab5_qms.publish._ensure_quality_manager_role_row"),
             patch("lab5_qms.publish._ensure_qm_roles_in_graph"),
             patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=1),
+            patch("lab5_qms.publish._ensure_qms_setup_rows"),
             patch("lab5_qms.publish._recycle_app_pool") as recycle,
         ):
             seed_qm_rights(session)
@@ -135,6 +138,7 @@ class TestQmsDetailMappingSeedV12(unittest.TestCase):
             patch("lab5_qms.publish._ensure_quality_manager_role_row"),
             patch("lab5_qms.publish._ensure_qm_roles_in_graph"),
             patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("lab5_qms.publish._ensure_qms_setup_rows"),
             patch("lab5_qms.publish._recycle_app_pool") as recycle,
         ):
             seed_qm_rights(session)

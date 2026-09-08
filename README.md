@@ -241,6 +241,7 @@ PUT and GET those flags on `QMS/22.200.001`.
 | `StockItem` | GET, PUT | Persist `UsrQMSInspectionRequired`, `UsrQMSInspectionPlanID`, `UsrMinShelfLifeDays` on `InventoryItemExt` |
 | `InspectionOrder` | GET, PUT | Ingest lab results and certificate metadata |
 | `NonConformance` | GET, POST | OOS tickets |
+| `QMSSetup` | GET, PUT | Quality Preferences on QM101000 (`InspectionOrderNumberingID` QORD, `NCRNumberingID` QNCR) |
 
 Typical ingestion sequence:
 

@@ -1,8 +1,9 @@
-"""lab5-qms Click console script (T14 / T15 / T16 / I.cmd / V8 / V10).
+"""lab5-qms Click console script (T14 / T15 / T16 / T25 / I.cmd / V8 / V10 / V14).
 
 Packs Lab5_QMS_Customization.zip, publishes via CustomizationApi, and
 seeds post-publish Role Quality Manager + RolesInGraph Delete on QM*
-screens. Zip never includes Role, UsersInRoles, or RolesInGraph.
+screens + UsrQMSSetup (QORD QNCR) per company when missing.
+Zip never includes Role, UsersInRoles, or RolesInGraph.
 ACU_USER Quality Manager attach stays e2e-only.
 Never prints ACU_PASSWORD.
 """
@@ -59,7 +60,7 @@ def publish_cmd(timeout: float) -> None:
 
 @cli.command("seed")
 def seed_cmd() -> None:
-    """Post-publish Role Quality Manager, RolesInGraph Delete on QM*, EntityMapping Tests/Results."""
+    """Post-publish Role Quality Manager, RolesInGraph Delete on QM*, EntityMapping Tests/Results, UsrQMSSetup."""
     with publish.client() as session:
         publish.seed_qm_rights(session)
     click.echo("seeded")
@@ -75,7 +76,7 @@ def seed_cmd() -> None:
 )
 @click.option("--timeout", type=float, default=600.0, show_default=True)
 def deploy(output: Path | None, timeout: float) -> None:
-    """Pack, CustomizationApi publish, and post-publish Role + EntityMapping seed."""
+    """Pack, CustomizationApi publish, and post-publish Role + EntityMapping + UsrQMSSetup seed."""
     path = _write_zip(output)
     click.echo(str(path))
     status = publish.publish_package(path.read_bytes(), timeout=timeout)

@@ -5,11 +5,12 @@
   (namespace http://www.acumatica.com/entity/maintenance/5.31).
   systemContractVersion 4 = SystemContracts.V4.
 
-  Contract verbs (I.rest / V2 / V12 / V13):
+  Contract verbs (I.rest / V2 / V12 / V13 / V14):
     InspectionPlan   GET PUT
     InspectionOrder  GET PUT
     NonConformance   GET POST
     StockItem        GET PUT
+    QMSSetup         GET PUT  (QM101000 Quality Preferences)
   StockItem (V13 / I.stock): IN202500 InventoryItem + InventoryItemExt
     UsrQMSInspectionRequired, UsrQMSInspectionPlanID, UsrMinShelfLifeDays.
     InventoryID maps Item.InventoryCD (Default swagger / live EntityMapping).
@@ -262,6 +263,20 @@
         </Mapping>
         <Mapping field="UsrMinShelfLifeDays">
           <To object="Item" field="UsrMinShelfLifeDays" />
+        </Mapping>
+      </Mappings>
+    </TopLevelEntity>
+    <TopLevelEntity name="QMSSetup" screen="QM101000">
+      <Fields>
+        <Field name="InspectionOrderNumberingID" type="StringValue" />
+        <Field name="NCRNumberingID" type="StringValue" />
+      </Fields>
+      <Mappings>
+        <Mapping field="InspectionOrderNumberingID">
+          <To object="Setup" field="InspectionOrderNumberingID" />
+        </Mapping>
+        <Mapping field="NCRNumberingID">
+          <To object="Setup" field="NCRNumberingID" />
         </Mapping>
       </Mappings>
     </TopLevelEntity>
