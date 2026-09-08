@@ -278,8 +278,14 @@ class TestLotStatusSetILot(unittest.TestCase):
             "Overall evaluation must be Pass or Fail on an open inspection order.",
             graph,
         )
-        self.assertIn("ext.UsrQMSLotStatus = lotStatus;", graph)
-        self.assertIn("INLotSerialStatus.lotSerialNbr", graph)
+        self.assertIn(
+            "QMSLotIssueGate.WriteLotStatus(this, inventoryID, lotSerialNbr, lotStatus)",
+            graph,
+        )
+        gate = (ROOT / "src" / "Lab5.QMS" / "QMSLotIssueGate.cs").read_text(encoding="utf-8")
+        self.assertIn("ext.UsrQMSLotStatus = lotStatus;", gate)
+        self.assertIn("INLotSerialStatus.lotSerialNbr", gate)
+        self.assertIn("INLotSerialStatusByCostCenter.lotSerialNbr", gate)
         ext = (ROOT / "src" / "Lab5.QMS" / "DAC" / "INLotSerialStatusExt.cs").read_text(
             encoding="utf-8"
         )
@@ -291,6 +297,10 @@ class TestLotStatusSetILot(unittest.TestCase):
         sql = (ROOT / "Scripts" / "CreateQMSTables.sql").read_text(encoding="utf-8")
         self.assertIn(
             "COL_LENGTH(N'dbo.INLotSerialStatus', N'UsrQMSLotStatus')",
+            sql,
+        )
+        self.assertIn(
+            "COL_LENGTH(N'dbo.INLotSerialStatusByCostCenter', N'UsrQMSLotStatus')",
             sql,
         )
         aspx = ASPX.read_text(encoding="utf-8")

@@ -47,6 +47,7 @@ CODE_CLASSES = {
     "QMSSetup": "NewDac",
     "InventoryItemExt": "NewDac",
     "INLotSerialStatusExt": "NewDac",
+    "INLotSerialStatusByCostCenterExt": "NewDac",
     "QMSInspectionPlanMaint": "NewGraph",
     "QMSInspectionOrderEntry": "NewGraph",
     "QMSNonConformanceEntry": "NewGraph",

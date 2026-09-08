@@ -17,12 +17,63 @@ namespace Lab5.QMS
                 Where<INLotSerialStatus.inventoryID, Equal<Required<INLotSerialStatus.inventoryID>>,
                     And<INLotSerialStatus.lotSerialNbr, Equal<Required<INLotSerialStatus.lotSerialNbr>>>>>
                 .Select(graph, inventoryID, lotSerialNbr);
-            if (lot == null)
+            if (lot != null)
             {
-                return null;
+                INLotSerialStatusExt ext = lot.GetExtension<INLotSerialStatusExt>();
+                if (ext != null && !string.IsNullOrWhiteSpace(ext.UsrQMSLotStatus))
+                {
+                    return ext.UsrQMSLotStatus;
+                }
             }
-            INLotSerialStatusExt ext = lot.GetExtension<INLotSerialStatusExt>();
-            return ext == null ? null : ext.UsrQMSLotStatus;
+            foreach (INLotSerialStatusByCostCenter row in PXSelect<INLotSerialStatusByCostCenter,
+                Where<INLotSerialStatusByCostCenter.inventoryID, Equal<Required<INLotSerialStatusByCostCenter.inventoryID>>,
+                    And<INLotSerialStatusByCostCenter.lotSerialNbr, Equal<Required<INLotSerialStatusByCostCenter.lotSerialNbr>>>>>
+                .Select(graph, inventoryID, lotSerialNbr))
+            {
+                INLotSerialStatusByCostCenterExt ext = row.GetExtension<INLotSerialStatusByCostCenterExt>();
+                if (ext != null && !string.IsNullOrWhiteSpace(ext.UsrQMSLotStatus))
+                {
+                    return ext.UsrQMSLotStatus;
+                }
+            }
+            return null;
+        }
+
+        public static void WriteLotStatus(
+            PXGraph graph, int? inventoryID, string lotSerialNbr, string lotStatus)
+        {
+            if (graph == null || inventoryID == null || !QMSReceiptReleaseRules.HasLot(lotSerialNbr))
+            {
+                return;
+            }
+            foreach (INLotSerialStatus lot in PXSelect<INLotSerialStatus,
+                Where<INLotSerialStatus.inventoryID, Equal<Required<INLotSerialStatus.inventoryID>>,
+                    And<INLotSerialStatus.lotSerialNbr, Equal<Required<INLotSerialStatus.lotSerialNbr>>>>>
+                .Select(graph, inventoryID, lotSerialNbr))
+            {
+                INLotSerialStatusExt ext = lot.GetExtension<INLotSerialStatusExt>();
+                if (ext != null)
+                {
+                    ext.UsrQMSLotStatus = lotStatus;
+                }
+                graph.Caches[typeof(INLotSerialStatus)].Update(lot);
+            }
+            foreach (INLotSerialStatusByCostCenter lot in PXSelect<INLotSerialStatusByCostCenter,
+                Where<INLotSerialStatusByCostCenter.inventoryID, Equal<Required<INLotSerialStatusByCostCenter.inventoryID>>,
+                    And<INLotSerialStatusByCostCenter.lotSerialNbr, Equal<Required<INLotSerialStatusByCostCenter.lotSerialNbr>>>>>
+                .Select(graph, inventoryID, lotSerialNbr))
+            {
+                INLotSerialStatusByCostCenterExt ext = lot.GetExtension<INLotSerialStatusByCostCenterExt>();
+                if (ext != null)
+                {
+                    ext.UsrQMSLotStatus = lotStatus;
+                }
+                graph.Caches[typeof(INLotSerialStatusByCostCenter)].Update(lot);
+            }
+            PXDatabase.Update<INLotSerialStatusByCostCenter>(
+                new PXDataFieldAssign("UsrQMSLotStatus", PXDbType.NVarChar, 10, lotStatus),
+                new PXDataFieldRestrict("InventoryID", PXDbType.Int, 4, inventoryID, PXComp.EQ),
+                new PXDataFieldRestrict("LotSerialNbr", PXDbType.NVarChar, 100, lotSerialNbr, PXComp.EQ));
         }
 
         public static void ThrowIfNotIssuable(PXGraph graph, int? inventoryID, string lotSerialNbr)

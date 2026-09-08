@@ -146,6 +146,7 @@ class TestSharedGateWiresIsAllocatable(unittest.TestCase):
     def test_gate_reads_usrqms_lot_status_and_can_issue(self) -> None:
         src = GATE_CS.read_text(encoding="utf-8")
         self.assertIn("INLotSerialStatusExt", src)
+        self.assertIn("INLotSerialStatusByCostCenterExt", src)
         self.assertIn("ext.UsrQMSLotStatus", src)
         self.assertIn("QMSLotDecisionRules.CanIssue(status)", src)
         self.assertIn("QMSLotDecisionRules.RefuseIssueMessage(lotSerialNbr, status)", src)
