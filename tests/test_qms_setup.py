@@ -173,6 +173,14 @@ class TestQmsSetupSeedV14(unittest.TestCase):
         self.assertIn("_ensure_qms_setup_rows()", helper)
         self.assertNotIn("INSERT INTO", helper[helper.index("def _ensure_setup_row") :])
 
+    def test_e2e_covers_get_put_and_receipt_not_422(self) -> None:
+        src = (ROOT / "e2e" / "test_qms_setup.py").read_text(encoding="utf-8")
+        self.assertIn("QMSSetup", src)
+        self.assertIn("GITOPS_QMS_SETUP", src)
+        self.assertIn("ReleasePurchaseReceipt", src)
+        self.assertIn("Quality Preferences form", src)
+        self.assertIn("assertNotIn", src)
+
 
 if __name__ == "__main__":
     unittest.main()

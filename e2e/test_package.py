@@ -46,6 +46,10 @@ class TestPublishAndPresence(unittest.TestCase):
             "StockItem" in r.text or "StockItem" in paths,
             "swagger missing StockItem",
         )
+        self.assertTrue(
+            "QMSSetup" in r.text or "QMSSetup" in paths,
+            "swagger missing QMSSetup",
+        )
 
     def test_inspection_plan_list(self) -> None:
         self._assert_entity_list("InspectionPlan")
@@ -58,6 +62,9 @@ class TestPublishAndPresence(unittest.TestCase):
 
     def test_stock_item_list(self) -> None:
         self._assert_entity_list("StockItem")
+
+    def test_qms_setup_list(self) -> None:
+        self._assert_entity_list("QMSSetup")
 
     def _assert_entity_list(self, entity: str) -> None:
         with client() as session:
