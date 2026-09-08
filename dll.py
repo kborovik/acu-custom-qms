@@ -25,7 +25,13 @@ ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "src" / "Lab5.QMS"
 REMOTE_ZIP = "lab5-qms-src.zip"
 REMOTE_DIR = "lab5-qms-build"
-PX_ASSEMBLIES = ("PX.Data", "PX.Objects", "PX.Common", "PX.Common.Std")
+PX_ASSEMBLIES = (
+    "PX.Data",
+    "PX.Objects",
+    "PX.Common",
+    "PX.Common.Std",
+    "PX.DbServices",
+)
 FRAMEWORK_DIR = r"C:\Windows\Microsoft.NET\Framework64\v4.0.30319"
 FRAMEWORK_ASSEMBLIES = (
     "System",

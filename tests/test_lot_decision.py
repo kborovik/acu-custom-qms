@@ -283,9 +283,15 @@ class TestLotStatusSetILot(unittest.TestCase):
             graph,
         )
         gate = (ROOT / "src" / "Lab5.QMS" / "QMSLotIssueGate.cs").read_text(encoding="utf-8")
-        self.assertIn("ext.UsrQMSLotStatus = lotStatus;", gate)
+        self.assertIn('PXDatabase.Update<INLotSerialStatusByCostCenter>(', gate)
+        self.assertIn('new PXDataField("UsrQMSLotStatus")', gate)
         self.assertIn("INLotSerialStatus.lotSerialNbr", gate)
         self.assertIn("INLotSerialStatusByCostCenter.lotSerialNbr", gate)
+        self.assertNotIn("graph.Caches[typeof(INLotSerialStatus)].Update(lot)", gate)
+        self.assertNotIn(
+            "graph.Caches[typeof(INLotSerialStatusByCostCenter)].Update(lot)",
+            gate,
+        )
         ext = (ROOT / "src" / "Lab5.QMS" / "DAC" / "INLotSerialStatusExt.cs").read_text(
             encoding="utf-8"
         )

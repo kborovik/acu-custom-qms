@@ -9,7 +9,40 @@ namespace Lab5.QMS
     {
         public static string ReadLotStatus(PXGraph graph, int? inventoryID, string lotSerialNbr)
         {
-            if (graph == null || inventoryID == null || !QMSReceiptReleaseRules.HasLot(lotSerialNbr))
+            if (inventoryID == null || !QMSReceiptReleaseRules.HasLot(lotSerialNbr))
+            {
+                return null;
+            }
+            string first = null;
+            foreach (PXDataRecord rec in PXDatabase.SelectMulti<INLotSerialStatusByCostCenter>(
+                new PXDataField("UsrQMSLotStatus"),
+                new PXDataFieldValue("InventoryID", PXDbType.Int, 4, inventoryID),
+                new PXDataFieldValue("LotSerialNbr", PXDbType.NVarChar, 100, lotSerialNbr)))
+            {
+                string status = rec.GetString(0);
+                if (string.IsNullOrWhiteSpace(status))
+                {
+                    continue;
+                }
+                if (first == null)
+                {
+                    first = status;
+                }
+                if (!QMSLotDecisionRules.CanIssue(status))
+                {
+                    return status;
+                }
+            }
+            if (first != null)
+            {
+                return first;
+            }
+            return ReadLotStatusFallback(graph, inventoryID, lotSerialNbr);
+        }
+
+        static string ReadLotStatusFallback(PXGraph graph, int? inventoryID, string lotSerialNbr)
+        {
+            if (graph == null)
             {
                 return null;
             }
@@ -42,33 +75,9 @@ namespace Lab5.QMS
         public static void WriteLotStatus(
             PXGraph graph, int? inventoryID, string lotSerialNbr, string lotStatus)
         {
-            if (graph == null || inventoryID == null || !QMSReceiptReleaseRules.HasLot(lotSerialNbr))
+            if (inventoryID == null || !QMSReceiptReleaseRules.HasLot(lotSerialNbr))
             {
                 return;
-            }
-            foreach (INLotSerialStatus lot in PXSelect<INLotSerialStatus,
-                Where<INLotSerialStatus.inventoryID, Equal<Required<INLotSerialStatus.inventoryID>>,
-                    And<INLotSerialStatus.lotSerialNbr, Equal<Required<INLotSerialStatus.lotSerialNbr>>>>>
-                .Select(graph, inventoryID, lotSerialNbr))
-            {
-                INLotSerialStatusExt ext = lot.GetExtension<INLotSerialStatusExt>();
-                if (ext != null)
-                {
-                    ext.UsrQMSLotStatus = lotStatus;
-                }
-                graph.Caches[typeof(INLotSerialStatus)].Update(lot);
-            }
-            foreach (INLotSerialStatusByCostCenter lot in PXSelect<INLotSerialStatusByCostCenter,
-                Where<INLotSerialStatusByCostCenter.inventoryID, Equal<Required<INLotSerialStatusByCostCenter.inventoryID>>,
-                    And<INLotSerialStatusByCostCenter.lotSerialNbr, Equal<Required<INLotSerialStatusByCostCenter.lotSerialNbr>>>>>
-                .Select(graph, inventoryID, lotSerialNbr))
-            {
-                INLotSerialStatusByCostCenterExt ext = lot.GetExtension<INLotSerialStatusByCostCenterExt>();
-                if (ext != null)
-                {
-                    ext.UsrQMSLotStatus = lotStatus;
-                }
-                graph.Caches[typeof(INLotSerialStatusByCostCenter)].Update(lot);
             }
             PXDatabase.Update<INLotSerialStatusByCostCenter>(
                 new PXDataFieldAssign("UsrQMSLotStatus", PXDbType.NVarChar, 10, lotStatus),

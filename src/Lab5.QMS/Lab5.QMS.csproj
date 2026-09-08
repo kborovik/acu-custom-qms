@@ -29,5 +29,9 @@
       <HintPath>$(AcumaticaDir)\Bin\PX.Common.Std.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="PX.DbServices">
+      <HintPath>$(AcumaticaDir)\Bin\PX.DbServices.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 </Project>

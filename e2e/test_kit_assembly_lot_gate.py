@@ -20,6 +20,7 @@ from e2e.helper import (
     unwrap,
     wrap,
 )
+from lab5_qms.acu import AcumaticaClient
 from e2e.test_functional import GITOPS_PLANS, _seed_ready
 from e2e.test_qms_setup import GITOPS_QMS_SETUP
 from e2e.test_stock_item_qms import GITOPS_STOCK_ITEMS
@@ -88,6 +89,9 @@ def _force_qc_hold(item_cd: str, lot: str) -> None:
 
 def _error_text(payload: object) -> str:
     parts: list[str] = []
+    if isinstance(payload, BaseException):
+        parts.append(str(payload))
+        payload = getattr(payload, "body", None) or payload
     cur: object = payload
     while isinstance(cur, dict):
         for key in ("exceptionMessage", "message", "error"):
@@ -95,9 +99,15 @@ def _error_text(payload: object) -> str:
             if isinstance(val, str) and val.strip():
                 parts.append(val.strip())
         cur = cur.get("innerException")
-    if isinstance(payload, BaseException):
-        parts.append(str(payload))
-    return " ".join(parts)
+    if isinstance(payload, dict):
+        parts.extend(AcumaticaClient._field_errors(payload))
+    seen: set[str] = set()
+    out: list[str] = []
+    for part in parts:
+        if part not in seen:
+            seen.add(part)
+            out.append(part)
+    return " ".join(out)
 
 
 def _gate_message(text: str) -> bool:
@@ -200,7 +210,7 @@ class TestKitAssemblyRefusesQcHoldLotV15(unittest.TestCase):
                     )
                 )
             except RuntimeError as exc:
-                self.skipTest(f"PurchaseReceipt PUT failed: {exc}")
+                self.fail(f"PurchaseReceipt PUT setup failed: {exc}")
             receipt_nbr = (rcpt.get("ReceiptNbr") or "").strip()
             self.assertTrue(receipt_nbr, "PurchaseReceipt PUT returned no ReceiptNbr")
             try:
@@ -211,16 +221,17 @@ class TestKitAssemblyRefusesQcHoldLotV15(unittest.TestCase):
                     {"Type": "Receipt", "ReceiptNbr": receipt_nbr},
                 )
             except RuntimeError as exc:
-                self.skipTest(f"ReleasePurchaseReceipt failed: {exc}")
+                self.fail(f"ReleasePurchaseReceipt setup failed: {exc}")
             status = _sql_lot_status(COMPONENT_CD, lot)
             if status != QC_HOLD:
                 _force_qc_hold(COMPONENT_CD, lot)
                 status = _sql_lot_status(COMPONENT_CD, lot)
-            if status != QC_HOLD:
-                self.skipTest(
-                    f"lot {lot} UsrQMSLotStatus={status!r} — need QC Hold on "
-                    f"{COMPONENT_CD} after receipt release"
-                )
+            self.assertEqual(
+                status,
+                QC_HOLD,
+                f"lot {lot} UsrQMSLotStatus={status!r} — need QC Hold on "
+                f"{COMPONENT_CD} after receipt release",
+            )
 
             try:
                 created = unwrap(
@@ -238,7 +249,9 @@ class TestKitAssemblyRefusesQcHoldLotV15(unittest.TestCase):
                     )
                 )
             except RuntimeError as exc:
-                self.skipTest(f"KitAssembly PUT failed — kit spec/seed: {exc}")
+                self.fail(
+                    f"KitAssembly header PUT failed after QC Hold lot {lot}: {exc}"
+                )
             ref = (created.get("ReferenceNbr") or "").strip()
             kit_type = (created.get("Type") or KIT_TYPE).strip() or KIT_TYPE
             self.assertTrue(ref, "KitAssembly PUT returned no ReferenceNbr")
@@ -247,8 +260,9 @@ class TestKitAssemblyRefusesQcHoldLotV15(unittest.TestCase):
                 [kit_type, ref],
                 params={"$expand": "StockComponents"},
             )
-            if raw is None:
-                self.skipTest(f"KitAssembly GET {kit_type}/{ref} returned nothing")
+            self.assertIsNotNone(
+                raw, f"KitAssembly GET {kit_type}/{ref} returned nothing"
+            )
             components = raw.get("StockComponents") or []
             ech_raw = None
             ech = None
@@ -260,10 +274,10 @@ class TestKitAssemblyRefusesQcHoldLotV15(unittest.TestCase):
                     ech_raw = row
                     ech = body
                     break
-            if ech is None or ech_raw is None:
-                self.skipTest(
-                    f"KitAssembly {ref} has no {COMPONENT_CD} stock component"
-                )
+            self.assertIsNotNone(
+                ech,
+                f"KitAssembly {ref} has no {COMPONENT_CD} stock component",
+            )
             qty = ech.get("Qty") or ech.get("ComponentQty") or 0.012
             alloc_line = {
                 "id": ech_raw.get("id"),
