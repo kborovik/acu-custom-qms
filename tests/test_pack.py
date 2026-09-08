@@ -180,14 +180,33 @@ class TestProjectXmlPackedItems(unittest.TestCase):
             self.assertIn(f"Pages/QM/{screen}.aspx", names, screen)
         sitemap = root.find("SiteMapNode")
         self.assertIsNotNone(sitemap)
+        site_rows = sitemap.findall(".//SiteMap/row")
         screens = {
-            row.get("ScreenID")
-            for row in sitemap.findall(".//row")
-            if row.get("ScreenID")
+            row.get("ScreenID"): row for row in site_rows if row.get("ScreenID")
         }
         self.assertIn("QM000000", screens)
-        for screen in SCREENS:
+        workspace = sitemap.find(".//MUIWorkspace/row")
+        self.assertIsNotNone(workspace, "packed SiteMap missing MUIWorkspace")
+        self.assertEqual(workspace.get("Title"), "Quality Management")
+        self.assertEqual(workspace.get("ScreenID"), "QM000000")
+        workspace_id = workspace.get("WorkspaceID")
+        for screen in ("QM000000", *SCREENS):
             self.assertIn(screen, screens, screen)
+            row = screens[screen]
+            self.assertNotEqual(
+                row.get("SelectedUI"),
+                "E",
+                f"{screen} still SelectedUI=E folder-only",
+            )
+            mui = row.find("MUIScreen")
+            self.assertIsNotNone(mui, f"{screen} missing MUIScreen")
+            self.assertEqual(mui.get("WorkspaceID"), workspace_id, screen)
+            if screen != "QM000000":
+                self.assertEqual(
+                    row.get("Url"),
+                    f"~/Pages/QM/{screen}.aspx",
+                    screen,
+                )
 
 
 class TestPackDllFile(unittest.TestCase):

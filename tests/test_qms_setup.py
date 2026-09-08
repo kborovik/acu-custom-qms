@@ -37,11 +37,26 @@ SETUP_FIELDS = (
 )
 
 WORKSPACE_SCREENS = (
+    "QM000000",
     "QM101000",
     "QM201000",
     "QM301000",
     "QM302000",
 )
+WORKSPACE_TITLE = "Quality Management"
+SCREEN_TITLES = {
+    "QM000000": "Quality Management",
+    "QM101000": "Quality Preferences",
+    "QM201000": "Inspection Plans",
+    "QM301000": "Inspection Orders",
+    "QM302000": "Non-Conformance Reports",
+}
+SCREEN_URLS = {
+    "QM101000": "~/Pages/QM/QM101000.aspx",
+    "QM201000": "~/Pages/QM/QM201000.aspx",
+    "QM301000": "~/Pages/QM/QM301000.aspx",
+    "QM302000": "~/Pages/QM/QM302000.aspx",
+}
 
 
 def _region(src: str, name: str) -> str:
@@ -115,14 +130,35 @@ class TestQmsSetupGraphAndScreen(unittest.TestCase):
 
     def test_sitemap_workspace_screens(self) -> None:
         tree = ET.parse(SITEMAP)
-        rows = tree.findall(".//row")
-        by_screen = {row.get("ScreenID"): row for row in rows if row.get("ScreenID")}
-        self.assertIn("QM000000", by_screen)
-        self.assertEqual(by_screen["QM000000"].get("Title"), "Quality Management")
-        self.assertEqual(by_screen[PREFS_SCREEN].get("Title"), "Quality Preferences")
-        self.assertEqual(by_screen[PREFS_SCREEN].get("Url"), "~/Pages/QM/QM101000.aspx")
-        for screen_id in WORKSPACE_SCREENS:
+        site_rows = tree.findall(".//{*}SiteMap/{*}row") or tree.findall(".//SiteMap/row")
+        by_screen = {
+            row.get("ScreenID"): row for row in site_rows if row.get("ScreenID")
+        }
+        workspace = tree.find(".//{*}MUIWorkspace/{*}row")
+        if workspace is None:
+            workspace = tree.find(".//MUIWorkspace/row")
+        self.assertIsNotNone(workspace, "missing MUIWorkspace Quality Management")
+        workspace_id = workspace.get("WorkspaceID")
+        self.assertEqual(workspace.get("Title"), WORKSPACE_TITLE)
+        self.assertEqual(workspace.get("ScreenID"), "QM000000")
+        self.assertTrue(workspace_id)
+        self.assertEqual(by_screen[PREFS_SCREEN].get("Url"), SCREEN_URLS[PREFS_SCREEN])
+        for screen_id, title in SCREEN_TITLES.items():
             self.assertIn(screen_id, by_screen, screen_id)
+            row = by_screen[screen_id]
+            self.assertEqual(row.get("Title"), title, screen_id)
+            self.assertNotEqual(
+                row.get("SelectedUI"),
+                "E",
+                f"{screen_id} still SelectedUI=E folder-only",
+            )
+            mui = row.find("{*}MUIScreen")
+            if mui is None:
+                mui = row.find("MUIScreen")
+            self.assertIsNotNone(mui, f"{screen_id} missing MUIScreen workspace")
+            self.assertEqual(mui.get("WorkspaceID"), workspace_id, screen_id)
+            if screen_id in SCREEN_URLS:
+                self.assertEqual(row.get("Url"), SCREEN_URLS[screen_id], screen_id)
 
 
 class TestAutoNumberWiring(unittest.TestCase):
