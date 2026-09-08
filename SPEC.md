@@ -15,12 +15,12 @@ Ship Acumatica xRP customization `Lab5.QMS`: cannot-pass lot gate + REST CoA ing
 - Released PATH `acu` via `uv tool install`; project ! `acumatica-cli` dep; Python ! `import acumatica_cli`; sibling in-dev checkout stays out of this env
 
 ## §I INTERFACES
-- pkg: `Lab5_QMS_Customization.zip` → `_project/ProjectMetadata.xml` 22.200.001 + `Lab5.QMS.dll` + Pages_QM + `CreateQMSTables.sql`; ! Role `UsersInRoles` `RolesInGraph`
+- pkg: `Lab5_QMS_Customization.zip` → `_project/ProjectMetadata.xml` 22.200.001 + `_project/SiteMap.xml` (QM* Workspaces) + `Lab5.QMS.dll` + Pages_QM + `CreateQMSTables.sql`; ! Role `UsersInRoles` `RolesInGraph`
 - cmd: `lab5-qms` Click console script on installable `lab5-qms` → subcommands `pack` `publish` `seed` `deploy`; no subcommand → Click help exit 0 (not deploy); `deploy` pack `Lab5_QMS_Customization.zip` + CustomizationApi publish + post-publish Role seed + `UsrQMSSetup` (QORD QNCR) per company when missing; pack/publish/seed/deploy emit per-step progress on stderr (step, target, result, elapsed); stdout stays path / status / `seeded`
 - cli: `acu` PATH (released `uv tool install`) → `acu config check` `acu config show` `acu tenant list`; ! `uv run acu`; ! `acu check` (destructive rebuild); Python ! `import acumatica_cli`
 - dac: `QMSSetup` (`InspectionOrderNumberingID` `NCRNumberingID`) `QMSInspectionPlan` `QMSInspectionPlanTest` `QMSInspectionOrder` `QMSInspectionOrderResult` `QMSNonConformance` + `InventoryItemExt` (`UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays`)
 - graph: `QMSSetupMaint` `QMSInspectionPlanMaint` `QMSInspectionOrderEntry` (`EvaluateResults` `ReleaseLotDecision`) `QMSNonConformanceEntry` (`CloseNCR` `DispositionRTV`) `POReceiptEntry_Extension` on `Release`; Kit Assembly IN307000 + BOM/issue graph extensions on allocate/issue
-- screen: Quality Management workspace — `QM.10.10.00` prefs, `QM.20.10.00` plans, `QM.30.10.00` orders, `QM.30.20.00` NCR
+- screen: Quality Management workspace — `QM.00.00.00` + `QM.10.10.00` prefs, `QM.20.10.00` plans, `QM.30.10.00` orders, `QM.30.20.00` NCR; Site Map Workspaces populated (modern UI tile + Search); ScreenId URLs keep working
 - rest: `/entity/QMS/22.200.001/` — InspectionPlan GET PUT (`$expand=Tests`); InspectionOrder GET PUT; NonConformance GET POST; QMSSetup GET PUT (QM101000)
 - stock: REST PUT/GET StockItem persist `UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays` on `InventoryItemExt` (extend Default or QMS entity); GitOps `config/qms/20-stock-item-qms.yaml`
 - files: Acumatica `/files` attach CoA PDF + JSON on `QMSInspectionOrder.NoteID`
@@ -43,6 +43,7 @@ V12: inspection-plan-rest-write — PUT `/entity/QMS/22.200.001/InspectionPlan` 
 V13: stock-item-qms-rest — PUT StockItem persists `UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays` on `InventoryItem`; GET same contract returns the three fields; GitOps `config/qms/20-stock-item-qms.yaml` apply sets flags on all six PARTS items w/o SQL
 V14: qms-setup-seed-rest — after `Lab5.QMS` publish, `UsrQMSSetup` row exists (QORD QNCR) per company when missing; `QMS/22.200.001` QMSSetup GET PUT mapped QM101000; GitOps PUT Quality Preferences w/o UI Save or SQL; PO receipt Release on tenant w/ no prior QM101000 Save → draft InspectionOrder (not 422 PXSetup empty)
 V15: cannot-issue-unreleased-lot — Kit Assembly IN307000 + BOM/issue graphs refuse lots with `UsrQMSLotStatus` QC Hold or Quarantine; issue allowed only when Released
+V16: modern-qm-workspace — `_project/SiteMap.xml` assigns QM* to Quality Management workspace (not SelectedUI=E folder-only empty Workspaces); after `Lab5.QMS` publish, Site Map Workspaces populated `QM.00.00.00` `QM.10.10.00` `QM.20.10.00` `QM.30.10.00` `QM.30.20.00`; modern UI workspace bar or More Items shows Quality Management; Search finds Quality Preferences, Inspection Plans, Inspection Orders, Non-Conformance Reports; ScreenId URLs keep working
 
 ## §T TASKS
 id|status|task|cites
@@ -74,6 +75,8 @@ T25|x|post-publish seed insert `UsrQMSSetup` (QORD QNCR) per company when missin
 T26|x|e2e prove QMSSetup GET PUT; GitOps PUT Quality Preferences no UI/SQL; PO receipt Release no prior QM101000 Save → draft InspectionOrder not 422|V14,I.rest,T24,T25
 T27|x|add Kit Assembly IN307000 + BOM/issue graph extensions: refuse `UsrQMSLotStatus` QC Hold or Quarantine; allow issue only when Released|V15,V1,I.lot,I.graph
 T28|x|e2e or GitOps scenario fail when QC Hold lot allocated on kit|V15,I.lot,T27
+T29|.|assign QM* Site Map rows to Quality Management workspace in `_project/SiteMap.xml` (not SelectedUI=E folder-only empty Workspaces)|V16,I.screen,I.pkg
+T30|.|e2e prove after publish: modern UI workspace bar or More Items shows Quality Management; Search finds Quality Preferences Inspection Plans Inspection Orders Non-Conformance Reports; Site Map Workspaces populated `QM.00.00.00` `QM.10.10.00` `QM.20.10.00` `QM.30.10.00` `QM.30.20.00`; ScreenId URLs keep working|V16,I.screen,T29
 
 ## §B BUGS
 id|date|cause|fix
@@ -81,3 +84,4 @@ B1|2026-09-07|InspectionPlan mapped GET-only; Tests expand empty despite `UsrQMS
 B2|2026-09-07|Default StockItem PUT ignores UsrQMS* InventoryItemExt; SQL stays 0/NULL|V13
 B3|2026-09-08|publish leaves UsrQMSSetup empty; QMSSetup not on REST; PO receipt Release 422 PXSetup|V14
 B4|2026-09-08|PO receipt writes `UsrQMSLotStatus` QC Hold; Kit Assembly / IN issue graphs unread so QC Hold lots stay BOM-allocatable|V15
+B5|2026-09-08|SiteMap.xml classic folder QM000000 SelectedUI=E; Workspaces empty → modern UI no tile no Search|V16
