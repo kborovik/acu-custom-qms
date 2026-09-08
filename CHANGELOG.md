@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [v0.4.0] - 2026-09-08
+
 ### Added
 
 - **QMSSetup seed + REST (V14):** after `Lab5.QMS` publish, seed inserts
