@@ -21,7 +21,7 @@ if str(ROOT) not in sys.path:
 import dll  # noqa: E402
 from lab5_qms import pack  # noqa: E402
 
-PX = ("PX.Data", "PX.Objects", "PX.Common", "PX.Common.Std")
+PX = ("PX.Data", "PX.Objects", "PX.Common", "PX.Common.Std", "PX.DbServices")
 
 
 class TestCsprojPxHintPaths(unittest.TestCase):

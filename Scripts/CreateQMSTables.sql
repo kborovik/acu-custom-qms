@@ -236,3 +236,10 @@ BEGIN
     ALTER TABLE [dbo].[INLotSerialStatus] ADD
         [UsrQMSLotStatus] [nvarchar](10) NULL;
 END
+
+-- 26.x live lot qty is INLotSerialStatusByCostCenter (INLotSerialStatus is a projection).
+IF COL_LENGTH(N'dbo.INLotSerialStatusByCostCenter', N'UsrQMSLotStatus') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[INLotSerialStatusByCostCenter] ADD
+        [UsrQMSLotStatus] [nvarchar](10) NULL;
+END

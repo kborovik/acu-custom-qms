@@ -62,20 +62,7 @@ namespace Lab5.QMS
 
         protected virtual void UpdateLotStatus(int? inventoryID, string lotSerialNbr, string lotStatus)
         {
-            INLotSerialStatus lot = PXSelect<INLotSerialStatus,
-                Where<INLotSerialStatus.inventoryID, Equal<Required<INLotSerialStatus.inventoryID>>,
-                    And<INLotSerialStatus.lotSerialNbr, Equal<Required<INLotSerialStatus.lotSerialNbr>>>>>
-                .Select(Base, inventoryID, lotSerialNbr);
-            if (lot == null)
-            {
-                return;
-            }
-            INLotSerialStatusExt ext = lot.GetExtension<INLotSerialStatusExt>();
-            if (ext != null)
-            {
-                ext.UsrQMSLotStatus = lotStatus;
-            }
-            Base.Caches[typeof(INLotSerialStatus)].Update(lot);
+            QMSLotIssueGate.WriteLotStatus(Base, inventoryID, lotSerialNbr, lotStatus);
         }
 
         protected virtual void CreateDraftInspectionOrder(

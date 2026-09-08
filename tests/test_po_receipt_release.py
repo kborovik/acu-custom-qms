@@ -110,7 +110,7 @@ class TestQcHoldNotReleasedV1(unittest.TestCase):
         graph = GRAPH_CS.read_text(encoding="utf-8")
         self.assertIn("UpdateLotStatus(item.InventoryID, split.LotSerialNbr, QMSLotStatus.QcHold)", graph)
         self.assertNotIn("QMSLotStatus.Released", graph)
-        self.assertIn("ext.UsrQMSLotStatus = lotStatus;", graph)
+        self.assertIn("QMSLotIssueGate.WriteLotStatus(Base, inventoryID, lotSerialNbr, lotStatus)", graph)
 
     def test_draft_order_open_pending(self) -> None:
         order = seed_draft_order("Q0000001LOT0001", 42, "LOT-1", 7, "PR000001", "QPLAN-BOT")
@@ -228,7 +228,9 @@ class TestGraphOverride(unittest.TestCase):
         self.assertIn("PXSelect<POReceiptLine,", src)
         self.assertIn("PXSelect<POReceiptLineSplit,", src)
         self.assertIn("PXGraph.CreateInstance<QMSInspectionOrderEntry>()", src)
-        self.assertIn("INLotSerialStatus.lotSerialNbr", src)
+        self.assertIn("QMSLotIssueGate.WriteLotStatus(Base, inventoryID, lotSerialNbr, lotStatus)", src)
+        gate = (ROOT / "src" / "Lab5.QMS" / "QMSLotIssueGate.cs").read_text(encoding="utf-8")
+        self.assertIn("INLotSerialStatus.lotSerialNbr", gate)
 
 
 if __name__ == "__main__":

@@ -19,21 +19,21 @@ Ship Acumatica xRP customization `Lab5.QMS`: cannot-pass lot gate + REST CoA ing
 - cmd: `lab5-qms` Click console script on installable `lab5-qms` → subcommands `pack` `publish` `seed` `deploy`; no subcommand → Click help exit 0 (not deploy); `deploy` pack `Lab5_QMS_Customization.zip` + CustomizationApi publish + post-publish Role seed + `UsrQMSSetup` (QORD QNCR) per company when missing; pack/publish/seed/deploy emit per-step progress on stderr (step, target, result, elapsed); stdout stays path / status / `seeded`
 - cli: `acu` PATH (released `uv tool install`) → `acu config check` `acu config show` `acu tenant list`; ! `uv run acu`; ! `acu check` (destructive rebuild); Python ! `import acumatica_cli`
 - dac: `QMSSetup` (`InspectionOrderNumberingID` `NCRNumberingID`) `QMSInspectionPlan` `QMSInspectionPlanTest` `QMSInspectionOrder` `QMSInspectionOrderResult` `QMSNonConformance` + `InventoryItemExt` (`UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays`)
-- graph: `QMSSetupMaint` `QMSInspectionPlanMaint` `QMSInspectionOrderEntry` (`EvaluateResults` `ReleaseLotDecision`) `QMSNonConformanceEntry` (`CloseNCR` `DispositionRTV`) `POReceiptEntry_Extension` on `Release`
+- graph: `QMSSetupMaint` `QMSInspectionPlanMaint` `QMSInspectionOrderEntry` (`EvaluateResults` `ReleaseLotDecision`) `QMSNonConformanceEntry` (`CloseNCR` `DispositionRTV`) `POReceiptEntry_Extension` on `Release`; Kit Assembly IN307000 + BOM/issue graph extensions on allocate/issue
 - screen: Quality Management workspace — `QM.10.10.00` prefs, `QM.20.10.00` plans, `QM.30.10.00` orders, `QM.30.20.00` NCR
 - rest: `/entity/QMS/22.200.001/` — InspectionPlan GET PUT (`$expand=Tests`); InspectionOrder GET PUT; NonConformance GET POST; QMSSetup GET PUT (QM101000)
 - stock: REST PUT/GET StockItem persist `UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays` on `InventoryItemExt` (extend Default or QMS entity); GitOps `config/qms/20-stock-item-qms.yaml`
 - files: Acumatica `/files` attach CoA PDF + JSON on `QMSInspectionOrder.NoteID`
-- lot: `INLotSerialStatus.LotStatus` in {`QC Hold`, `Released`, `Quarantine`}
+- lot: `INLotSerialStatusExt.UsrQMSLotStatus` in {`QC Hold`, `Released`, `Quarantine`}; 26.x `INLotSerialStatus` has no `LotStatus`
 - role: `Quality Manager` or ingestion service-account token for QC Hold → Released; post-publish seed Bootstrap Role `Quality Manager` + `RolesInGraph` Accessrights=4 QM101000 QM201000 QM301000 QM302000 for Administrator (CompanyID 1) and Quality Manager; `ACU_USER` ← Quality Manager e2e-only
 
 ## §V INVARIANTS
-V1: cannot-pass-lot-gate — `UsrQMSInspectionRequired=true` on `POReceiptEntry.Release` → lot `LotStatus=QC Hold` (not BOM-allocatable) + draft `QMSInspectionOrder` (PlanID, Lot, Vendor, ReceiptNbr); lot ! Released until all required plan tests Pass
+V1: cannot-pass-lot-gate — `UsrQMSInspectionRequired=true` on `POReceiptEntry.Release` → lot `UsrQMSLotStatus=QC Hold` (not BOM-allocatable per cannot-issue-unreleased-lot) + draft `QMSInspectionOrder` (PlanID, Lot, Vendor, ReceiptNbr); lot ! Released until all required plan tests Pass
 V2: rest-coa-ingest — ingestion engine GET `InspectionPlan` (`$expand=Tests` returns test lines when `UsrQMSInspectionPlanTest` rows exist) then PUT `InspectionOrder` results + lab cert metadata; attach original CoA PDF + parsed JSON via `/files`
 V3: gmp-audit-record — `QMSInspectionOrder` + attached CoA PDF/JSON is system of record for lot release; plan+order carry `CreatedByID` `CreatedDateTime` `LastModifiedByID` `LastModifiedDateTime`; evaluation complete stamps `EvaluatedByID` `EvaluationDateTime`; QC Hold → Released requires ingestion service-account token or authenticated user w/ `Quality Manager` role
 V4: evaluate — each required plan test: numeric `MinValue` ≤ `ActualNumericValue` ≤ `MaxValue` (bound nullable); text contains required token; shelf-life `ExpiryDate` ≥ `ReceiptDate` + `UsrMinShelfLifeDays`; any Fail or missing required → `OverallEvaluation` Fail; all Pass → Pass
-V5: pass-path — `OverallEvaluation` Pass → `LotStatus` Released + order Status Completed
-V6: fail-path — `OverallEvaluation` Fail → `LotStatus` Quarantine + insert `QMSNonConformance` + halt allocation
+V5: pass-path — `OverallEvaluation` Pass → `UsrQMSLotStatus` Released + order Status Completed
+V6: fail-path — `OverallEvaluation` Fail → `UsrQMSLotStatus` Quarantine + insert `QMSNonConformance` + halt allocation
 V7: plan-bounds — `MinValue` and `MaxValue` both set → `MinValue` ≤ `MaxValue`; `PlanID` unique uppercase
 V8: publisher-lab5 — namespace `Lab5.QMS`; assembly `Lab5.QMS.dll`; zip `Lab5_QMS_Customization.zip`; zip ! Role `UsersInRoles` `RolesInGraph`
 V9: three-way-link — `POReceipt.ReceiptNbr` + `POReceiptLineSplit.LotSerialNbr` + `QMSInspectionOrder` stay consistent
@@ -42,6 +42,7 @@ V11: released-acu-cli — project ! declare `acumatica-cli` (`pyproject.toml` de
 V12: inspection-plan-rest-write — PUT `/entity/QMS/22.200.001/InspectionPlan` w/ Tests → 200 create/update plan + test lines; GET `{PlanID}?$expand=Tests` returns those lines; GitOps `config/qms/10-inspection-plans.yaml` applies w/o 500
 V13: stock-item-qms-rest — PUT StockItem persists `UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays` on `InventoryItem`; GET same contract returns the three fields; GitOps `config/qms/20-stock-item-qms.yaml` apply sets flags on all six PARTS items w/o SQL
 V14: qms-setup-seed-rest — after `Lab5.QMS` publish, `UsrQMSSetup` row exists (QORD QNCR) per company when missing; `QMS/22.200.001` QMSSetup GET PUT mapped QM101000; GitOps PUT Quality Preferences w/o UI Save or SQL; PO receipt Release on tenant w/ no prior QM101000 Save → draft InspectionOrder (not 422 PXSetup empty)
+V15: cannot-issue-unreleased-lot — Kit Assembly IN307000 + BOM/issue graphs refuse lots with `UsrQMSLotStatus` QC Hold or Quarantine; issue allowed only when Released
 
 ## §T TASKS
 id|status|task|cites
@@ -71,9 +72,12 @@ T23|x|e2e prove PARTS StockItem PUT persist + GET roundtrip; GitOps six-item `co
 T24|x|map QMSSetup GET PUT on `QMS/22.200.001` (QM101000)|V14,I.rest,I.dac,I.graph
 T25|x|post-publish seed insert `UsrQMSSetup` (QORD QNCR) per company when missing|V14,I.cmd
 T26|x|e2e prove QMSSetup GET PUT; GitOps PUT Quality Preferences no UI/SQL; PO receipt Release no prior QM101000 Save → draft InspectionOrder not 422|V14,I.rest,T24,T25
+T27|x|add Kit Assembly IN307000 + BOM/issue graph extensions: refuse `UsrQMSLotStatus` QC Hold or Quarantine; allow issue only when Released|V15,V1,I.lot,I.graph
+T28|x|e2e or GitOps scenario fail when QC Hold lot allocated on kit|V15,I.lot,T27
 
 ## §B BUGS
 id|date|cause|fix
 B1|2026-09-07|InspectionPlan mapped GET-only; Tests expand empty despite `UsrQMSInspectionPlanTest` rows; PUT 500|V12
 B2|2026-09-07|Default StockItem PUT ignores UsrQMS* InventoryItemExt; SQL stays 0/NULL|V13
 B3|2026-09-08|publish leaves UsrQMSSetup empty; QMSSetup not on REST; PO receipt Release 422 PXSetup|V14
+B4|2026-09-08|PO receipt writes `UsrQMSLotStatus` QC Hold; Kit Assembly / IN issue graphs unread so QC Hold lots stay BOM-allocatable|V15
