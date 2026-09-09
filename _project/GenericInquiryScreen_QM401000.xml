@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <GenericInquiryScreen ScreenID="QM401000">
   <data-set>
-    <relations format-version="3" relations-version="20180809" main-table="GIDesign">
+    <relations format-version="4" relations-version="6" main-table="GIDesign">
       <link from="GIFilter (DesignID)" to="GIDesign (DesignID)" />
       <link from="GIGroupBy (DesignID)" to="GIDesign (DesignID)" />
       <link from="GIMassAction (DesignID)" to="GIDesign (DesignID)" />
@@ -17,11 +17,6 @@
       <link from="GISort (DesignID)" to="GIDesign (DesignID)" />
       <link from="GITable (DesignID)" to="GIDesign (DesignID)" />
       <link from="GIWhere (DesignID)" to="GIDesign (DesignID)" />
-      <link from="SiteMap (Url)" to="GIDesign (DesignID)" type="WeakByUrl" linkname="toDesignById" baseurl="~/GenericInquiry/GenericInquiry.aspx" paramnames="id" />
-      <link from="MUIScreen (NodeID)" to="SiteMap (NodeID)" />
-      <link from="MUIWorkspace (WorkspaceID)" to="MUIScreen (WorkspaceID)" type="FromMaster" linkname="workspaceToScreen" split-location="yes" updateable="True" />
-      <link from="MUISubcategory (SubcategoryID)" to="MUIScreen (SubcategoryID)" type="FromMaster" updateable="True" />
-      <link from="MUIPinnedScreen (NodeID, WorkspaceID)" to="MUIScreen (NodeID, WorkspaceID)" type="WeakIfEmpty" isEmpty="Username" />
     </relations>
     <layout>
       <table name="GIDesign">
@@ -36,67 +31,55 @@
           <table name="GIResult" uplink="(Alias, DesignID) = (ObjectName, DesignID)" />
         </table>
         <table name="GIWhere" uplink="(DesignID) = (DesignID)" />
-        <table name="SiteMap" uplink="(DesignID) = (Url)" recursion="(NodeID) = (ParentID)" linkname="toDesignById">
-          <table name="MUIScreen" uplink="(NodeID) = (NodeID)">
-            <table name="MUIPinnedScreen" uplink="(NodeID, WorkspaceID) = (NodeID, WorkspaceID)" />
-          </table>
-        </table>
       </table>
     </layout>
     <data>
       <GIDesign>
-        <row DesignID="9f9483b9-6427-40c6-9c91-96b22c67c28e" Name="Quality Queue" FilterColCount="3" PageSize="0" ExportTop="0" NewRecordCreationEnabled="0" MassDeleteEnabled="0" AutoConfirmDelete="0" MassRecordsUpdateEnabled="0" MassActionsOnRecordsEnabled="0" ExposeViaOData="0" ExposeViaMobile="0" NotesAndFilesTable="$&lt;None&gt;">
-          <GITable Alias="Order" Name="Lab5.QMS.QMSInspectionOrder" Type="0">
-            <GIRelation LineNbr="1" ChildTable="Lot" IsActive="1" JoinType="L">
+        <row DesignID="9f9483b9-6427-40c6-9c91-96b22c67c28e" Name="Quality Queue">
+          <GITable Alias="Order" Name="Lab5.QMS.QMSInspectionOrder">
+            <GIRelation LineNbr="1" ChildTable="Lot" JoinType="L">
               <GIOn LineNbr="1" ParentField="inventoryID" Condition="E" ChildField="inventoryID" Operation="A" />
               <GIOn LineNbr="2" ParentField="lotSerialNbr" Condition="E" ChildField="lotSerialNbr" Operation="A" />
             </GIRelation>
-            <GIRelation LineNbr="2" ChildTable="NCR" IsActive="1" JoinType="L">
+            <GIRelation LineNbr="2" ChildTable="NCR" JoinType="L">
               <GIOn LineNbr="1" ParentField="inspectionOrderNbr" Condition="E" ChildField="inspectionOrderNbr" Operation="A" />
             </GIRelation>
-            <GIRelation LineNbr="3" ChildTable="Item" IsActive="1" JoinType="L">
+            <GIRelation LineNbr="3" ChildTable="Item" JoinType="L">
               <GIOn LineNbr="1" ParentField="inventoryID" Condition="E" ChildField="inventoryID" Operation="A" />
             </GIRelation>
-            <GIRelation LineNbr="4" ChildTable="Vendor" IsActive="1" JoinType="L">
+            <GIRelation LineNbr="4" ChildTable="Vendor" JoinType="L">
               <GIOn LineNbr="1" ParentField="vendorID" Condition="E" ChildField="bAccountID" Operation="A" />
             </GIRelation>
-            <GIResult LineNbr="2" SortOrder="2" IsActive="1" Field="lotSerialNbr" SchemaField="Order.LotSerialNbr" Caption="Lot" Width="140" IsVisible="1" DefaultNav="0" QuickFilter="0" FastFilter="1" />
-            <GIResult LineNbr="3" SortOrder="3" IsActive="1" Field="receiptNbr" SchemaField="Order.ReceiptNbr" Caption="Receipt" Width="120" IsVisible="1" DefaultNav="0" QuickFilter="0" FastFilter="1" />
-            <GIResult LineNbr="5" SortOrder="5" IsActive="1" Field="planID" SchemaField="Order.PlanID" Caption="Plan" Width="140" IsVisible="1" DefaultNav="0" QuickFilter="0" FastFilter="1" />
-            <GIResult LineNbr="7" SortOrder="7" IsActive="1" Field="inspectionOrderNbr" SchemaField="Order.InspectionOrderNbr" Caption="Order Nbr" Width="140" IsVisible="1" DefaultNav="1" NavigationNbr="1" QuickFilter="1" FastFilter="1" />
-            <GIResult LineNbr="8" SortOrder="8" IsActive="1" Field="status" SchemaField="Order.Status" Caption="Order Status" Width="100" IsVisible="1" DefaultNav="0" QuickFilter="0" FastFilter="0" />
+            <GIResult LineNbr="2" Field="lotSerialNbr" Caption="Lot" />
+            <GIResult LineNbr="3" Field="receiptNbr" Caption="Receipt" />
+            <GIResult LineNbr="5" Field="planID" Caption="Plan" />
+            <GIResult LineNbr="7" Field="inspectionOrderNbr" Caption="Order Nbr" DefaultNav="1" NavigationNbr="1" />
+            <GIResult LineNbr="8" Field="status" Caption="Order Status" />
           </GITable>
-          <GITable Alias="Lot" Name="PX.Objects.IN.INLotSerialStatusByCostCenter" Type="0">
-            <GIResult LineNbr="6" SortOrder="6" IsActive="1" Field="usrQMSLotStatus" SchemaField="Lot.UsrQMSLotStatus" Caption="Lot Status" Width="100" IsVisible="1" DefaultNav="0" QuickFilter="0" FastFilter="1" />
+          <GITable Alias="Lot" Name="PX.Objects.IN.INLotSerialStatusByCostCenter">
+            <GIResult LineNbr="6" Field="usrQMSLotStatus" Caption="Lot Status" />
           </GITable>
-          <GITable Alias="NCR" Name="Lab5.QMS.QMSNonConformance" Type="0">
-            <GIResult LineNbr="9" SortOrder="9" IsActive="1" Field="nCRNbr" SchemaField="NCR.NCRNbr" Caption="NCR Nbr" Width="140" IsVisible="1" DefaultNav="1" NavigationNbr="2" QuickFilter="1" FastFilter="1" />
-            <GIResult LineNbr="10" SortOrder="10" IsActive="1" Field="status" SchemaField="NCR.Status" Caption="NCR Status" Width="100" IsVisible="1" DefaultNav="0" QuickFilter="0" FastFilter="0" />
+          <GITable Alias="NCR" Name="Lab5.QMS.QMSNonConformance">
+            <GIResult LineNbr="9" Field="nCRNbr" Caption="NCR Nbr" DefaultNav="1" NavigationNbr="2" />
+            <GIResult LineNbr="10" Field="status" Caption="NCR Status" />
           </GITable>
-          <GITable Alias="Item" Name="PX.Objects.IN.InventoryItem" Type="0">
-            <GIResult LineNbr="1" SortOrder="1" IsActive="1" Field="inventoryCD" SchemaField="Item.InventoryCD" Caption="Inventory" Width="140" IsVisible="1" DefaultNav="0" QuickFilter="0" FastFilter="1" />
+          <GITable Alias="Item" Name="PX.Objects.IN.InventoryItem">
+            <GIResult LineNbr="1" Field="inventoryCD" Caption="Inventory" />
           </GITable>
-          <GITable Alias="Vendor" Name="PX.Objects.AP.Vendor" Type="0">
-            <GIResult LineNbr="4" SortOrder="4" IsActive="1" Field="acctCD" SchemaField="Vendor.AcctCD" Caption="Vendor" Width="140" IsVisible="1" DefaultNav="0" QuickFilter="0" FastFilter="1" />
+          <GITable Alias="Vendor" Name="PX.Objects.AP.Vendor">
+            <GIResult LineNbr="4" Field="acctCD" Caption="Vendor" />
           </GITable>
-          <GIWhere LineNbr="1" IsActive="1" OpenBrackets="(" DataFieldName="Lot.usrQMSLotStatus" Condition="E" IsExpression="0" Value1="QC Hold" CloseBrackets=")" Operation="O" />
-          <GIWhere LineNbr="2" IsActive="1" OpenBrackets="(" DataFieldName="Order.status" Condition="NE" IsExpression="0" Value1="C" CloseBrackets=")" Operation="O" />
-          <GIWhere LineNbr="3" IsActive="1" OpenBrackets="(" DataFieldName="NCR.nCRNbr" Condition="NN" IsExpression="0" Operation="A" />
-          <GIWhere LineNbr="4" IsActive="1" DataFieldName="NCR.status" Condition="NE" IsExpression="0" Value1="C" CloseBrackets=")" Operation="A" />
-          <GISort LineNbr="1" IsActive="1" DataFieldName="Order.inspectionOrderNbr" SortOrder="A" />
-          <GINavigationScreen Link="QM301000" LineNbr="1" SortOrder="1" WindowMode="L" IsActive="1">
-            <GINavigationParameter NavigationScreenLineNbr="1" LineNbr="1" FieldName="InspectionOrderNbr" ParameterName="Order.inspectionOrderNbr" IsExpression="0" />
+          <GIWhere LineNbr="1" DataFieldName="Lot.usrQMSLotStatus" Condition="E" Value1="QC Hold" Operation="O" />
+          <GIWhere LineNbr="2" DataFieldName="Order.status" Condition="NE" Value1="C" Operation="O" />
+          <GIWhere LineNbr="3" DataFieldName="NCR.nCRNbr" Condition="NN" Operation="A" />
+          <GIWhere LineNbr="4" DataFieldName="NCR.status" Condition="NE" Value1="C" Operation="A" />
+          <GISort LineNbr="1" DataFieldName="Order.inspectionOrderNbr" SortOrder="A" />
+          <GINavigationScreen ScreenID="QM301000" LineNbr="1">
+            <GINavigationParameter LineNbr="1" FieldName="InspectionOrderNbr" ParameterName="Order.inspectionOrderNbr" />
           </GINavigationScreen>
-          <GINavigationScreen Link="QM302000" LineNbr="2" SortOrder="2" WindowMode="L" IsActive="1">
-            <GINavigationParameter NavigationScreenLineNbr="2" LineNbr="1" FieldName="NCRNbr" ParameterName="NCR.nCRNbr" IsExpression="0" />
+          <GINavigationScreen ScreenID="QM302000" LineNbr="2">
+            <GINavigationParameter LineNbr="1" FieldName="NCRNbr" ParameterName="NCR.nCRNbr" />
           </GINavigationScreen>
-          <SiteMap linkname="toDesignById">
-            <row Position="5" Title="Quality Queue" Url="~/GenericInquiry/GenericInquiry.aspx?id=9f9483b9-6427-40c6-9c91-96b22c67c28e" Expanded="0" IsFolder="0" ScreenID="QM401000" NodeID="4B71B730-6114-4FA3-86EF-87EBA78E1DB0" ParentID="00000000-0000-0000-0000-000000000000">
-              <MUIScreen IsPortal="0" WorkspaceID="6557C1C6-747E-45BB-9072-54F096598D61" Order="800.0" SubcategoryID="98E86774-69E3-41EA-B94F-EB2C7A8426D4">
-                <MUIPinnedScreen IsPinned="0" Username="" IsPortal="0" />
-              </MUIScreen>
-            </row>
-          </SiteMap>
         </row>
       </GIDesign>
     </data>

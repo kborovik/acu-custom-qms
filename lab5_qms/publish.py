@@ -14,11 +14,13 @@ import subprocess
 import time
 import xml.etree.ElementTree as ET
 import zipfile
+from pathlib import Path
 from typing import Any
 
 import httpx
 
 from lab5_qms.acu import (
+    ACU_INSTANCE_PATH,
     DB_NAME,
     SSH_TIMEOUT,
     AcumaticaClient,
@@ -42,6 +44,7 @@ ROLES_IN_GRAPH_APPLICATION = "/"
 ACCESSRIGHTS_DELETE = 4
 QORD = "QORD"
 QNCR = "QNCR"
+QM401000_DESIGN_ID = "9f9483b9-6427-40c6-9c91-96b22c67c28e"
 
 
 def instance() -> Instance:
@@ -491,6 +494,135 @@ def _ensure_qms_setup_rows() -> None:
     sqlcmd(qms_setup_insert_sql())
 
 
+def quality_queue_seed_sql(cid: int) -> str:
+    """Insert QM401000 GIDesign work-queue when missing (26.101 GI XML upgrades fail)."""
+    nil = "00000000-0000-0000-0000-000000000000"
+    did = QM401000_DESIGN_ID
+    db = DB_NAME
+    return (
+        f"DECLARE @cid int = {cid}; "
+        f"DECLARE @did uniqueidentifier = '{did}'; "
+        "DECLARE @mask varbinary(32); "
+        f"SELECT TOP 1 @mask = CompanyMask FROM {db}.dbo.GIDesign WHERE CompanyID = @cid; "
+        "IF @mask IS NULL SET @mask = 0xAAAAAAAA; "
+        f"IF NOT EXISTS (SELECT 1 FROM {db}.dbo.GIDesign WHERE CompanyID = @cid AND DesignID = @did) "
+        f"INSERT INTO {db}.dbo.GIDesign ("
+        "CompanyID, DesignID, Name, NewRecordCreationEnabled, MassDeleteEnabled, "
+        "AutoConfirmDelete, MassRecordsUpdateEnabled, MassActionsOnRecordsEnabled, "
+        "ExposeViaOData, ExposeViaMobile, ShowDeletedRecords, ShowArchivedRecords, "
+        "DisableCountsAndTotals, CreatedByID, CreatedDateTime, CreatedByScreenID, "
+        "LastModifiedByID, LastModifiedDateTime, LastModifiedByScreenID, NoteID, CompanyMask"
+        ") VALUES ("
+        f"@cid, @did, N'Quality Queue', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
+        f"'{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask); "
+        "IF NOT EXISTS (SELECT 1 FROM "
+        f"{db}.dbo.GITable WHERE CompanyID = @cid AND DesignID = @did) "
+        "BEGIN "
+        f"INSERT INTO {db}.dbo.GITable ("
+        "CompanyID, DesignID, Alias, Name, Type, CreatedByID, CreatedDateTime, "
+        "CreatedByScreenID, LastModifiedByID, LastModifiedDateTime, LastModifiedByScreenID, "
+        "NoteID, CompanyMask) VALUES "
+        f"(@cid, @did, N'Order', N'Lab5.QMS.QMSInspectionOrder', 0, '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, N'Lot', N'PX.Objects.IN.INLotSerialStatusByCostCenter', 0, '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, N'NCR', N'Lab5.QMS.QMSNonConformance', 0, '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, N'Item', N'PX.Objects.IN.InventoryItem', 0, '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, N'Vendor', N'PX.Objects.AP.Vendor', 0, '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask); "
+        f"INSERT INTO {db}.dbo.GIRelation ("
+        "CompanyID, DesignID, LineNbr, ParentTable, ChildTable, IsActive, JoinType, "
+        "CreatedByID, CreatedDateTime, CreatedByScreenID, LastModifiedByID, "
+        "LastModifiedDateTime, LastModifiedByScreenID, NoteID, CompanyMask) VALUES "
+        f"(@cid, @did, 1, N'Order', N'Lot', 1, 'L', '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 2, N'Order', N'NCR', 1, 'L', '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 3, N'Order', N'Item', 1, 'L', '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 4, N'Order', N'Vendor', 1, 'L', '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask); "
+        f"INSERT INTO {db}.dbo.GIOn ("
+        "CompanyID, DesignID, RelationNbr, LineNbr, ParentField, Condition, ChildField, Operation, "
+        "CreatedByID, CreatedDateTime, CreatedByScreenID, LastModifiedByID, "
+        "LastModifiedDateTime, LastModifiedByScreenID, NoteID, CompanyMask) VALUES "
+        f"(@cid, @did, 1, 1, N'inventoryID', 'E', N'inventoryID', 'A', '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 1, 2, N'lotSerialNbr', 'E', N'lotSerialNbr', 'A', '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 2, 1, N'inspectionOrderNbr', 'E', N'inspectionOrderNbr', 'A', '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 3, 1, N'inventoryID', 'E', N'inventoryID', 'A', '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 4, 1, N'vendorID', 'E', N'bAccountID', 'A', '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask); "
+        f"INSERT INTO {db}.dbo.GIResult ("
+        "CompanyID, DesignID, LineNbr, SortOrder, IsActive, ObjectName, Field, Caption, "
+        "IsVisible, DefaultNav, NavigationNbr, QuickFilter, FastFilter, RowID, "
+        "CreatedByID, CreatedDateTime, CreatedByScreenID, LastModifiedByID, "
+        "LastModifiedDateTime, LastModifiedByScreenID, NoteID, CompanyMask) VALUES "
+        f"(@cid, @did, 1, 1, 1, N'Item', N'inventoryCD', N'Inventory', 1, 0, NULL, 0, 1, NEWID(), '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 2, 2, 1, N'Order', N'lotSerialNbr', N'Lot', 1, 0, NULL, 0, 1, NEWID(), '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 3, 3, 1, N'Order', N'receiptNbr', N'Receipt', 1, 0, NULL, 0, 1, NEWID(), '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 4, 4, 1, N'Vendor', N'acctCD', N'Vendor', 1, 0, NULL, 0, 1, NEWID(), '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 5, 5, 1, N'Order', N'planID', N'Plan', 1, 0, NULL, 0, 1, NEWID(), '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 6, 6, 1, N'Lot', N'usrQMSLotStatus', N'Lot Status', 1, 0, NULL, 0, 1, NEWID(), '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 7, 7, 1, N'Order', N'inspectionOrderNbr', N'Order Nbr', 1, 1, 1, 1, 1, NEWID(), '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 8, 8, 1, N'Order', N'status', N'Order Status', 1, 0, NULL, 0, 0, NEWID(), '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 9, 9, 1, N'NCR', N'nCRNbr', N'NCR Nbr', 1, 1, 2, 1, 1, NEWID(), '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 10, 10, 1, N'NCR', N'status', N'NCR Status', 1, 0, NULL, 0, 0, NEWID(), '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask); "
+        f"INSERT INTO {db}.dbo.GIWhere ("
+        "CompanyID, DesignID, LineNbr, IsActive, OpenBrackets, DataFieldName, Condition, "
+        "IsExpression, Value1, CloseBrackets, Operation, CreatedByID, CreatedDateTime, "
+        "CreatedByScreenID, LastModifiedByID, LastModifiedDateTime, LastModifiedByScreenID, "
+        "NoteID, CompanyMask) VALUES "
+        f"(@cid, @did, 1, 1, N'(', N'Lot.usrQMSLotStatus', 'E', 0, N'QC Hold', N')', 'O', '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 2, 1, N'(', N'Order.status', 'NE', 0, N'C', N')', 'O', '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 3, 1, N'(', N'NCR.nCRNbr', 'NN', 0, NULL, NULL, 'A', '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask), "
+        f"(@cid, @did, 4, 1, NULL, N'NCR.status', 'NE', 0, N'C', N')', 'A', '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask); "
+        f"INSERT INTO {db}.dbo.GISort ("
+        "CompanyID, DesignID, LineNbr, IsActive, DataFieldName, SortOrder, "
+        "CreatedByID, CreatedDateTime, CreatedByScreenID, LastModifiedByID, "
+        "LastModifiedDateTime, LastModifiedByScreenID, NoteID, CompanyMask) VALUES "
+        f"(@cid, @did, 1, 1, N'Order.inspectionOrderNbr', 'A', '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask); "
+        f"INSERT INTO {db}.dbo.GINavigationScreen ("
+        "CompanyID, DesignID, Link, LineNbr, SortOrder, WindowMode, IsActive, NoteID, CompanyMask, "
+        "CreatedByID, CreatedDateTime, CreatedByScreenID, LastModifiedByID, "
+        "LastModifiedDateTime, LastModifiedByScreenID) VALUES "
+        f"(@cid, @did, N'QM301000', 1, 1, N'L', 1, NEWID(), @mask, '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000'), "
+        f"(@cid, @did, N'QM302000', 2, 2, N'L', 1, NEWID(), @mask, '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000'); "
+        f"INSERT INTO {db}.dbo.GINavigationParameter ("
+        "CompanyID, DesignID, NavigationScreenLineNbr, LineNbr, FieldName, ParameterName, "
+        "IsExpression, CreatedByID, CreatedDateTime, CreatedByScreenID, LastModifiedByID, "
+        "LastModifiedDateTime, LastModifiedByScreenID, CompanyMask) VALUES "
+        f"(@cid, @did, 1, 1, N'InspectionOrderNbr', N'Order.inspectionOrderNbr', 0, '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', @mask), "
+        f"(@cid, @did, 2, 1, N'NCRNbr', N'NCR.nCRNbr', 0, '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', @mask); "
+        "END"
+    )
+
+
+def _ensure_quality_queue_gi() -> None:
+    sqlcmd(quality_queue_seed_sql(company_id()))
+
+
+def _ensure_qm_aspx_pages() -> None:
+    """Copy stub aspx onto the site. REST QMS entities 500 if Pages/QM/*.aspx is missing."""
+    inst = instance()
+    if not inst.ssh:
+        return
+    root = Path(__file__).resolve().parents[1]
+    remote_dir = ACU_INSTANCE_PATH.replace("\\", "/") + "/Pages/QM"
+    ssh_run(
+        "New-Item -ItemType Directory -Force -Path '"
+        + ACU_INSTANCE_PATH
+        + r"\Pages\QM' | Out-Null"
+    )
+    for screen in ("QM101000", "QM201000", "QM301000", "QM302000"):
+        for suffix in (".aspx", ".aspx.cs"):
+            local = root / "Pages_QM" / f"{screen}{suffix}"
+            remote = f"{inst.ssh}:{remote_dir}/{screen}{suffix}"
+            result = subprocess.run(
+                ["scp", "-o", "BatchMode=yes", str(local), remote],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=SSH_TIMEOUT,
+            )
+            if result.returncode != 0:
+                raise RuntimeError(
+                    f"scp {local.name} failed ({result.returncode}):\n"
+                    f"{result.stdout}\n{result.stderr}"
+                )
+
+
 def seed_qm_rights(session: AcumaticaClient) -> None:
     """Post-publish Role Quality Manager + QM RolesInGraph + UsrQMSSetup. No ACU_USER attach."""
     with progress("seed Role", QUALITY_MANAGER_ROLE):
@@ -508,3 +640,7 @@ def seed_qm_rights(session: AcumaticaClient) -> None:
             _recycle_app_pool()
     with progress("seed UsrQMSSetup", f"{QORD},{QNCR}"):
         _ensure_qms_setup_rows()
+    with progress("seed Quality Queue GI", "QM401000"):
+        _ensure_quality_queue_gi()
+    with progress("seed Pages/QM aspx", "REST"):
+        _ensure_qm_aspx_pages()

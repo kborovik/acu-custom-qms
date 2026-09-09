@@ -28,12 +28,7 @@ PAGES = (
     "QM301000",
     "QM302000",
 )
-PAGE_TITLES = {
-    "QM101000": "Quality Preferences",
-    "QM201000": "Inspection Plans",
-    "QM301000": "Inspection Orders",
-    "QM302000": "Non-Conformance Reports",
-}
+
 
 CLASS_RE = re.compile(
     r"public\s+(?:static\s+)?class\s+(\w+)(?:\s*:\s*([^{\n]+))?",
@@ -96,9 +91,6 @@ def _project_xml(root: Path) -> ET.Element:
     sitemap_doc = ET.parse(root / "_project" / "SiteMap.xml")
     customization.append(sitemap_doc.getroot())
 
-    gi_doc = ET.parse(root / "_project" / "GenericInquiryScreen_QM401000.xml")
-    customization.append(gi_doc.getroot())
-
     sql_el = ET.SubElement(customization, "Sql")
     sql_el.set("TableName", "CreateQMSTables")
     sql_el.set(
@@ -111,11 +103,10 @@ def _project_xml(root: Path) -> ET.Element:
     # 26.101.0225 (includedAspxFiles). Training packages ship Bin\*.dll.
     # Keep DAC/graph source in src/; pack/publish/deploy compile on the ERP
     # VM when those sources change, then add File Bin\Lab5.QMS.dll.
-    for screen in PAGES:
-        page_el = ET.SubElement(customization, "Page")
-        page_el.set("Type", "Page")
-        page_el.set("ScreenID", screen)
-        page_el.set("Title", PAGE_TITLES[screen])
+    # Do not emit <Page> items for new QM screens: 26.101.0225 CstPageData
+    # NRE without path, and path=~/Pages/QM/*.aspx fails import ("page does
+    # not exist in this version"). SiteMap + FrontendSources File register
+    # the Modern screens. ScreenID stays on SiteMap and HTML+TS class names.
     for rel in _frontend_files():
         file_el = ET.SubElement(customization, "File")
         file_el.set("AppRelativePath", _app_relative(rel))

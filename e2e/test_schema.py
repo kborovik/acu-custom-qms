@@ -288,6 +288,16 @@ class TestModernQmWorkspace(unittest.TestCase):
                     f"ScreenId={screen_id}" in url or f"ScreenID={screen_id}" in url,
                     f"{screen_id} dropped from url after redirects: {url}",
                 )
+                self.assertNotIn(
+                    "/Pages/QM/",
+                    url,
+                    f"{screen_id} opened Classic ASPX: {url}",
+                )
+                self.assertNotRegex(
+                    url,
+                    r"\.aspx(\?|$)",
+                    f"{screen_id} opened Classic ASPX: {url}",
+                )
 
 
 if __name__ == "__main__":

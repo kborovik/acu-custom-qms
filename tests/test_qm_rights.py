@@ -160,6 +160,8 @@ class TestQmsDetailMappingSeedV12(unittest.TestCase):
             patch("lab5_qms.publish._ensure_qm_roles_in_graph"),
             patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=1),
             patch("lab5_qms.publish._ensure_qms_setup_rows"),
+            patch("lab5_qms.publish._ensure_quality_queue_gi"),
+            patch("lab5_qms.publish._ensure_qm_aspx_pages"),
             patch("lab5_qms.publish._recycle_app_pool") as recycle,
         ):
             seed_qm_rights(session)
@@ -176,6 +178,8 @@ class TestQmsDetailMappingSeedV12(unittest.TestCase):
             patch("lab5_qms.publish._ensure_qm_roles_in_graph"),
             patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
             patch("lab5_qms.publish._ensure_qms_setup_rows"),
+            patch("lab5_qms.publish._ensure_quality_queue_gi"),
+            patch("lab5_qms.publish._ensure_qm_aspx_pages"),
             patch("lab5_qms.publish._recycle_app_pool") as recycle,
         ):
             seed_qm_rights(session)

@@ -227,14 +227,7 @@ class TestProjectXmlPackedItems(unittest.TestCase):
             )
         self.assertEqual(screens["QM401000"].get("Title"), "Quality Queue")
         self.assertEqual(screens["QM401000"].get("Url"), QM401000_URL)
-        pages = {
-            item.get("ScreenID"): item
-            for item in root.findall("Page")
-            if item.get("Type") == "Page"
-        }
-        for screen in SCREENS:
-            self.assertIn(screen, pages, screen)
-            self.assertEqual(pages[screen].get("Title"), pack.PAGE_TITLES[screen])
+        self.assertEqual(root.findall("Page"), [])
         file_paths = {item.get("AppRelativePath") for item in root.findall("File")}
         for screen in SCREENS:
             for suffix in (".html", ".ts"):

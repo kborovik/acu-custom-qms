@@ -46,6 +46,8 @@ SEED_STEPS = (
     "seed RolesInGraph",
     "seed EntityMapping",
     "seed UsrQMSSetup",
+    "seed Quality Queue GI",
+    "seed Pages/QM aspx",
 )
 
 
@@ -297,6 +299,8 @@ class TestCliProgressICmdV10(unittest.TestCase):
             patch("lab5_qms.publish._ensure_qm_roles_in_graph"),
             patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
             patch("lab5_qms.publish._ensure_qms_setup_rows"),
+            patch("lab5_qms.publish._ensure_quality_queue_gi"),
+            patch("lab5_qms.publish._ensure_qm_aspx_pages"),
             patch("lab5_qms.progress.sys.stderr", err),
         ):
             seed_qm_rights(session)
@@ -306,6 +310,8 @@ class TestCliProgressICmdV10(unittest.TestCase):
         self.assertEqual(rows[1][1], ",".join(QM_SCREENS))
         self.assertEqual(rows[2][1], "Tests,Results")
         self.assertEqual(rows[3][1], "QORD,QNCR")
+        self.assertEqual(rows[4][1], "QM401000")
+        self.assertEqual(rows[5][1], "REST")
         session.put.assert_called_once()
         for row in rows:
             self.assertEqual(row[2], "ok")
@@ -336,6 +342,8 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 patch("lab5_qms.publish._ensure_qm_roles_in_graph"),
                 patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
                 patch("lab5_qms.publish._ensure_qms_setup_rows"),
+                patch("lab5_qms.publish._ensure_quality_queue_gi"),
+                patch("lab5_qms.publish._ensure_qm_aspx_pages"),
             ):
                 r = CliRunner().invoke(cli, ["deploy", "-o", str(dest)])
         self.assertEqual(r.exit_code, 0, r.output)

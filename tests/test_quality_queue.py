@@ -60,7 +60,8 @@ class TestQualityQueueGI(unittest.TestCase):
             design = root.find(".//GIDesign/row")
         self.assertIsNotNone(design)
         self.assertEqual(design.get("Name"), "Quality Queue")
-        self.assertEqual(design.get("MassActionsOnRecordsEnabled"), "0")
+        self.assertNotIn("EvaluateResults", blob)
+        self.assertNotIn("ReleaseLotDecision", blob)
         tables = {
             row.get("Alias"): row.get("Name")
             for row in root.findall(".//{*}GITable") + root.findall(".//GITable")
@@ -86,7 +87,7 @@ class TestQualityQueueGI(unittest.TestCase):
         self.assertIn('Value1="C"', where)
         self.assertIn('Condition="NN"', where)
         links = {
-            row.get("Link")
+            row.get("Link") or row.get("ScreenID")
             for row in root.findall(".//{*}GINavigationScreen")
             + root.findall(".//GINavigationScreen")
         }
@@ -96,17 +97,26 @@ class TestQualityQueueGI(unittest.TestCase):
         with _zip() as zf:
             project = ET.fromstring(zf.read("project.xml"))
             names = set(zf.namelist())
-        gi = project.find("GenericInquiryScreen")
-        self.assertIsNotNone(gi)
-        self.assertEqual(gi.get("ScreenID"), "QM401000")
         self.assertIn("_project/GenericInquiryScreen_QM401000.xml", names)
-        blob = ET.tostring(gi, encoding="unicode")
+        self.assertIsNone(project.find("GenericInquiryScreen"))
+        blob = GI_XML.read_text(encoding="utf-8")
         for action in FORBIDDEN_ACTIONS:
             self.assertNotIn(action, blob, action)
         self.assertNotIn(
             "FrontendSources/screen/src/screens/QM/QM401000/",
             " ".join(names),
         )
+
+    def test_seed_sql_covers_work_filter_and_drills(self) -> None:
+        from lab5_qms.publish import QM401000_DESIGN_ID, quality_queue_seed_sql
+
+        sql = quality_queue_seed_sql(14)
+        self.assertIn(QM401000_DESIGN_ID, sql)
+        self.assertIn("Quality Queue", sql)
+        self.assertIn("QC Hold", sql)
+        self.assertIn("QM301000", sql)
+        self.assertIn("QM302000", sql)
+        self.assertNotIn("EvaluateResults", sql)
 
 
 if __name__ == "__main__":
