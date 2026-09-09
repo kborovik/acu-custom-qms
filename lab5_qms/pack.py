@@ -64,10 +64,6 @@ def package_zip(root: Path | None = None, *, ensure_dll: bool = False) -> bytes:
         zf.writestr("project.xml", xml_bytes)
         for rel in _pkg_members(root):
             zf.write(root / rel, arcname=rel.as_posix())
-        for screen in PAGES:
-            for suffix in (".aspx", ".aspx.cs"):
-                src = root / "Pages_QM" / f"{screen}{suffix}"
-                zf.write(src, arcname=f"Pages/QM/{screen}{suffix}")
         dll = _dll_path(root)
         if dll is not None:
             zf.write(dll, arcname="Bin/" + ASSEMBLY_DLL)
@@ -123,10 +119,6 @@ def _project_xml(root: Path) -> ET.Element:
     for rel in _frontend_files():
         file_el = ET.SubElement(customization, "File")
         file_el.set("AppRelativePath", _app_relative(rel))
-    for screen in PAGES:
-        for suffix in (".aspx", ".aspx.cs"):
-            file_el = ET.SubElement(customization, "File")
-            file_el.set("AppRelativePath", rf"Pages\QM\{screen}{suffix}")
 
     dll = _dll_path(root)
     if dll is not None:
@@ -145,9 +137,6 @@ def _pkg_members(root: Path) -> list[Path]:
         Path("Scripts") / "CreateQMSTables.sql",
     ]
     members.extend(_frontend_files())
-    for screen in PAGES:
-        members.append(Path("Pages_QM") / f"{screen}.aspx")
-        members.append(Path("Pages_QM") / f"{screen}.aspx.cs")
     for path in members:
         if not (root / path).is_file():
             raise FileNotFoundError(path)

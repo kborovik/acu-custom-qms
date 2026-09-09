@@ -85,14 +85,21 @@ class TestRolesInGraphSeedV10(unittest.TestCase):
         base = {
             "project.xml": b"<Customization/>",
             "Bin/Lab5.QMS.dll": b"MZ",
-            "Pages/QM/QM301000.aspx": b"old-page",
+            "FrontendSources/screen/src/screens/QM/QM301000/QM301000.html": b"old-page",
             "Scripts/CreateQMSTables.sql": b"CREATE TABLE",
         }
         same = zip_digest(blob(**base))
         self.assertEqual(same, zip_digest(blob(**base)))
         self.assertNotEqual(
             same,
-            zip_digest(blob(**{**base, "Pages/QM/QM301000.aspx": b"new-page"})),
+            zip_digest(
+                blob(
+                    **{
+                        **base,
+                        "FrontendSources/screen/src/screens/QM/QM301000/QM301000.html": b"new-page",
+                    }
+                )
+            ),
         )
         self.assertNotEqual(
             same,

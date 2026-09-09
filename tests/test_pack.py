@@ -110,8 +110,11 @@ class TestPackIPkg(unittest.TestCase):
         self.assertIn("_project/ProjectMetadata.xml", names)
         self.assertIn("_project/GenericInquiryScreen_QM401000.xml", names)
         self.assertIn("Scripts/CreateQMSTables.sql", names)
-        for screen in SCREENS:
-            self.assertIn(f"Pages_QM/{screen}.aspx", names, screen)
+        for name in names:
+            self.assertFalse(name.startswith("Pages_QM/"), name)
+            self.assertFalse(name.startswith("Pages/QM/"), name)
+            self.assertFalse(name.endswith(".aspx"), name)
+            self.assertFalse(name.endswith(".aspx.cs"), name)
         meta = ET.parse(ROOT / "_project" / "ProjectMetadata.xml").getroot()
         self.assertEqual(meta.get("name"), "Lab5.QMS")
         self.assertIn("22.200.001", meta.get("description") or "")
@@ -182,15 +185,17 @@ class TestProjectXmlPackedItems(unittest.TestCase):
         with _zip() as zf:
             root = _project(zf)
             names = set(zf.namelist())
-        paths = {
+        aspx_files = [
             item.get("AppRelativePath")
             for item in root.findall("File")
             if (item.get("AppRelativePath") or "").endswith(".aspx")
-        }
-        for screen in SCREENS:
-            self.assertIn(rf"Pages\QM\{screen}.aspx", paths, screen)
-            self.assertIn(f"Pages_QM/{screen}.aspx", names, screen)
-            self.assertIn(f"Pages/QM/{screen}.aspx", names, screen)
+            or (item.get("AppRelativePath") or "").endswith(".aspx.cs")
+        ]
+        self.assertEqual(aspx_files, [])
+        for name in names:
+            self.assertNotIn("Pages_QM/", name)
+            self.assertNotIn("Pages/QM/", name)
+            self.assertFalse(name.endswith(".aspx"), name)
         sitemap = root.find("SiteMapNode")
         self.assertIsNotNone(sitemap)
         site_rows = sitemap.findall(".//SiteMap/row")

@@ -77,7 +77,18 @@ class TestPkgLayout(unittest.TestCase):
         self.assertTrue((ROOT / "_project" / "ProjectMetadata.xml").is_file())
         self.assertTrue((ROOT / "Scripts" / "CreateQMSTables.sql").is_file())
         self.assertTrue((ROOT / "src" / "Lab5.QMS" / "Lab5.QMS.csproj").is_file())
-        self.assertTrue((ROOT / "Pages_QM").is_dir())
+        self.assertTrue(
+            (
+                ROOT
+                / "FrontendSources"
+                / "screen"
+                / "src"
+                / "screens"
+                / "QM"
+                / "QM101000"
+                / "QM101000.ts"
+            ).is_file()
+        )
 
 
 class TestUsrQmsDdl(unittest.TestCase):
