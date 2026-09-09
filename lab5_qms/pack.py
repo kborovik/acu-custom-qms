@@ -59,6 +59,8 @@ def package_zip(root: Path | None = None, *, ensure_dll: bool = False) -> bytes:
         zf.writestr("project.xml", xml_bytes)
         for rel in _pkg_members(root):
             zf.write(root / rel, arcname=rel.as_posix())
+        for src in _aspx_sources(root):
+            zf.write(root / src, arcname=_aspx_arcname(src))
         dll = _dll_path(root)
         if dll is not None:
             zf.write(dll, arcname="Bin/" + ASSEMBLY_DLL)
@@ -98,18 +100,13 @@ def _project_xml(root: Path) -> ET.Element:
         (root / "Scripts" / "CreateQMSTables.sql").read_text(encoding="utf-8"),
     )
 
-    # C# CstCodeFile <Graph Source FileType=NewDac|NewGraph|NewFile> import
-    # succeeds but publishBegin CstCodeFile.Upgrade KeyNotFoundException on
-    # 26.101.0225 (includedAspxFiles). Training packages ship Bin\*.dll.
-    # Keep DAC/graph source in src/; pack/publish/deploy compile on the ERP
-    # VM when those sources change, then add File Bin\Lab5.QMS.dll.
-    # Do not emit <Page> items for new QM screens: 26.101.0225 CstPageData
-    # NRE without path, and path=~/Pages/QM/*.aspx fails import ("page does
-    # not exist in this version"). SiteMap + FrontendSources File register
-    # the Modern screens. ScreenID stays on SiteMap and HTML+TS class names.
+    # No <Page>: 26.101 NRE without path; path=~/Pages/QM/*.aspx is not OOTB.
     for rel in _frontend_files():
         file_el = ET.SubElement(customization, "File")
         file_el.set("AppRelativePath", _app_relative(rel))
+    for src in _aspx_sources(root):
+        file_el = ET.SubElement(customization, "File")
+        file_el.set("AppRelativePath", _aspx_app_relative(src))
 
     dll = _dll_path(root)
     if dll is not None:
@@ -165,6 +162,26 @@ def _frontend_in202500_qms() -> list[Path]:
 
 def _frontend_files() -> list[Path]:
     return [*_frontend_qm_files(), *_frontend_in202500_qms()]
+
+
+def _aspx_sources(root: Path) -> list[Path]:
+    files = [
+        Path("Pages_QM") / f"{screen}{suffix}"
+        for screen in PAGES
+        for suffix in (".aspx", ".aspx.cs")
+    ]
+    for path in files:
+        if not (root / path).is_file():
+            raise FileNotFoundError(path)
+    return files
+
+
+def _aspx_arcname(src: Path) -> str:
+    return f"Pages/QM/{src.name}"
+
+
+def _aspx_app_relative(src: Path) -> str:
+    return rf"Pages\QM\{src.name}"
 
 
 def _app_relative(rel: Path) -> str:

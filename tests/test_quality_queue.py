@@ -92,6 +92,18 @@ class TestQualityQueueGI(unittest.TestCase):
             + root.findall(".//GINavigationScreen")
         }
         self.assertEqual(links, {"QM301000", "QM302000"})
+        relations = root.find(".//{*}relations")
+        if relations is None:
+            relations = root.find(".//relations")
+        self.assertIsNotNone(relations)
+        self.assertNotEqual(relations.get("relations-version"), "20180809")
+        self.assertIsNone(root.find(".//{*}SiteMap"))
+        self.assertIsNone(root.find(".//SiteMap"))
+        group = [
+            row.get("DataFieldName")
+            for row in root.findall(".//{*}GIGroupBy") + root.findall(".//GIGroupBy")
+        ]
+        self.assertIn("Order.inspectionOrderNbr", group)
 
     def test_packed_project_has_generic_inquiry_screen(self) -> None:
         with _zip() as zf:
@@ -117,6 +129,9 @@ class TestQualityQueueGI(unittest.TestCase):
         self.assertIn("QM301000", sql)
         self.assertIn("QM302000", sql)
         self.assertNotIn("EvaluateResults", sql)
+        self.assertIn("GIGroupBy", sql)
+        self.assertIn("DELETE FROM", sql)
+        self.assertIn("N'Order.inspectionOrderNbr'", sql)
 
 
 if __name__ == "__main__":

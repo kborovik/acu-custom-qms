@@ -47,14 +47,11 @@ class TestPublishedPackageV17(unittest.TestCase):
             project = ET.fromstring(zf.read("project.xml"))
         for member in PATTERN_B + PATTERN_A:
             self.assertIn(member, names, member)
-        aspx = [
-            name
-            for name in names
-            if name.endswith(".aspx")
-            or name.startswith("Pages_QM/")
-            or name.startswith("Pages/QM/")
-        ]
-        self.assertEqual(aspx, [])
+        pages_qm = [name for name in names if name.startswith("Pages_QM/")]
+        self.assertEqual(pages_qm, [])
+        for screen in ("QM101000", "QM201000", "QM301000", "QM302000"):
+            self.assertIn(f"Pages/QM/{screen}.aspx", names, screen)
+            self.assertIn(f"Pages/QM/{screen}.aspx.cs", names, screen)
         self.assertEqual(project.findall("Page"), [])
 
 
@@ -85,6 +82,15 @@ class TestQualityQueueLiveV16(unittest.TestCase):
         self.assertIn("QM301000", links)
         self.assertIn("QM302000", links)
         self.assertNotIn("EvaluateResults", links)
+        grouped = sql_lines(
+            f"SELECT DataFieldName FROM {DB_NAME}.dbo.GIGroupBy "
+            f"WHERE DesignID = '{GI_DESIGN_ID}' AND CompanyID IN (1, {cid})"
+        )
+        self.assertIn(
+            "Order.inspectionOrderNbr",
+            grouped,
+            f"Quality Queue GIGroupBy missing: {grouped}",
+        )
         screens = sql_lines(
             f"SELECT ScreenID FROM {DB_NAME}.dbo.SiteMap "
             f"WHERE ScreenID = N'QM401000' AND CompanyID IN (1, {cid})"

@@ -495,7 +495,7 @@ def _ensure_qms_setup_rows() -> None:
 
 
 def quality_queue_seed_sql(cid: int) -> str:
-    """Insert QM401000 GIDesign work-queue when missing (26.101 GI XML upgrades fail)."""
+    """Replace QM401000 GIDesign children (26.101 GI XML upgrades fail)."""
     nil = "00000000-0000-0000-0000-000000000000"
     did = QM401000_DESIGN_ID
     db = DB_NAME
@@ -515,9 +515,16 @@ def quality_queue_seed_sql(cid: int) -> str:
         ") VALUES ("
         f"@cid, @did, N'Quality Queue', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
         f"'{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask); "
-        "IF NOT EXISTS (SELECT 1 FROM "
-        f"{db}.dbo.GITable WHERE CompanyID = @cid AND DesignID = @did) "
         "BEGIN "
+        f"DELETE FROM {db}.dbo.GINavigationParameter WHERE CompanyID = @cid AND DesignID = @did; "
+        f"DELETE FROM {db}.dbo.GINavigationScreen WHERE CompanyID = @cid AND DesignID = @did; "
+        f"DELETE FROM {db}.dbo.GISort WHERE CompanyID = @cid AND DesignID = @did; "
+        f"DELETE FROM {db}.dbo.GIGroupBy WHERE CompanyID = @cid AND DesignID = @did; "
+        f"DELETE FROM {db}.dbo.GIWhere WHERE CompanyID = @cid AND DesignID = @did; "
+        f"DELETE FROM {db}.dbo.GIResult WHERE CompanyID = @cid AND DesignID = @did; "
+        f"DELETE FROM {db}.dbo.GIOn WHERE CompanyID = @cid AND DesignID = @did; "
+        f"DELETE FROM {db}.dbo.GIRelation WHERE CompanyID = @cid AND DesignID = @did; "
+        f"DELETE FROM {db}.dbo.GITable WHERE CompanyID = @cid AND DesignID = @did; "
         f"INSERT INTO {db}.dbo.GITable ("
         "CompanyID, DesignID, Alias, Name, Type, CreatedByID, CreatedDateTime, "
         "CreatedByScreenID, LastModifiedByID, LastModifiedDateTime, LastModifiedByScreenID, "
@@ -573,6 +580,11 @@ def quality_queue_seed_sql(cid: int) -> str:
         "CreatedByID, CreatedDateTime, CreatedByScreenID, LastModifiedByID, "
         "LastModifiedDateTime, LastModifiedByScreenID, NoteID, CompanyMask) VALUES "
         f"(@cid, @did, 1, 1, N'Order.inspectionOrderNbr', 'A', '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask); "
+        f"INSERT INTO {db}.dbo.GIGroupBy ("
+        "CompanyID, DesignID, LineNbr, IsActive, DataFieldName, "
+        "CreatedByID, CreatedDateTime, CreatedByScreenID, LastModifiedByID, "
+        "LastModifiedDateTime, LastModifiedByScreenID, NoteID, CompanyMask) VALUES "
+        f"(@cid, @did, 1, 1, N'Order.inspectionOrderNbr', '{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask); "
         f"INSERT INTO {db}.dbo.GINavigationScreen ("
         "CompanyID, DesignID, Link, LineNbr, SortOrder, WindowMode, IsActive, NoteID, CompanyMask, "
         "CreatedByID, CreatedDateTime, CreatedByScreenID, LastModifiedByID, "

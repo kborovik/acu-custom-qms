@@ -24,6 +24,7 @@
           <table name="GINavigationParameter" uplink="(DesignID, NavigationScreenLineNbr) = (DesignID, LineNbr)" />
         </table>
         <table name="GISort" uplink="(DesignID) = (DesignID)" />
+        <table name="GIGroupBy" uplink="(DesignID) = (DesignID)" />
         <table name="GITable" uplink="(DesignID) = (DesignID)">
           <table name="GIRelation" uplink="(DesignID, Alias) = (DesignID, ParentTable)">
             <table name="GIOn" uplink="(DesignID, LineNbr) = (DesignID, RelationNbr)" />
@@ -57,11 +58,11 @@
             <GIResult LineNbr="8" Field="status" Caption="Order Status" />
           </GITable>
           <GITable Alias="Lot" Name="PX.Objects.IN.INLotSerialStatusByCostCenter">
-            <GIResult LineNbr="6" Field="usrQMSLotStatus" Caption="Lot Status" />
+            <GIResult LineNbr="6" Field="usrQMSLotStatus" Caption="Lot Status" AggregateFunction="MAX" />
           </GITable>
           <GITable Alias="NCR" Name="Lab5.QMS.QMSNonConformance">
-            <GIResult LineNbr="9" Field="nCRNbr" Caption="NCR Nbr" DefaultNav="1" NavigationNbr="2" />
-            <GIResult LineNbr="10" Field="status" Caption="NCR Status" />
+            <GIResult LineNbr="9" Field="nCRNbr" Caption="NCR Nbr" DefaultNav="1" NavigationNbr="2" AggregateFunction="MAX" />
+            <GIResult LineNbr="10" Field="status" Caption="NCR Status" AggregateFunction="MAX" />
           </GITable>
           <GITable Alias="Item" Name="PX.Objects.IN.InventoryItem">
             <GIResult LineNbr="1" Field="inventoryCD" Caption="Inventory" />
@@ -74,6 +75,7 @@
           <GIWhere LineNbr="3" DataFieldName="NCR.nCRNbr" Condition="NN" Operation="A" />
           <GIWhere LineNbr="4" DataFieldName="NCR.status" Condition="NE" Value1="C" Operation="A" />
           <GISort LineNbr="1" DataFieldName="Order.inspectionOrderNbr" SortOrder="A" />
+          <GIGroupBy LineNbr="1" IsActive="1" DataFieldName="Order.inspectionOrderNbr" />
           <GINavigationScreen ScreenID="QM301000" LineNbr="1">
             <GINavigationParameter LineNbr="1" FieldName="InspectionOrderNbr" ParameterName="Order.inspectionOrderNbr" />
           </GINavigationScreen>
