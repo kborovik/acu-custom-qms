@@ -43,7 +43,7 @@ rwildcard = $(strip \
 
 default: help
 
-.PHONY: help check test pack deploy clean preflight release major minor patch
+.PHONY: help check test build deploy clean preflight release major minor patch
 .PHONY: _release-pre _release-bump _release-tag _release-pack _release-gh
 
 ###############################################################################
@@ -59,8 +59,8 @@ test: .venv ## Format check, lint, local unit tests (no live tenant)
 	$(UV) run ruff check
 	$(UV) run python -u -m unittest discover -s tests -p 'test_*.py' -v
 
-pack: .venv ## Build Lab5_QMS_Customization.zip
-	$(call header,Packing Lab5_QMS_Customization.zip)
+build: .venv ## Build Lab5_QMS_Customization.zip
+	$(call header,Building Lab5_QMS_Customization.zip)
 	$(UV) run lab5-qms pack
 
 deploy: .venv ## Pack, publish Lab5.QMS, seed Role + QM rights
@@ -173,7 +173,7 @@ help-words := $(foreach w,$(subst $(space),$(s),$(help-src)),$(if $(and $(findst
 pad-check := check$(space)$(space)$(space)$(space)$(space)
 pad-clean := clean$(space)$(space)$(space)$(space)$(space)
 pad-deploy := deploy$(space)$(space)$(space)$(space)
-pad-pack := pack$(space)$(space)$(space)$(space)$(space)$(space)
+pad-build := build$(space)$(space)$(space)$(space)$(space)
 pad-preflight := preflight$(space)
 pad-release := release$(space)$(space)$(space)
 pad-test := test$(space)$(space)$(space)$(space)$(space)$(space)

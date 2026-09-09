@@ -84,9 +84,10 @@ class TestDllScript(unittest.TestCase):
         self.assertNotIn("\ndll:", makefile)
         self.assertNotIn("QMS_DLL", makefile)
         self.assertNotIn("pad-dll", makefile)
-        self.assertIn("pack: .venv", makefile)
+        self.assertIn("build: .venv", makefile)
         self.assertIn("deploy: .venv", makefile)
         self.assertNotIn("pack: dll", makefile)
+        self.assertNotIn("\npack:", makefile)
         self.assertIn("check: test preflight ##", makefile)
         self.assertIn("release: test _release-gh", makefile)
         self.assertIn("python dll.py", makefile)
@@ -101,7 +102,8 @@ class TestDllScript(unittest.TestCase):
         self.assertIn("__pycache__", makefile)
         phony = makefile.split(".PHONY:", 1)[1].splitlines()[0]
         self.assertNotIn("dll", phony)
-        self.assertIn("pack", phony)
+        self.assertIn("build", phony)
+        self.assertNotIn("pack", phony)
         self.assertIn("deploy", phony)
         self.assertIn("clean", phony)
 

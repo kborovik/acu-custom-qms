@@ -308,10 +308,10 @@ help and exits 0.
 
 ```sh
 gmake test                # ruff format --check, ruff check, unit tests
-gmake pack                # compile Lab5.QMS.dll if C# changed; write zip
+gmake build               # compile Lab5.QMS.dll if C# changed; write zip
 gmake deploy              # pack + publish + seed (no e2e)
 gmake check               # test + preflight + live e2e (publishes)
-uv run lab5-qms pack      # same as gmake pack
+uv run lab5-qms pack      # same as gmake build
 uv run lab5-qms deploy    # same as gmake deploy
 uv run lab5-qms           # Click help (exit 0)
 ```

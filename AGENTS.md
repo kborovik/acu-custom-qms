@@ -24,7 +24,7 @@ Recipes (never `acu check` — destructive tenant rebuild):
 | Recipe | What it does |
 | --- | --- |
 | `gmake test` | `ruff format --check`, `ruff check`, unit tests (no tenant) |
-| `gmake pack` | compile `Lab5.QMS.dll` if `src/Lab5.QMS` C# changed; write zip |
+| `gmake build` | compile `Lab5.QMS.dll` if `src/Lab5.QMS` C# changed; write zip |
 | `gmake deploy` | pack + CustomizationApi publish + Role / `RolesInGraph` / `UsrQMSSetup` seed |
 | `gmake check` | `gmake test` + `acu config check` + live e2e (publishes if the package digest differs) |
 | `gmake release` | unit tests, compile if stale, bump, tag, pack, `gh release` (no e2e) |
@@ -62,7 +62,7 @@ Python probes: `uv run python` (project env has click + httpx; ruff is a dev dep
 
 ### Package presence
 
-`gmake deploy` / `uv run lab5-qms deploy` packs `Lab5_QMS_Customization.zip`, publishes via `/CustomizationApi` (same cookie session as `acu`; field is `projectContentBase64`, not `projectContents`), and seeds post-publish Role `Quality Manager` plus QM `RolesInGraph` and `UsrQMSSetup`. Publish skip is a SHA-256 of **every zip member** (pages, SQL, DLL, `project.xml`); an ASPX-only change must republish. Subcommands: `pack`, `publish`, `seed`, `deploy`. Naked `lab5-qms` prints Click help and exits 0 (does not deploy). `gmake pack` runs `lab5-qms pack`. Then prove the tenant has the package:
+`gmake deploy` / `uv run lab5-qms deploy` packs `Lab5_QMS_Customization.zip`, publishes via `/CustomizationApi` (same cookie session as `acu`; field is `projectContentBase64`, not `projectContents`), and seeds post-publish Role `Quality Manager` plus QM `RolesInGraph` and `UsrQMSSetup`. Publish skip is a SHA-256 of **every zip member** (pages, SQL, DLL, `project.xml`); an ASPX-only change must republish. Subcommands: `pack`, `publish`, `seed`, `deploy`. Naked `lab5-qms` prints Click help and exits 0 (does not deploy). `gmake build` runs `lab5-qms pack`. Then prove the tenant has the package:
 
 | Check | Expect |
 | --- | --- |
