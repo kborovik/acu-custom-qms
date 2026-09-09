@@ -3,16 +3,18 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""gmake dll: csproj PX refs + SSH compile inputs (V8 / I.pkg)."""
+"""Lab5.QMS.dll compile inputs + ensure-on-pack (V8 / I.pkg)."""
 
 from __future__ import annotations
 
 import io
 import sys
+import tempfile
 import unittest
 import zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -77,16 +79,15 @@ class TestDllScript(unittest.TestCase):
         self.assertNotIn("print(inst.password", src)
         self.assertNotIn("ACU_PASSWORD=", src)
 
-    def test_makefile_dll_recipe(self) -> None:
+    def test_makefile_has_no_dll_target(self) -> None:
         makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
-        self.assertIn(
-            "QMS_DLL := src/Lab5.QMS/bin/Release/Lab5.QMS.dll", makefile
-        )
-        self.assertIn("dll: $(QMS_DLL)", makefile)
-        self.assertIn("pack: dll", makefile)
-        self.assertIn("check: test preflight $(QMS_DLL)", makefile)
-        self.assertIn("release: test $(QMS_DLL)", makefile)
-        self.assertIn("$(QMS_DLL): | .venv", makefile)
+        self.assertNotIn("\ndll:", makefile)
+        self.assertNotIn("QMS_DLL", makefile)
+        self.assertNotIn("pad-dll", makefile)
+        self.assertIn("pack: .venv", makefile)
+        self.assertNotIn("pack: dll", makefile)
+        self.assertIn("check: test preflight ##", makefile)
+        self.assertIn("release: test _release-gh", makefile)
         self.assertIn("python dll.py", makefile)
         self.assertIn("lab5-qms pack", makefile)
         self.assertIn("python -u -m unittest discover -s tests", makefile)
@@ -95,15 +96,87 @@ class TestDllScript(unittest.TestCase):
         self.assertIn("rm -f Lab5_QMS_Customization.zip", makefile)
         self.assertIn("__pycache__", makefile)
         phony = makefile.split(".PHONY:", 1)[1].splitlines()[0]
-        self.assertIn("dll", phony)
+        self.assertNotIn("dll", phony)
+        self.assertIn("pack", phony)
         self.assertIn("clean", phony)
-        self.assertNotIn("QMS_DLL", phony)
 
     def test_local_dll_path_release(self) -> None:
         self.assertEqual(
             dll.local_dll_path(ROOT),
             ROOT / "src" / "Lab5.QMS" / "bin" / "Release" / pack.ASSEMBLY_DLL,
         )
+
+    def test_pack_publish_deploy_and_e2e_ensure_dll(self) -> None:
+        cli_src = (ROOT / "lab5_qms" / "cli.py").read_text(encoding="utf-8")
+        pack_src = (ROOT / "lab5_qms" / "pack.py").read_text(encoding="utf-8")
+        helper = (ROOT / "e2e" / "helper.py").read_text(encoding="utf-8")
+        self.assertIn("ensure_dll=True", cli_src)
+        self.assertIn("ensure_dll=True", pack_src)
+        self.assertIn("ensure_dll=True", helper)
+        self.assertIn("def ensure_assembly", pack_src)
+        self.assertIn("ensure_compiled", (ROOT / "dll.py").read_text(encoding="utf-8"))
+
+
+class TestEnsureCompiled(unittest.TestCase):
+    def test_fingerprint_covers_cs_csproj_and_compiler(self) -> None:
+        text = dll.inputs_fingerprint(ROOT)
+        self.assertIn("src/Lab5.QMS/QMS.cs\t", text)
+        self.assertIn("src/Lab5.QMS/Graph/QMSInspectionPlanMaint.cs\t", text)
+        self.assertIn("src/Lab5.QMS/Lab5.QMS.csproj\t", text)
+        self.assertIn("dll.py\t", text)
+        self.assertNotIn("Pages_QM/", text)
+        self.assertNotIn("/bin/", text)
+        self.assertNotIn("/obj/", text)
+
+    def test_stale_when_dll_or_stamp_missing(self) -> None:
+        missing = Path("/no/such/Lab5.QMS.dll")
+        with patch.object(dll, "local_dll_path", return_value=missing):
+            self.assertTrue(dll.assembly_stale(ROOT))
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp) / pack.ASSEMBLY_DLL
+            dest.write_bytes(b"MZ")
+            with patch.object(dll, "local_dll_path", return_value=dest):
+                self.assertTrue(dll.assembly_stale(ROOT))
+
+    def test_ensure_skips_compile_when_fingerprint_matches(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp) / pack.ASSEMBLY_DLL
+            dest.write_bytes(b"MZ")
+            dll.inputs_stamp(dest).write_text(
+                dll.inputs_fingerprint(ROOT), encoding="utf-8"
+            )
+            with (
+                patch.object(dll, "local_dll_path", return_value=dest),
+                patch.object(dll, "compile_on_vm") as compile,
+            ):
+                out = dll.ensure_compiled(ROOT)
+            compile.assert_not_called()
+            self.assertEqual(out, dest)
+
+    def test_ensure_compiles_when_stale_and_writes_stamp(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp) / pack.ASSEMBLY_DLL
+            dest.write_bytes(b"old")
+            with (
+                patch.object(dll, "local_dll_path", return_value=dest),
+                patch.object(dll, "compile_on_vm", return_value=dest) as compile,
+            ):
+                out = dll.ensure_compiled(ROOT)
+            compile.assert_called_once_with(ROOT)
+            self.assertEqual(out, dest)
+            stamp = dll.inputs_stamp(dest)
+            self.assertTrue(stamp.is_file())
+            self.assertEqual(
+                stamp.read_text(encoding="utf-8"), dll.inputs_fingerprint(ROOT)
+            )
+
+    def test_package_zip_ensure_dll_calls_ensure_assembly(self) -> None:
+        with patch.object(pack, "ensure_assembly") as ensure:
+            pack.package_zip(ROOT, ensure_dll=True)
+        ensure.assert_called_once_with(ROOT)
+        with patch.object(pack, "ensure_assembly") as ensure:
+            pack.package_zip(ROOT)
+        ensure.assert_not_called()
 
 
 if __name__ == "__main__":

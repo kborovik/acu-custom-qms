@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import io
 import re
+import sys
 import zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -33,9 +34,21 @@ CLASS_RE = re.compile(
 )
 
 
-def package_zip(root: Path | None = None) -> bytes:
+def ensure_assembly(root: Path | None = None) -> Path:
+    """Compile Lab5.QMS.dll when src/Lab5.QMS C# is newer than the assembly."""
+    root = ROOT if root is None else Path(root)
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    import dll
+
+    return dll.ensure_compiled(root)
+
+
+def package_zip(root: Path | None = None, *, ensure_dll: bool = False) -> bytes:
     """Build the customization package bytes."""
     root = ROOT if root is None else Path(root)
+    if ensure_dll:
+        ensure_assembly(root)
     customization = _project_xml(root)
     xml_bytes = b'<?xml version="1.0" encoding="utf-8"?>\n' + ET.tostring(
         customization, encoding="utf-8"
@@ -55,11 +68,16 @@ def package_zip(root: Path | None = None) -> bytes:
     return buf.getvalue()
 
 
-def write_package(dest: Path | None = None, root: Path | None = None) -> Path:
+def write_package(
+    dest: Path | None = None,
+    root: Path | None = None,
+    *,
+    ensure_dll: bool = False,
+) -> Path:
     """Write Lab5_QMS_Customization.zip and return its path."""
     root = ROOT if root is None else Path(root)
     path = root / PACKAGE_ZIP if dest is None else Path(dest)
-    path.write_bytes(package_zip(root))
+    path.write_bytes(package_zip(root, ensure_dll=ensure_dll))
     return path
 
 
@@ -86,8 +104,8 @@ def _project_xml(root: Path) -> ET.Element:
     # C# CstCodeFile <Graph Source FileType=NewDac|NewGraph|NewFile> import
     # succeeds but publishBegin CstCodeFile.Upgrade KeyNotFoundException on
     # 26.101.0225 (includedAspxFiles). Training packages ship Bin\*.dll.
-    # Keep DAC/graph source in src/; `gmake dll` compiles on the ERP VM
-    # and pack adds File Bin\Lab5.QMS.dll when that assembly exists.
+    # Keep DAC/graph source in src/; pack/publish/deploy compile on the ERP
+    # VM when those sources change, then add File Bin\Lab5.QMS.dll.
     for screen in PAGES:
         for suffix in (".aspx", ".aspx.cs"):
             file_el = ET.SubElement(customization, "File")
@@ -170,7 +188,7 @@ def main() -> None:
         help="output zip path (default: ./Lab5_QMS_Customization.zip)",
     )
     args = parser.parse_args()
-    path = write_package(args.output)
+    path = write_package(args.output, ensure_dll=True)
     print(path)
 
 

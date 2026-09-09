@@ -305,7 +305,7 @@ contain Role / UsersInRoles / RolesInGraph. No subcommand prints Click
 help and exits 0.
 
 ```sh
-uv run lab5-qms pack      # write Lab5_QMS_Customization.zip
+uv run lab5-qms pack      # compile Lab5.QMS.dll if C# changed; write zip
 uv run lab5-qms deploy    # pack + publish + seed
 uv run lab5-qms           # Click help (exit 0)
 ```

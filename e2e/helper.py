@@ -126,7 +126,7 @@ def ensure_published(*, timeout: float = 600.0) -> str:
     if _publish_error is not None:
         raise _publish_error
 
-    zip_bytes = pack.package_zip(ROOT)
+    zip_bytes = pack.package_zip(ROOT, ensure_dll=True)
     try:
         status = publish_package(zip_bytes, timeout=timeout)
         _published = True

@@ -5,7 +5,11 @@ The live 26.101.0225 box has no Visual Studio MSBuild and no dotnet SDK.
 It does ship Roslyn csc next to the site Bin (`Bin\\roslyn\\csc.exe`). This
 script zips `src/Lab5.QMS` sources, compiles there against PX.Data /
 PX.Objects / PX.Common / PX.Common.Std, and writes
-`src/Lab5.QMS/bin/Release/Lab5.QMS.dll` for `gmake pack`.
+`src/Lab5.QMS/bin/Release/Lab5.QMS.dll`.
+
+Pack, publish, deploy, live e2e, and release call `ensure_compiled` so a
+C# change under `src/Lab5.QMS` rebuilds the assembly. A matching
+`Lab5.QMS.dll.inputs` fingerprint skips SSH.
 
 Hosted path (blank ACU_SSH) cannot compile — that is a hard error.
 Never prints ACU_PASSWORD.
@@ -114,6 +118,49 @@ def local_dll_path(root: Path | None = None) -> Path:
     return base / "src" / "Lab5.QMS" / "bin" / "Release" / pack.ASSEMBLY_DLL
 
 
+def compile_inputs(root: Path | None = None) -> list[Path]:
+    """Sources that change the assembly: project .cs, csproj, and this compiler."""
+    base = ROOT if root is None else Path(root)
+    files = list(source_files(root))
+    files.append(base / "src" / "Lab5.QMS" / "Lab5.QMS.csproj")
+    files.append(base / "dll.py")
+    files.sort()
+    return files
+
+
+def inputs_stamp(dest: Path) -> Path:
+    return Path(str(dest) + ".inputs")
+
+
+def inputs_fingerprint(root: Path | None = None) -> str:
+    base = ROOT if root is None else Path(root)
+    lines: list[str] = []
+    for path in compile_inputs(root):
+        st = path.stat()
+        rel = path.relative_to(base).as_posix()
+        lines.append(f"{rel}\t{st.st_size}\t{st.st_mtime_ns}")
+    return "\n".join(lines) + "\n"
+
+
+def assembly_stale(root: Path | None = None) -> bool:
+    dest = local_dll_path(root)
+    stamp = inputs_stamp(dest)
+    if not dest.is_file() or not stamp.is_file():
+        return True
+    return stamp.read_text(encoding="utf-8") != inputs_fingerprint(root)
+
+
+def ensure_compiled(root: Path | None = None) -> Path:
+    """Compile on the ERP VM when Lab5.QMS C# (or the compiler) changed."""
+    dest = local_dll_path(root)
+    if not assembly_stale(root):
+        return dest
+    fingerprint = inputs_fingerprint(root)
+    dest = compile_on_vm(root)
+    inputs_stamp(dest).write_text(fingerprint, encoding="utf-8")
+    return dest
+
+
 def _scp(src: str, dst: str) -> None:
     result = subprocess.run(
         ["scp", "-o", "BatchMode=yes", src, dst],
@@ -168,7 +215,7 @@ def compile_on_vm(root: Path | None = None) -> Path:
 
 
 def main() -> None:
-    path = compile_on_vm()
+    path = ensure_compiled()
     print(path)
 
 

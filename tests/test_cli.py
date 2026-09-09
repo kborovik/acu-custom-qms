@@ -119,10 +119,19 @@ class TestCliHelpICmd(unittest.TestCase):
 
 
 class TestCliPackV8(unittest.TestCase):
+    def test_pack_ensures_assembly(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp) / "Lab5_QMS_Customization.zip"
+            with patch("lab5_qms.pack.ensure_assembly") as ensure:
+                r = CliRunner().invoke(cli, ["pack", "-o", str(dest)])
+            self.assertEqual(r.exit_code, 0, r.output)
+            ensure.assert_called_once()
+
     def test_pack_writes_zip_without_role_rows(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             dest = Path(tmp) / "Lab5_QMS_Customization.zip"
-            r = CliRunner().invoke(cli, ["pack", "-o", str(dest)])
+            with patch("lab5_qms.pack.ensure_assembly"):
+                r = CliRunner().invoke(cli, ["pack", "-o", str(dest)])
             self.assertEqual(r.exit_code, 0, r.output)
             self.assertTrue(dest.is_file())
             with zipfile.ZipFile(dest) as zf:
@@ -210,7 +219,8 @@ class TestCliProgressICmdV10(unittest.TestCase):
     def test_pack_progress_on_stderr_stdout_is_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             dest = Path(tmp) / "Lab5_QMS_Customization.zip"
-            r = CliRunner().invoke(cli, ["pack", "-o", str(dest)])
+            with patch("lab5_qms.pack.ensure_assembly"):
+                r = CliRunner().invoke(cli, ["pack", "-o", str(dest)])
         self.assertEqual(r.exit_code, 0, r.output)
         self.assertEqual(r.stdout.strip(), str(dest))
         self.assertNotIn("\t", r.stdout)

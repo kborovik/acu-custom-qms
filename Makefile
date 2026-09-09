@@ -9,7 +9,6 @@ MAKEFLAGS += --no-builtin-rules --no-builtin-variables
 export PATH := $(abspath .venv)/bin:$(PATH)
 
 UV ?= uv
-QMS_DLL := src/Lab5.QMS/bin/Release/Lab5.QMS.dll
 # Unbuffered unittest so a stuck e2e test prints its name. Process-level
 # backstop (seconds) via faulthandler in e2e/helper.py; 0 disables.
 export PYTHONUNBUFFERED := 1
@@ -17,7 +16,6 @@ export E2E_TIMEOUT ?= 900
 
 empty :=
 space := $(empty) $(empty)
-ht := $(shell printf '\t')
 s := $(shell printf '\036')
 esc := $(shell printf '\033')
 blue := $(esc)[34m
@@ -27,11 +25,15 @@ reset := $(esc)[0m
 
 header = $(info $(blue)==> $1 <==$(reset))
 
-need-env = $(if $(wildcard .env),,$(error .env missing — decrypt .env.gpg at the repo root))
-need-acu = $(if $(shell command -v acu),,$(error acu not on PATH — uv tool install acumatica-cli))
-need-gh = $(if $(shell command -v gh),,$(error gh CLI required — https://cli.github.com/))
-need-gh-auth = $(shell gh auth status >/dev/null 2>&1)$(if $(filter 0,$(.SHELLSTATUS)),,$(error gh not authenticated — run: gh auth login))
-need-clean = $(if $(shell git status --porcelain),$(error working tree not clean — commit or stash first))
+# Short flags live in the first MAKEFLAGS word (`nprR`). `-n` is `n` there;
+# later words (`--jobserver-auth=...`) also contain `n` and must be ignored.
+dry-run = $(findstring n,$(firstword $(MAKEFLAGS)))
+
+need-env = $(if $(dry-run),,$(if $(wildcard .env),,$(error .env missing — decrypt .env.gpg at the repo root)))
+need-acu = $(if $(dry-run),,$(if $(shell command -v acu),,$(error acu not on PATH — uv tool install acumatica-cli)))
+need-gh = $(if $(dry-run),,$(if $(shell command -v gh),,$(error gh CLI required — https://cli.github.com/)))
+need-gh-auth = $(if $(dry-run),,$(shell gh auth status >/dev/null 2>&1)$(if $(filter 0,$(.SHELLSTATUS)),,$(error gh not authenticated — run: gh auth login)))
+need-clean = $(if $(dry-run),,$(if $(shell git status --porcelain),$(error working tree not clean — commit or stash first)))
 need-part = $(if $(part),,$(error usage: gmake release major|minor|patch))
 
 # Recursive glob. `*` skips dot-dirs (.git, .venv).
@@ -41,7 +43,7 @@ rwildcard = $(strip \
 
 default: help
 
-.PHONY: help check test pack dll clean preflight release major minor patch
+.PHONY: help check test pack clean preflight release major minor patch
 .PHONY: _release-pre _release-bump _release-tag _release-pack _release-gh
 
 ###############################################################################
@@ -55,30 +57,14 @@ test: .venv ## Local unit tests (no live tenant)
 	$(call header,Running unit tests)
 	$(UV) run python -u -m unittest discover -s tests -p 'test_*.py' -v
 
-pack: dll ## Build Lab5_QMS_Customization.zip
+pack: .venv ## Build Lab5_QMS_Customization.zip
 	$(call header,Packing Lab5_QMS_Customization.zip)
 	$(UV) run lab5-qms pack
 
-dll: $(QMS_DLL) ## Compile Lab5.QMS.dll on the ERP VM (SSH) if missing
-
-# File target: compile only when the assembly is absent. Order-only .venv
-# so `uv sync` does not force a rebuild. No source prereqs — `gmake dll`
-# with an existing file is a no-op.
-$(QMS_DLL): | .venv
-	$(call need-env)
-	$(call header,Building Lab5.QMS.dll via SSH)
-	$(UV) run python dll.py
-
 clean: ## Remove compiled DLL, pack zip, and temp artifacts
 	$(call header,Cleaning)
-	rm -rf src/Lab5.QMS/bin src/Lab5.QMS/obj \
-		.ruff_cache .pytest_cache findings .vs \
-		$(call rwildcard,,__pycache__)
-	rm -f Lab5_QMS_Customization.zip .release-notes \
-		$(call rwildcard,,*.pyc) \
-		$(call rwildcard,,.DS_Store) \
-		$(call rwildcard,,*.user) \
-		$(call rwildcard,,*.suo)
+	rm -rf src/Lab5.QMS/bin src/Lab5.QMS/obj .ruff_cache .pytest_cache findings .vs $(call rwildcard,,__pycache__)
+	rm -f Lab5_QMS_Customization.zip .release-notes $(call rwildcard,,*.pyc) $(call rwildcard,,.DS_Store) $(call rwildcard,,*.user) $(call rwildcard,,*.suo)
 
 preflight: .venv ## Read-only acu config check against .env
 	$(call need-env)
@@ -88,10 +74,13 @@ preflight: .venv ## Read-only acu config check against .env
 
 # `gmake check FILE=<path-or-stem>` scopes to one e2e file; unset = whole tier.
 check_target := $(if $(FILE),$(firstword $(wildcard $(FILE) e2e/$(FILE) e2e/$(FILE).py)),e2e)
+ifneq ($(filter check,$(MAKECMDGOALS)),)
+$(if $(FILE),$(if $(check_target),,$(error no e2e file matches FILE=$(FILE))))
+endif
 
-check: test preflight $(QMS_DLL) ## Live e2e vs .env tenant (acu CLI + REST; publishes Lab5.QMS)
-	$(if $(FILE),$(if $(check_target),,$(error no e2e file matches FILE=$(FILE))))
+check: test preflight ## Live e2e vs .env tenant (acu CLI + REST; publishes Lab5.QMS)
 	$(call header,Live e2e)
+	$(UV) run python dll.py
 	$(if $(filter %.py,$(check_target)),\
 		$(UV) run python -u -m unittest discover -s e2e -p '$(notdir $(check_target))' -t . -v,\
 		$(UV) run python -u -m unittest discover -s e2e -t . -v)
@@ -106,17 +95,22 @@ check: test preflight $(QMS_DLL) ## Live e2e vs .env tenant (acu CLI + REST; pub
 # `gh release create` locally (unlike acumatica-cli).
 # Chain splits around `uv version --bump` so $(VERSION) is read after the bump.
 part := $(firstword $(filter major minor patch,$(MAKECMDGOALS)))
+ifneq ($(filter release,$(MAKECMDGOALS)),)
+$(if $(part),,$(error usage: gmake release major|minor|patch))
+endif
 VERSION = $(shell $(UV) version --short)
 
-release: test $(QMS_DLL) _release-gh ## Bump version, promote CHANGELOG, pack zip, tag, push, gh release
+release: test _release-gh ## Bump version, promote CHANGELOG, pack zip, tag, push, gh release
 
-_release-pre: test $(QMS_DLL)
+_release-pre: test
 	$(call need-part)
 	$(call need-clean)
 	$(call need-gh)
 	$(call need-gh-auth)
 	$(call header,Checking CHANGELOG Unreleased has shippable bullets)
 	./Scripts/changelog check
+	$(call need-env)
+	$(UV) run python dll.py
 
 _release-bump: _release-pre
 	$(call header,Bumping $(part) version)
@@ -167,8 +161,15 @@ uv.lock: pyproject.toml
 
 # Target-line double-hash descriptions, read with $(file) and split with $(let).
 help-src := $(file < $(firstword $(MAKEFILE_LIST)))
-help-words := $(foreach w,$(subst $(space),$(s),$(subst $(ht),,$(help-src))),$(if $(and $(findstring $(s)##$(s),$(w)),$(filter-out \#%,$(w))),$(w)))
-show-help = $(let tgt desc,$(subst $(s)##$(s), ,$1),$(info   $(yellow)$(patsubst %:,%,$(firstword $(subst $(s),$(space),$(tgt))))$(reset)  $(strip $(subst $(s),$(space),$(desc)))))
+help-words := $(foreach w,$(subst $(space),$(s),$(help-src)),$(if $(and $(findstring $(s)##$(s),$(w)),$(filter-out \#%,$(w))),$(w)))
+pad-check := check$(space)$(space)$(space)$(space)$(space)
+pad-clean := clean$(space)$(space)$(space)$(space)$(space)
+pad-pack := pack$(space)$(space)$(space)$(space)$(space)$(space)
+pad-preflight := preflight$(space)
+pad-release := release$(space)$(space)$(space)
+pad-test := test$(space)$(space)$(space)$(space)$(space)$(space)
+pad10 = $(or $(pad-$1),$1)
+show-help = $(let tgt desc,$(subst $(s)##$(s), ,$1),$(let name text,$(patsubst %:,%,$(firstword $(subst $(s),$(space),$(tgt)))) $(strip $(subst $(s),$(space),$(desc))),$(info   $(yellow)$(call pad10,$(name))$(reset) $(text))))
 
 help:
 	$(info $(blue)Usage: $(green)gmake [recipe]$(reset))

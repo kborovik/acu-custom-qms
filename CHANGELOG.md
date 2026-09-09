@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Changed
+
+- **Pack compiles `Lab5.QMS.dll` when C# changes:** `lab5-qms pack` /
+  `publish` / `deploy`, `gmake pack` / `check` / `release` rebuild the
+  assembly on the ERP VM when `src/Lab5.QMS` sources (or the compiler)
+  change. Dropped `gmake dll` — compile is a dependency of those paths,
+  not a recipe.
+
 ## [v0.4.0] - 2026-09-08
 
 ### Added

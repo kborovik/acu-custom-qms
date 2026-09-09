@@ -32,7 +32,7 @@ def cli(ctx: click.Context) -> None:
 
 def _write_zip(output: Path | None) -> Path:
     with progress("pack zip", str(output or pack.PACKAGE_ZIP)) as p:
-        path = pack.write_package(output)
+        path = pack.write_package(output, ensure_dll=True)
         p.target = str(path)
         return path
 
@@ -54,7 +54,9 @@ def pack_cmd(output: Path | None) -> None:
 @click.option("--timeout", type=float, default=600.0, show_default=True)
 def publish_cmd(timeout: float) -> None:
     """Import and publish Lab5.QMS via CustomizationApi (merge with existing)."""
-    status = publish.publish_package(pack.package_zip(), timeout=timeout)
+    status = publish.publish_package(
+        pack.package_zip(ensure_dll=True), timeout=timeout
+    )
     click.echo(status)
 
 
