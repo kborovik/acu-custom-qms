@@ -284,6 +284,8 @@ class TestPatternAStockItem(unittest.TestCase):
         html = (base / "IN202500_QMS.html").read_text(encoding="utf-8")
         ts = (base / "IN202500_QMS.ts").read_text(encoding="utf-8")
         self.assertIn("export class IN202500_QMS", ts)
+        self.assertIn("export class InventoryItem", ts)
+        self.assertNotIn("InventoryItemExtension", ts)
         self.assertNotIn("if.bind", html)
         self.assertIn("visible.bind", html)
         for field in (

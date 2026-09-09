@@ -51,7 +51,7 @@ class TestInventoryItemExtV1(unittest.TestCase):
 
 class TestPatternAStockItemScreen(unittest.TestCase):
     def test_modern_ui_shows_usr_fields(self) -> None:
-        html = (
+        base = (
             ROOT
             / "FrontendSources"
             / "screen"
@@ -60,12 +60,16 @@ class TestPatternAStockItemScreen(unittest.TestCase):
             / "IN"
             / "IN202500"
             / "extensions"
-            / "IN202500_QMS.html"
-        ).read_text(encoding="utf-8")
+        )
+        html = (base / "IN202500_QMS.html").read_text(encoding="utf-8")
+        ts = (base / "IN202500_QMS.ts").read_text(encoding="utf-8")
         for field in USR_FIELDS:
             self.assertIn(f'name="{field}"', html, field)
+            self.assertIn(field, ts, field)
         self.assertIn("visible.bind", html)
         self.assertNotIn("if.bind", html)
+        self.assertIn("export class InventoryItem", ts)
+        self.assertNotIn("InventoryItemExtension", ts)
 
 
 class TestInventoryItemUsrColumns(unittest.TestCase):

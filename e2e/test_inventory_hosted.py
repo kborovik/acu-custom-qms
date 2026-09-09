@@ -99,28 +99,68 @@ class TestQualityQueueLiveV16(unittest.TestCase):
 
     def test_work_row_grain(self) -> None:
         cid = company_id()
-        rows = sql_lines(
-            "SELECT COUNT(*) FROM "
+        aggs = {}
+        for line in sql_lines(
+            "SELECT ObjectName, Field, AggregateFunction FROM "
+            f"{DB_NAME}.dbo.GIResult "
+            f"WHERE DesignID = '{GI_DESIGN_ID}' AND CompanyID IN (1, {cid})"
+        ):
+            parts = line.split("|")
+            obj, field = parts[0], parts[1]
+            aggs[f"{obj}.{field}"] = parts[2] if len(parts) > 2 else ""
+        for key in ("Lot.usrQMSLotStatus", "NCR.nCRNbr", "NCR.status"):
+            self.assertEqual(
+                aggs.get(key),
+                "MAX",
+                f"{key} AggregateFunction missing MAX: {aggs}",
+            )
+        work = (
             f"{DB_NAME}.dbo.UsrQMSInspectionOrder o "
-            f"LEFT JOIN {DB_NAME}.dbo.UsrQMSNonConformance n "
-            "ON n.CompanyID = o.CompanyID "
-            "AND n.InspectionOrderNbr = o.InspectionOrderNbr "
-            "AND n.Status <> N'C' "
             f"LEFT JOIN {DB_NAME}.dbo.INLotSerialStatusByCostCenter lot "
             "ON lot.CompanyID = o.CompanyID "
             "AND lot.InventoryID = o.InventoryID "
             "AND lot.LotSerialNbr = o.LotSerialNbr "
-            "AND lot.UsrQMSLotStatus = N'QC Hold' "
+            f"LEFT JOIN {DB_NAME}.dbo.UsrQMSNonConformance n "
+            "ON n.CompanyID = o.CompanyID "
+            "AND n.InspectionOrderNbr = o.InspectionOrderNbr "
             f"WHERE o.CompanyID IN (1, {cid}) AND ("
-            "lot.InventoryID IS NOT NULL "
+            "lot.UsrQMSLotStatus = N'QC Hold' "
             "OR o.Status <> N'C' "
-            "OR n.NCRNbr IS NOT NULL)"
+            "OR (n.NCRNbr IS NOT NULL AND n.Status <> N'C'))"
         )
-        self.assertTrue(rows)
-        if int(rows[0]) == 0:
+        distinct = sql_lines("SELECT COUNT(DISTINCT o.InspectionOrderNbr) FROM " + work)
+        grouped = sql_lines(
+            "SELECT COUNT(*) FROM (SELECT o.InspectionOrderNbr FROM "
+            + work
+            + " GROUP BY o.InspectionOrderNbr) q"
+        )
+        self.assertTrue(distinct)
+        self.assertTrue(grouped)
+        if int(distinct[0]) == 0:
             raise unittest.SkipTest(
                 "no inspection-order work rows — seed tenant from acu-gitops-qms"
             )
+        self.assertEqual(
+            int(grouped[0]),
+            int(distinct[0]),
+            "Quality Queue grain is not one row per inspectionOrderNbr",
+        )
+        ncr_rows = sql_lines(
+            "SELECT COUNT(*) FROM (SELECT o.InspectionOrderNbr, MAX(n.NCRNbr) "
+            "FROM " + work + " AND n.NCRNbr IS NOT NULL AND n.Status <> N'C' "
+            "GROUP BY o.InspectionOrderNbr) q"
+        )
+        self.assertTrue(ncr_rows)
+        if int(ncr_rows[0]) > 0:
+            links = set(
+                sql_lines(
+                    f"SELECT Link FROM {DB_NAME}.dbo.GINavigationScreen "
+                    f"WHERE DesignID = '{GI_DESIGN_ID}' "
+                    f"AND CompanyID IN (1, {cid})"
+                )
+            )
+            self.assertIn("QM301000", links)
+            self.assertIn("QM302000", links)
 
     def test_roles_in_graph_qm401000(self) -> None:
         cid = company_id()

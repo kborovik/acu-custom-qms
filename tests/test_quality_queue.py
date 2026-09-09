@@ -104,6 +104,14 @@ class TestQualityQueueGI(unittest.TestCase):
             for row in root.findall(".//{*}GIGroupBy") + root.findall(".//GIGroupBy")
         ]
         self.assertIn("Order.inspectionOrderNbr", group)
+        maxed = {
+            row.get("Caption"): row.get("AggregateFunction")
+            for row in root.findall(".//{*}GIResult") + root.findall(".//GIResult")
+            if row.get("AggregateFunction")
+        }
+        self.assertEqual(maxed.get("Lot Status"), "MAX")
+        self.assertEqual(maxed.get("NCR Nbr"), "MAX")
+        self.assertEqual(maxed.get("NCR Status"), "MAX")
 
     def test_packed_project_has_generic_inquiry_screen(self) -> None:
         with _zip() as zf:
@@ -132,6 +140,10 @@ class TestQualityQueueGI(unittest.TestCase):
         self.assertIn("GIGroupBy", sql)
         self.assertIn("DELETE FROM", sql)
         self.assertIn("N'Order.inspectionOrderNbr'", sql)
+        self.assertIn("AggregateFunction", sql)
+        self.assertEqual(sql.count("N'MAX'"), 3)
+        self.assertIn("N'usrQMSLotStatus'", sql)
+        self.assertIn("N'nCRNbr'", sql)
 
 
 if __name__ == "__main__":

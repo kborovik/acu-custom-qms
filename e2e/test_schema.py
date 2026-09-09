@@ -23,6 +23,9 @@ from e2e.helper import (
     roles_in_graph_rows,
     sql_lines,
 )
+from lab5_qms.publish import QM401000_DESIGN_ID
+
+QM_FORM_SCREENS = ("QM101000", "QM201000", "QM301000", "QM302000")
 
 QM_WORKSPACE_TITLE = "Inventory"
 QM_SEARCH_TITLES = {
@@ -275,7 +278,7 @@ class TestModernQmWorkspace(unittest.TestCase):
 
     def test_screenid_urls_keep_working(self) -> None:
         with client() as session:
-            for screen_id in QM_SCREENS:
+            for screen_id in QM_FORM_SCREENS:
                 response = session._checked(
                     session._http.get(
                         "/Main",
@@ -298,6 +301,20 @@ class TestModernQmWorkspace(unittest.TestCase):
                     r"\.aspx(\?|$)",
                     f"{screen_id} opened Classic ASPX: {url}",
                 )
+            gi = session._checked(
+                session._http.get(
+                    "/Main",
+                    params={"ScreenId": "QM401000"},
+                    follow_redirects=True,
+                )
+            )
+            gi_url = str(gi.url)
+            self.assertTrue(
+                "ScreenId=QM401000" in gi_url
+                or "ScreenID=QM401000" in gi_url
+                or QM401000_DESIGN_ID in gi_url,
+                f"QM401000 not reachable by ScreenId or design id: {gi_url}",
+            )
 
 
 if __name__ == "__main__":
