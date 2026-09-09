@@ -51,7 +51,8 @@ class TestRolesInGraphSeedV10(unittest.TestCase):
             set(rows),
             {(role, screen) for role in QM_RIGHTS_ROLES for screen in QM_SCREENS},
         )
-        self.assertEqual(len(rows), 8)
+        self.assertEqual(len(rows), 10)
+        self.assertIn("QM401000", QM_SCREENS)
         self.assertEqual(ROLES_IN_GRAPH_COMPANY_ID, 1)
         self.assertEqual(ROLES_IN_GRAPH_APPLICATION, "/")
         self.assertEqual(ACCESSRIGHTS_DELETE, 4)
