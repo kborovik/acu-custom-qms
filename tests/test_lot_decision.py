@@ -15,7 +15,16 @@ GRAPH_CS = ROOT / "src" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
 RULES_CS = ROOT / "src" / "Lab5.QMS" / "QMSLotDecisionRules.cs"
 LOT_CS = ROOT / "src" / "Lab5.QMS" / "QMSLotStatus.cs"
 NCR_RULES_CS = ROOT / "src" / "Lab5.QMS" / "QMSNonConformanceRules.cs"
-ASPX = ROOT / "Pages_QM" / "QM301000.aspx"
+TS = (
+    ROOT
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "screens"
+    / "QM"
+    / "QM301000"
+    / "QM301000.ts"
+)
 
 QC_HOLD = "QC Hold"
 RELEASED = "Released"
@@ -333,9 +342,9 @@ class TestLotStatusSetILot(unittest.TestCase):
             "COL_LENGTH(N'dbo.INLotSerialStatusByCostCenter', N'UsrQMSLotStatus')",
             sql,
         )
-        aspx = ASPX.read_text(encoding="utf-8")
-        self.assertIn('Name="ReleaseLotDecision"', aspx)
-        self.assertIn('Name="EvaluateResults"', aspx)
+        ts = TS.read_text(encoding="utf-8")
+        self.assertIn("ReleaseLotDecision: PXActionState", ts)
+        self.assertIn("EvaluateResults: PXActionState", ts)
 
 
 class TestNcrNbr(unittest.TestCase):

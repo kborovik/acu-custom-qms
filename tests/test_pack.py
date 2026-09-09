@@ -221,6 +221,51 @@ class TestProjectXmlPackedItems(unittest.TestCase):
             )
         self.assertEqual(screens["QM401000"].get("Title"), "Quality Queue")
         self.assertEqual(screens["QM401000"].get("Url"), QM401000_URL)
+        pages = {
+            item.get("ScreenID"): item
+            for item in root.findall("Page")
+            if item.get("Type") == "Page"
+        }
+        for screen in SCREENS:
+            self.assertIn(screen, pages, screen)
+            self.assertEqual(pages[screen].get("Title"), pack.PAGE_TITLES[screen])
+        file_paths = {item.get("AppRelativePath") for item in root.findall("File")}
+        for screen in SCREENS:
+            for suffix in (".html", ".ts"):
+                rel = (
+                    rf"FrontendSources\screen\src\screens\QM\{screen}\{screen}{suffix}"
+                )
+                self.assertIn(rel, file_paths, rel)
+                self.assertIn(
+                    f"FrontendSources/screen/src/screens/QM/{screen}/{screen}{suffix}",
+                    names,
+                    screen,
+                )
+
+
+GRAPH_TYPES = {
+    "QM101000": "Lab5.QMS.QMSSetupMaint",
+    "QM201000": "Lab5.QMS.QMSInspectionPlanMaint",
+    "QM301000": "Lab5.QMS.QMSInspectionOrderEntry",
+    "QM302000": "Lab5.QMS.QMSNonConformanceEntry",
+}
+
+
+class TestPatternBModernUi(unittest.TestCase):
+    def test_screen_class_and_graph_type(self) -> None:
+        for screen, graph_type in GRAPH_TYPES.items():
+            ts = (
+                ROOT
+                / "FrontendSources"
+                / "screen"
+                / "src"
+                / "screens"
+                / "QM"
+                / screen
+                / f"{screen}.ts"
+            ).read_text(encoding="utf-8")
+            self.assertIn(f"export class {screen} extends PXScreen", ts, screen)
+            self.assertIn(f'graphType: "{graph_type}"', ts, screen)
 
 
 class TestPackDllFile(unittest.TestCase):

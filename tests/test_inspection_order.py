@@ -19,7 +19,26 @@ RESULT_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSInspectionOrderResult.cs"
 STATUS_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSInspectionOrderStatus.cs"
 GRAPH_CS = ROOT / "src" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
 RULES_CS = ROOT / "src" / "Lab5.QMS" / "QMSInspectionOrderRules.cs"
-ASPX = ROOT / "Pages_QM" / "QM301000.aspx"
+HTML = (
+    ROOT
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "screens"
+    / "QM"
+    / "QM301000"
+    / "QM301000.html"
+)
+TS = (
+    ROOT
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "screens"
+    / "QM"
+    / "QM301000"
+    / "QM301000.ts"
+)
 SQL = ROOT / "Scripts" / "CreateQMSTables.sql"
 
 LINE_PASS = "P"
@@ -423,16 +442,21 @@ class TestInspectionOrderGraphAndScreen(unittest.TestCase):
         self.assertIn("lot.ExpireDate", src)
 
     def test_screen_qm301000(self) -> None:
-        aspx = ASPX.read_text(encoding="utf-8")
-        self.assertIn('TypeName="Lab5.QMS.QMSInspectionOrderEntry"', aspx)
-        self.assertIn('PrimaryView="Document"', aspx)
-        self.assertIn('DataMember="Document"', aspx)
-        self.assertIn('DataMember="Results"', aspx)
-        self.assertIn('Name="EvaluateResults"', aspx)
+        html = HTML.read_text(encoding="utf-8")
+        ts = TS.read_text(encoding="utf-8")
+        self.assertIn("export class QM301000 extends PXScreen", ts)
+        self.assertIn('graphType: "Lab5.QMS.QMSInspectionOrderEntry"', ts)
+        self.assertIn('primaryView: "Document"', ts)
+        self.assertIn("Document = createSingle", ts)
+        self.assertIn("Results = createCollection", ts)
+        self.assertIn("EvaluateResults: PXActionState", ts)
+        self.assertIn("ReleaseLotDecision: PXActionState", ts)
+        self.assertIn('view.bind="Document"', html)
+        self.assertIn('view.bind="Results"', html)
         for field in SUMMARY_FIELDS:
-            self.assertIn(f'DataField="{field}"', aspx)
+            self.assertIn(f'name="{field}"', html)
         for field in GRID_FIELDS:
-            self.assertIn(f'DataField="{field}"', aspx)
+            self.assertIn(field, ts)
 
 
 if __name__ == "__main__":

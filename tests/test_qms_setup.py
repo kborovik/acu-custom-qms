@@ -23,7 +23,26 @@ ORDER_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSInspectionOrder.cs"
 ORDER_GRAPH_CS = ROOT / "src" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
 NCR_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSNonConformance.cs"
 NCR_GRAPH_CS = ROOT / "src" / "Lab5.QMS" / "Graph" / "QMSNonConformanceEntry.cs"
-ASPX = ROOT / "Pages_QM" / "QM101000.aspx"
+HTML = (
+    ROOT
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "screens"
+    / "QM"
+    / "QM101000"
+    / "QM101000.html"
+)
+TS = (
+    ROOT
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "screens"
+    / "QM"
+    / "QM101000"
+    / "QM101000.ts"
+)
 SITEMAP = ROOT / "_project" / "SiteMap.xml"
 SQL = ROOT / "Scripts" / "CreateQMSTables.sql"
 
@@ -116,14 +135,15 @@ class TestQmsSetupGraphAndScreen(unittest.TestCase):
         self.assertIn("public PXSelect<QMSSetup> Setup;", src)
 
     def test_screen_qm101000(self) -> None:
-        aspx = ASPX.read_text(encoding="utf-8")
-        self.assertIn("QM101000", aspx)
-        self.assertIn('Title="Quality Preferences"', aspx)
-        self.assertIn('TypeName="Lab5.QMS.QMSSetupMaint"', aspx)
-        self.assertIn('PrimaryView="Setup"', aspx)
-        self.assertIn('DataMember="Setup"', aspx)
+        html = HTML.read_text(encoding="utf-8")
+        ts = TS.read_text(encoding="utf-8")
+        self.assertIn("export class QM101000 extends PXScreen", ts)
+        self.assertIn('graphType: "Lab5.QMS.QMSSetupMaint"', ts)
+        self.assertIn('primaryView: "Setup"', ts)
+        self.assertIn("Setup = createSingle", ts)
+        self.assertIn('view.bind="Setup"', html)
         for field in SETUP_FIELDS:
-            self.assertIn(f'DataField="{field}"', aspx)
+            self.assertIn(f'name="{field}"', html)
 
     def test_sitemap_workspace_screens(self) -> None:
         tree = ET.parse(SITEMAP)

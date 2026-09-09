@@ -18,7 +18,26 @@ TEST_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSInspectionPlanTest.cs"
 STATUS_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSInspectionPlanStatus.cs"
 GRAPH_CS = ROOT / "src" / "Lab5.QMS" / "Graph" / "QMSInspectionPlanMaint.cs"
 RULES_CS = ROOT / "src" / "Lab5.QMS" / "QMSInspectionPlanRules.cs"
-ASPX = ROOT / "Pages_QM" / "QM201000.aspx"
+HTML = (
+    ROOT
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "screens"
+    / "QM"
+    / "QM201000"
+    / "QM201000.html"
+)
+TS = (
+    ROOT
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "screens"
+    / "QM"
+    / "QM201000"
+    / "QM201000.ts"
+)
 SQL = ROOT / "Scripts" / "CreateQMSTables.sql"
 
 PLAN_FIELDS = (
@@ -210,15 +229,19 @@ class TestInspectionPlanGraphAndScreen(unittest.TestCase):
         )
 
     def test_screen_qm201000(self) -> None:
-        aspx = ASPX.read_text(encoding="utf-8")
-        self.assertIn('TypeName="Lab5.QMS.QMSInspectionPlanMaint"', aspx)
-        self.assertIn('PrimaryView="Document"', aspx)
-        self.assertIn('DataMember="Document"', aspx)
-        self.assertIn('DataMember="Tests"', aspx)
+        html = HTML.read_text(encoding="utf-8")
+        ts = TS.read_text(encoding="utf-8")
+        self.assertIn("export class QM201000 extends PXScreen", ts)
+        self.assertIn('graphType: "Lab5.QMS.QMSInspectionPlanMaint"', ts)
+        self.assertIn('primaryView: "Document"', ts)
+        self.assertIn("Document = createSingle", ts)
+        self.assertIn("Tests = createCollection", ts)
+        self.assertIn('view.bind="Document"', html)
+        self.assertIn('view.bind="Tests"', html)
         for field in SUMMARY_FIELDS:
-            self.assertIn(f'DataField="{field}"', aspx)
+            self.assertIn(f'name="{field}"', html)
         for field in GRID_FIELDS:
-            self.assertIn(f'DataField="{field}"', aspx)
+            self.assertIn(field, ts)
 
 
 def _table_block(sql: str, table: str) -> str:

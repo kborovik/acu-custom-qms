@@ -28,6 +28,12 @@ PAGES = (
     "QM301000",
     "QM302000",
 )
+PAGE_TITLES = {
+    "QM101000": "Quality Preferences",
+    "QM201000": "Inspection Plans",
+    "QM301000": "Inspection Orders",
+    "QM302000": "Non-Conformance Reports",
+}
 
 CLASS_RE = re.compile(
     r"public\s+(?:static\s+)?class\s+(\w+)(?:\s*:\s*([^{\n]+))?",
@@ -57,6 +63,8 @@ def package_zip(root: Path | None = None, *, ensure_dll: bool = False) -> bytes:
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("project.xml", xml_bytes)
         for rel in _pkg_members(root):
+            zf.write(root / rel, arcname=rel.as_posix())
+        for rel in _frontend_qm_files():
             zf.write(root / rel, arcname=rel.as_posix())
         for screen in PAGES:
             for suffix in (".aspx", ".aspx.cs"):
@@ -107,6 +115,14 @@ def _project_xml(root: Path) -> ET.Element:
     # Keep DAC/graph source in src/; pack/publish/deploy compile on the ERP
     # VM when those sources change, then add File Bin\Lab5.QMS.dll.
     for screen in PAGES:
+        page_el = ET.SubElement(customization, "Page")
+        page_el.set("Type", "Page")
+        page_el.set("ScreenID", screen)
+        page_el.set("Title", PAGE_TITLES[screen])
+    for rel in _frontend_qm_files():
+        file_el = ET.SubElement(customization, "File")
+        file_el.set("AppRelativePath", _app_relative(rel))
+    for screen in PAGES:
         for suffix in (".aspx", ".aspx.cs"):
             file_el = ET.SubElement(customization, "File")
             file_el.set("AppRelativePath", rf"Pages\QM\{screen}{suffix}")
@@ -126,6 +142,7 @@ def _pkg_members(root: Path) -> list[Path]:
         Path("_project") / "SiteMap.xml",
         Path("Scripts") / "CreateQMSTables.sql",
     ]
+    members.extend(_frontend_qm_files())
     for screen in PAGES:
         members.append(Path("Pages_QM") / f"{screen}.aspx")
         members.append(Path("Pages_QM") / f"{screen}.aspx.cs")
@@ -133,6 +150,26 @@ def _pkg_members(root: Path) -> list[Path]:
         if not (root / path).is_file():
             raise FileNotFoundError(path)
     return members
+
+
+def _frontend_qm_files() -> list[Path]:
+    files: list[Path] = []
+    for screen in PAGES:
+        for suffix in (".html", ".ts"):
+            files.append(
+                Path("FrontendSources")
+                / "screen"
+                / "src"
+                / "screens"
+                / "QM"
+                / screen
+                / f"{screen}{suffix}"
+            )
+    return files
+
+
+def _app_relative(rel: Path) -> str:
+    return "\\".join(rel.parts)
 
 
 def _cs_files(root: Path) -> list[Path]:
