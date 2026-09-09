@@ -108,6 +108,7 @@ class TestPackIPkg(unittest.TestCase):
             names = set(zf.namelist())
         self.assertIn("project.xml", names)
         self.assertIn("_project/ProjectMetadata.xml", names)
+        self.assertIn("_project/GenericInquiryScreen_QM401000.xml", names)
         self.assertIn("Scripts/CreateQMSTables.sql", names)
         for screen in SCREENS:
             self.assertIn(f"Pages_QM/{screen}.aspx", names, screen)

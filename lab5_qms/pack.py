@@ -100,6 +100,9 @@ def _project_xml(root: Path) -> ET.Element:
     sitemap_doc = ET.parse(root / "_project" / "SiteMap.xml")
     customization.append(sitemap_doc.getroot())
 
+    gi_doc = ET.parse(root / "_project" / "GenericInquiryScreen_QM401000.xml")
+    customization.append(gi_doc.getroot())
+
     sql_el = ET.SubElement(customization, "Sql")
     sql_el.set("TableName", "CreateQMSTables")
     sql_el.set(
@@ -138,6 +141,7 @@ def _pkg_members(root: Path) -> list[Path]:
         Path("_project") / "ProjectMetadata.xml",
         Path("_project") / "QMS.xml",
         Path("_project") / "SiteMap.xml",
+        Path("_project") / "GenericInquiryScreen_QM401000.xml",
         Path("Scripts") / "CreateQMSTables.sql",
     ]
     members.extend(_frontend_files())
