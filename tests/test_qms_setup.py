@@ -36,19 +36,23 @@ SETUP_FIELDS = (
     "NCRNumberingID",
 )
 
-WORKSPACE_TITLE = "Quality Management"
+INVENTORY_WORKSPACE_ID = "6557C1C6-747E-45BB-9072-54F096598D61"
+CONFIGURATION_WORKSPACE_ID = "3206E17E-8A34-4E3E-9648-5CEE25DEFDE5"
 SCREEN_TITLES = {
-    "QM000000": "Quality Management",
     "QM101000": "Quality Preferences",
     "QM201000": "Inspection Plans",
     "QM301000": "Inspection Orders",
     "QM302000": "Non-Conformance Reports",
+    "QM401000": "Quality Queue",
 }
 SCREEN_URLS = {
     "QM101000": "~/Pages/QM/QM101000.aspx",
     "QM201000": "~/Pages/QM/QM201000.aspx",
     "QM301000": "~/Pages/QM/QM301000.aspx",
     "QM302000": "~/Pages/QM/QM302000.aspx",
+    "QM401000": (
+        "~/GenericInquiry/GenericInquiry.aspx?id=9f9483b9-6427-40c6-9c91-96b22c67c28e"
+    ),
 }
 
 
@@ -129,14 +133,12 @@ class TestQmsSetupGraphAndScreen(unittest.TestCase):
         by_screen = {
             row.get("ScreenID"): row for row in site_rows if row.get("ScreenID")
         }
-        workspace = tree.find(".//{*}MUIWorkspace/{*}row")
-        if workspace is None:
-            workspace = tree.find(".//MUIWorkspace/row")
-        self.assertIsNotNone(workspace, "missing MUIWorkspace Quality Management")
-        workspace_id = workspace.get("WorkspaceID")
-        self.assertEqual(workspace.get("Title"), WORKSPACE_TITLE)
-        self.assertEqual(workspace.get("ScreenID"), "QM000000")
-        self.assertTrue(workspace_id)
+        self.assertNotIn("QM000000", by_screen)
+        self.assertIsNone(tree.find(".//{*}MUIWorkspace/{*}row"))
+        self.assertIsNone(tree.find(".//MUIWorkspace/row"))
+        blob = ET.tostring(tree.getroot(), encoding="unicode")
+        self.assertNotIn("Quality Management", blob)
+        self.assertNotIn(CONFIGURATION_WORKSPACE_ID, blob)
         self.assertEqual(by_screen[PREFS_SCREEN].get("Url"), SCREEN_URLS[PREFS_SCREEN])
         for screen_id, title in SCREEN_TITLES.items():
             self.assertIn(screen_id, by_screen, screen_id)
@@ -150,12 +152,9 @@ class TestQmsSetupGraphAndScreen(unittest.TestCase):
             mui = row.find("{*}MUIScreen")
             if mui is None:
                 mui = row.find("MUIScreen")
-            if screen_id in SCREEN_URLS:
-                self.assertIsNotNone(mui, f"{screen_id} missing MUIScreen workspace")
-                self.assertEqual(mui.get("WorkspaceID"), workspace_id, screen_id)
-                self.assertEqual(row.get("Url"), SCREEN_URLS[screen_id], screen_id)
-            else:
-                self.assertIsNone(mui, f"{screen_id} folder must not be a MUIScreen")
+            self.assertIsNotNone(mui, f"{screen_id} missing MUIScreen workspace")
+            self.assertEqual(mui.get("WorkspaceID"), INVENTORY_WORKSPACE_ID, screen_id)
+            self.assertEqual(row.get("Url"), SCREEN_URLS[screen_id], screen_id)
 
 
 class TestAutoNumberWiring(unittest.TestCase):

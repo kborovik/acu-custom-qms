@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Quality Management workspace (I.screen / V16). ScreenID QM.10.10.00 = QM101000. -->
+<!-- Inventory workspace (I.screen / V16). ScreenIDs stay QM*. No QMS MUIWorkspace, no QM000000. -->
 <SiteMapNode>
   <data-set>
     <relations format-version="3" relations-version="20160101" main-table="SiteMap">
@@ -27,44 +27,32 @@
     </layout>
     <data>
       <SiteMap>
-        <row Position="1" Title="Quality Management" Url="" Expanded="1" IsFolder="1" ScreenID="QM000000" NodeID="93AA892C-C7BA-4DE3-9317-EEA874B9ECD6" ParentID="00000000-0000-0000-0000-000000000000" />
-        <row Position="1" Title="Configuration" Url="" Expanded="1" IsFolder="1" ScreenID="" NodeID="EC9FE51C-0D2A-4346-AF56-6584C61A1D3E" ParentID="93AA892C-C7BA-4DE3-9317-EEA874B9ECD6" />
-        <row Position="1" Title="Quality Preferences" Url="~/Pages/QM/QM101000.aspx" Expanded="0" IsFolder="0" ScreenID="QM101000" NodeID="2E602620-2D0B-4492-879B-539750C3B711" ParentID="EC9FE51C-0D2A-4346-AF56-6584C61A1D3E">
-          <MUIScreen IsPortal="0" WorkspaceID="C0A1B1E5-0110-4D16-8A00-51E0A1B1E500" Order="10.0" SubcategoryID="8A93637D-B507-4667-A739-ADAF6FB5F7EA">
+        <row Position="1" Title="Quality Preferences" Url="~/Pages/QM/QM101000.aspx" Expanded="0" IsFolder="0" ScreenID="QM101000" NodeID="2E602620-2D0B-4492-879B-539750C3B711" ParentID="00000000-0000-0000-0000-000000000000">
+          <MUIScreen IsPortal="0" WorkspaceID="6557C1C6-747E-45BB-9072-54F096598D61" Order="800.0" SubcategoryID="8A93637D-B507-4667-A739-ADAF6FB5F7EA">
             <MUIPinnedScreen IsPinned="0" Username="" IsPortal="0" />
           </MUIScreen>
         </row>
-        <row Position="2" Title="Master Data" Url="" Expanded="1" IsFolder="1" ScreenID="" NodeID="63B6244B-4F8F-4105-9A20-C8BC726BDAE3" ParentID="93AA892C-C7BA-4DE3-9317-EEA874B9ECD6" />
-        <row Position="1" Title="Inspection Plans" Url="~/Pages/QM/QM201000.aspx" Expanded="0" IsFolder="0" ScreenID="QM201000" NodeID="E056CF36-148D-448B-B0C6-55739CBFAF05" ParentID="63B6244B-4F8F-4105-9A20-C8BC726BDAE3">
-          <MUIScreen IsPortal="0" WorkspaceID="C0A1B1E5-0110-4D16-8A00-51E0A1B1E500" Order="10.0" SubcategoryID="6D40B0B6-18F4-4139-ADAC-8EC8CB2A17EA">
+        <row Position="2" Title="Inspection Plans" Url="~/Pages/QM/QM201000.aspx" Expanded="0" IsFolder="0" ScreenID="QM201000" NodeID="E056CF36-148D-448B-B0C6-55739CBFAF05" ParentID="00000000-0000-0000-0000-000000000000">
+          <MUIScreen IsPortal="0" WorkspaceID="6557C1C6-747E-45BB-9072-54F096598D61" Order="800.0" SubcategoryID="6D40B0B6-18F4-4139-ADAC-8EC8CB2A17EA">
             <MUIPinnedScreen IsPinned="0" Username="" IsPortal="0" />
           </MUIScreen>
         </row>
-        <row Position="3" Title="Transactions" Url="" Expanded="1" IsFolder="1" ScreenID="" NodeID="1973B193-9F47-4DFA-A5B9-ADB89B83D3BE" ParentID="93AA892C-C7BA-4DE3-9317-EEA874B9ECD6" />
-        <row Position="1" Title="Inspection Orders" Url="~/Pages/QM/QM301000.aspx" Expanded="0" IsFolder="0" ScreenID="QM301000" NodeID="D3F000BF-007E-479F-9636-361A17DC7E57" ParentID="1973B193-9F47-4DFA-A5B9-ADB89B83D3BE">
-          <MUIScreen IsPortal="0" WorkspaceID="C0A1B1E5-0110-4D16-8A00-51E0A1B1E500" Order="10.0" SubcategoryID="38D13A6E-3076-42FB-9FCE-62FA33897DA6">
+        <row Position="3" Title="Inspection Orders" Url="~/Pages/QM/QM301000.aspx" Expanded="0" IsFolder="0" ScreenID="QM301000" NodeID="D3F000BF-007E-479F-9636-361A17DC7E57" ParentID="00000000-0000-0000-0000-000000000000">
+          <MUIScreen IsPortal="0" WorkspaceID="6557C1C6-747E-45BB-9072-54F096598D61" Order="800.0" SubcategoryID="38D13A6E-3076-42FB-9FCE-62FA33897DA6">
             <MUIPinnedScreen IsPinned="0" Username="" IsPortal="0" />
           </MUIScreen>
         </row>
-        <row Position="2" Title="Non-Conformance Reports" Url="~/Pages/QM/QM302000.aspx" Expanded="0" IsFolder="0" ScreenID="QM302000" NodeID="03BF7A0F-35DB-41F0-B79E-B50319C7BB0D" ParentID="1973B193-9F47-4DFA-A5B9-ADB89B83D3BE">
-          <MUIScreen IsPortal="0" WorkspaceID="C0A1B1E5-0110-4D16-8A00-51E0A1B1E500" Order="20.0" SubcategoryID="38D13A6E-3076-42FB-9FCE-62FA33897DA6">
+        <row Position="4" Title="Non-Conformance Reports" Url="~/Pages/QM/QM302000.aspx" Expanded="0" IsFolder="0" ScreenID="QM302000" NodeID="03BF7A0F-35DB-41F0-B79E-B50319C7BB0D" ParentID="00000000-0000-0000-0000-000000000000">
+          <MUIScreen IsPortal="0" WorkspaceID="6557C1C6-747E-45BB-9072-54F096598D61" Order="810.0" SubcategoryID="38D13A6E-3076-42FB-9FCE-62FA33897DA6">
+            <MUIPinnedScreen IsPinned="0" Username="" IsPortal="0" />
+          </MUIScreen>
+        </row>
+        <row Position="5" Title="Quality Queue" Url="~/GenericInquiry/GenericInquiry.aspx?id=9f9483b9-6427-40c6-9c91-96b22c67c28e" Expanded="0" IsFolder="0" ScreenID="QM401000" NodeID="4B71B730-6114-4FA3-86EF-87EBA78E1DB0" ParentID="00000000-0000-0000-0000-000000000000">
+          <MUIScreen IsPortal="0" WorkspaceID="6557C1C6-747E-45BB-9072-54F096598D61" Order="800.0" SubcategoryID="98E86774-69E3-41EA-B94F-EB2C7A8426D4">
             <MUIPinnedScreen IsPinned="0" Username="" IsPortal="0" />
           </MUIScreen>
         </row>
       </SiteMap>
-      <MUIWorkspace>
-        <row IsPortal="0" WorkspaceID="C0A1B1E5-0110-4D16-8A00-51E0A1B1E500" Order="360.0" Title="Quality Management" Icon="verified_user" AreaID="62CFD5DC-8EB9-4E92-BBCD-E0A99EB5E5DF" ScreenID="QM000000" IsSystem="0" LayoutMode="0">
-          <MUIFavoriteWorkspace IsFavorite="1" Username="" IsPortal="0" />
-        </row>
-      </MUIWorkspace>
-      <MUISubcategory>
-        <row IsPortal="0" SubcategoryID="8A93637D-B507-4667-A739-ADAF6FB5F7EA" Order="1391.813" Name="Preferences" Icon="" IsSystem="0" />
-        <row IsPortal="0" SubcategoryID="6D40B0B6-18F4-4139-ADAC-8EC8CB2A17EA" Order="128.0" Name="Profiles" Icon="" IsSystem="0" />
-        <row IsPortal="0" SubcategoryID="38D13A6E-3076-42FB-9FCE-62FA33897DA6" Order="64.0" Name="Transactions" Icon="" IsSystem="0" />
-      </MUISubcategory>
-      <MUIArea>
-        <row IsPortal="0" AreaID="62CFD5DC-8EB9-4E92-BBCD-E0A99EB5E5DF" Order="20.0" Name="Operations" />
-      </MUIArea>
     </data>
   </data-set>
 </SiteMapNode>

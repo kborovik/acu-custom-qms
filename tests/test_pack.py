@@ -37,6 +37,20 @@ SCREENS = (
     "QM301000",
     "QM302000",
 )
+SITEMAP_SCREENS = SCREENS + ("QM401000",)
+INVENTORY_WORKSPACE_ID = "6557C1C6-747E-45BB-9072-54F096598D61"
+CONFIGURATION_WORKSPACE_ID = "3206E17E-8A34-4E3E-9648-5CEE25DEFDE5"
+QMS_WORKSPACE_ID = "C0A1B1E5-0110-4D16-8A00-51E0A1B1E500"
+SUBCATEGORY = {
+    "QM101000": "8A93637D-B507-4667-A739-ADAF6FB5F7EA",
+    "QM201000": "6D40B0B6-18F4-4139-ADAC-8EC8CB2A17EA",
+    "QM301000": "38D13A6E-3076-42FB-9FCE-62FA33897DA6",
+    "QM302000": "38D13A6E-3076-42FB-9FCE-62FA33897DA6",
+    "QM401000": "98E86774-69E3-41EA-B94F-EB2C7A8426D4",
+}
+QM401000_URL = (
+    "~/GenericInquiry/GenericInquiry.aspx?id=9f9483b9-6427-40c6-9c91-96b22c67c28e"
+)
 
 CODE_CLASSES = {
     "QMSInspectionPlan": "NewDac",
@@ -180,16 +194,14 @@ class TestProjectXmlPackedItems(unittest.TestCase):
         self.assertIsNotNone(sitemap)
         site_rows = sitemap.findall(".//SiteMap/row")
         screens = {row.get("ScreenID"): row for row in site_rows if row.get("ScreenID")}
-        self.assertIn("QM000000", screens)
-        workspace = sitemap.find(".//MUIWorkspace/row")
-        self.assertIsNotNone(workspace, "packed SiteMap missing MUIWorkspace")
-        self.assertEqual(workspace.get("Title"), "Quality Management")
-        self.assertEqual(workspace.get("ScreenID"), "QM000000")
-        workspace_id = workspace.get("WorkspaceID")
-        folder = screens["QM000000"]
-        self.assertNotEqual(folder.get("SelectedUI"), "E")
-        self.assertIsNone(folder.find("MUIScreen"))
-        for screen in SCREENS:
+        self.assertNotIn("QM000000", screens)
+        self.assertIsNone(sitemap.find(".//MUIWorkspace/row"))
+        blob = ET.tostring(sitemap, encoding="unicode")
+        self.assertNotIn("Quality Management", blob)
+        self.assertNotIn(QMS_WORKSPACE_ID, blob)
+        self.assertNotIn(CONFIGURATION_WORKSPACE_ID, blob)
+        self.assertNotIn(">Configuration<", blob)
+        for screen in SITEMAP_SCREENS:
             self.assertIn(screen, screens, screen)
             row = screens[screen]
             self.assertNotEqual(
@@ -199,12 +211,16 @@ class TestProjectXmlPackedItems(unittest.TestCase):
             )
             mui = row.find("MUIScreen")
             self.assertIsNotNone(mui, f"{screen} missing MUIScreen")
-            self.assertEqual(mui.get("WorkspaceID"), workspace_id, screen)
+            self.assertEqual(mui.get("WorkspaceID"), INVENTORY_WORKSPACE_ID, screen)
+            self.assertEqual(mui.get("SubcategoryID"), SUBCATEGORY[screen], screen)
+        for screen in SCREENS:
             self.assertEqual(
-                row.get("Url"),
+                screens[screen].get("Url"),
                 f"~/Pages/QM/{screen}.aspx",
                 screen,
             )
+        self.assertEqual(screens["QM401000"].get("Title"), "Quality Queue")
+        self.assertEqual(screens["QM401000"].get("Url"), QM401000_URL)
 
 
 class TestPackDllFile(unittest.TestCase):
