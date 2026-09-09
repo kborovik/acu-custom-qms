@@ -49,6 +49,25 @@ class TestInventoryItemExtV1(unittest.TestCase):
         self.assertIn("int? UsrMinShelfLifeDays", shelf)
 
 
+class TestPatternAStockItemScreen(unittest.TestCase):
+    def test_modern_ui_shows_usr_fields(self) -> None:
+        html = (
+            ROOT
+            / "FrontendSources"
+            / "screen"
+            / "src"
+            / "screens"
+            / "IN"
+            / "IN202500"
+            / "extensions"
+            / "IN202500_QMS.html"
+        ).read_text(encoding="utf-8")
+        for field in USR_FIELDS:
+            self.assertIn(f'name="{field}"', html, field)
+        self.assertIn("visible.bind", html)
+        self.assertNotIn("if.bind", html)
+
+
 class TestInventoryItemUsrColumns(unittest.TestCase):
     def test_alter_inventory_item_adds_usr_columns(self) -> None:
         sql = SQL.read_text(encoding="utf-8")

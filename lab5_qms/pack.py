@@ -64,8 +64,6 @@ def package_zip(root: Path | None = None, *, ensure_dll: bool = False) -> bytes:
         zf.writestr("project.xml", xml_bytes)
         for rel in _pkg_members(root):
             zf.write(root / rel, arcname=rel.as_posix())
-        for rel in _frontend_qm_files():
-            zf.write(root / rel, arcname=rel.as_posix())
         for screen in PAGES:
             for suffix in (".aspx", ".aspx.cs"):
                 src = root / "Pages_QM" / f"{screen}{suffix}"
@@ -119,7 +117,7 @@ def _project_xml(root: Path) -> ET.Element:
         page_el.set("Type", "Page")
         page_el.set("ScreenID", screen)
         page_el.set("Title", PAGE_TITLES[screen])
-    for rel in _frontend_qm_files():
+    for rel in _frontend_files():
         file_el = ET.SubElement(customization, "File")
         file_el.set("AppRelativePath", _app_relative(rel))
     for screen in PAGES:
@@ -142,7 +140,7 @@ def _pkg_members(root: Path) -> list[Path]:
         Path("_project") / "SiteMap.xml",
         Path("Scripts") / "CreateQMSTables.sql",
     ]
-    members.extend(_frontend_qm_files())
+    members.extend(_frontend_files())
     for screen in PAGES:
         members.append(Path("Pages_QM") / f"{screen}.aspx")
         members.append(Path("Pages_QM") / f"{screen}.aspx.cs")
@@ -166,6 +164,23 @@ def _frontend_qm_files() -> list[Path]:
                 / f"{screen}{suffix}"
             )
     return files
+
+
+def _frontend_in202500_qms() -> list[Path]:
+    base = (
+        Path("FrontendSources")
+        / "screen"
+        / "src"
+        / "screens"
+        / "IN"
+        / "IN202500"
+        / "extensions"
+    )
+    return [base / "IN202500_QMS.html", base / "IN202500_QMS.ts"]
+
+
+def _frontend_files() -> list[Path]:
+    return [*_frontend_qm_files(), *_frontend_in202500_qms()]
 
 
 def _app_relative(rel: Path) -> str:

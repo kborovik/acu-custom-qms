@@ -268,6 +268,47 @@ class TestPatternBModernUi(unittest.TestCase):
             self.assertIn(f'graphType: "{graph_type}"', ts, screen)
 
 
+class TestPatternAStockItem(unittest.TestCase):
+    def test_in202500_qms_fields_and_visible_bind(self) -> None:
+        base = (
+            ROOT
+            / "FrontendSources"
+            / "screen"
+            / "src"
+            / "screens"
+            / "IN"
+            / "IN202500"
+            / "extensions"
+        )
+        html = (base / "IN202500_QMS.html").read_text(encoding="utf-8")
+        ts = (base / "IN202500_QMS.ts").read_text(encoding="utf-8")
+        self.assertIn("export class IN202500_QMS", ts)
+        self.assertNotIn("if.bind", html)
+        self.assertIn("visible.bind", html)
+        for field in (
+            "UsrQMSInspectionRequired",
+            "UsrQMSInspectionPlanID",
+            "UsrMinShelfLifeDays",
+        ):
+            self.assertIn(f'name="{field}"', html, field)
+            self.assertIn(field, ts, field)
+        with _zip() as zf:
+            root = _project(zf)
+            names = set(zf.namelist())
+        paths = {item.get("AppRelativePath") for item in root.findall("File")}
+        for suffix in (".html", ".ts"):
+            rel = (
+                r"FrontendSources\screen\src\screens\IN\IN202500\extensions"
+                rf"\IN202500_QMS{suffix}"
+            )
+            self.assertIn(rel, paths, rel)
+            self.assertIn(
+                "FrontendSources/screen/src/screens/IN/IN202500/extensions/"
+                f"IN202500_QMS{suffix}",
+                names,
+            )
+
+
 class TestPackDllFile(unittest.TestCase):
     def test_zip_includes_bin_dll_when_present(self) -> None:
         dest = ROOT / "src" / "Lab5.QMS" / "bin" / "Release" / pack.ASSEMBLY_DLL

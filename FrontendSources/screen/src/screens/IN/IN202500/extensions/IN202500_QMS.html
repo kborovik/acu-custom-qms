@@ -1,0 +1,15 @@
+<template>
+  <qp-tab
+    id="tab-Quality"
+    caption="Quality"
+    after="#tab-PriceCost"
+    visible.bind="true">
+    <qp-template id="form-Quality" name="1" class="label-size-m" wg-container="Item_form">
+      <qp-fieldset id="fsQuality" slot="A" view.bind="Item" caption="Quality Inspection">
+        <field name="UsrQMSInspectionRequired"></field>
+        <field name="UsrQMSInspectionPlanID"></field>
+        <field name="UsrMinShelfLifeDays"></field>
+      </qp-fieldset>
+    </qp-template>
+  </qp-tab>
+</template>
