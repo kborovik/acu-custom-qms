@@ -141,7 +141,9 @@ def _mappings(entity: ET.Element) -> dict[str, tuple[str | None, str | None]]:
     return out
 
 
-def _nested_mappings(entity: ET.Element, field: str) -> dict[str, tuple[str | None, str | None]]:
+def _nested_mappings(
+    entity: ET.Element, field: str
+) -> dict[str, tuple[str | None, str | None]]:
     """Detail field maps nest under the parent collection Mapping (Detail has no Mappings)."""
     out: dict[str, tuple[str | None, str | None]] = {}
     for mapping in entity.findall(f"{NS}Mappings/{NS}Mapping"):

@@ -142,9 +142,7 @@ class TestProjectXmlPackedItems(unittest.TestCase):
             for entity in endpoint.findall(f"{ENDPOINT_NS}TopLevelEntity")
         }
         if not tops:
-            tops = {
-                entity.get("name") for entity in endpoint.findall("TopLevelEntity")
-            }
+            tops = {entity.get("name") for entity in endpoint.findall("TopLevelEntity")}
         self.assertEqual(
             tops,
             {
@@ -181,9 +179,7 @@ class TestProjectXmlPackedItems(unittest.TestCase):
         sitemap = root.find("SiteMapNode")
         self.assertIsNotNone(sitemap)
         site_rows = sitemap.findall(".//SiteMap/row")
-        screens = {
-            row.get("ScreenID"): row for row in site_rows if row.get("ScreenID")
-        }
+        screens = {row.get("ScreenID"): row for row in site_rows if row.get("ScreenID")}
         self.assertIn("QM000000", screens)
         workspace = sitemap.find(".//MUIWorkspace/row")
         self.assertIsNotNone(workspace, "packed SiteMap missing MUIWorkspace")
@@ -225,9 +221,7 @@ class TestPackDllFile(unittest.TestCase):
                 payload = zf.read("Bin/" + pack.ASSEMBLY_DLL)
             self.assertIn("Bin/" + pack.ASSEMBLY_DLL, names)
             self.assertEqual(payload, b"MZ-test-dll")
-            paths = {
-                item.get("AppRelativePath") for item in root.findall("File")
-            }
+            paths = {item.get("AppRelativePath") for item in root.findall("File")}
             self.assertIn(rf"Bin\{pack.ASSEMBLY_DLL}", paths)
         finally:
             if created:

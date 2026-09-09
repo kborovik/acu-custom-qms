@@ -108,13 +108,17 @@ class TestPlanBoundsV7(unittest.TestCase):
 
     def test_csharp_bounds_match_oracle(self) -> None:
         src = RULES_CS.read_text(encoding="utf-8")
-        self.assertIn("public static bool BoundsValid(decimal? minValue, decimal? maxValue)", src)
+        self.assertIn(
+            "public static bool BoundsValid(decimal? minValue, decimal? maxValue)", src
+        )
         self.assertIn("if (minValue == null || maxValue == null)", src)
         self.assertIn("return minValue.Value <= maxValue.Value;", src)
 
     def test_graph_blocks_invalid_bounds(self) -> None:
         src = GRAPH_CS.read_text(encoding="utf-8")
-        self.assertIn("QMSInspectionPlanRules.BoundsValid(row.MinValue, row.MaxValue)", src)
+        self.assertIn(
+            "QMSInspectionPlanRules.BoundsValid(row.MinValue, row.MaxValue)", src
+        )
         self.assertIn("PXRowPersistingException", src)
         self.assertIn("MinValue must be less than or equal to MaxValue.", src)
 
@@ -158,8 +162,12 @@ class TestInspectionPlanDac(unittest.TestCase):
         self.assertIn("class UsrQMSInspectionPlanTest : PXBqlTable, IBqlTable", src)
         self.assertIn("class QMSInspectionPlanTest : UsrQMSInspectionPlanTest", src)
         self.assertIn("[PXTableName]", src)
-        line_nbr = src[src.index("#region LineNbr"):src.index("#endregion", src.index("#region LineNbr"))]
-        self.assertNotIn('Enabled = false', line_nbr)
+        line_nbr = src[
+            src.index("#region LineNbr") : src.index(
+                "#endregion", src.index("#region LineNbr")
+            )
+        ]
+        self.assertNotIn("Enabled = false", line_nbr)
         for name in TEST_FIELDS:
             self.assertIn(f"#region {name}", src)
 
@@ -170,7 +178,10 @@ class TestInspectionPlanDac(unittest.TestCase):
 
     def test_sql_synonyms_bind_dac_names(self) -> None:
         sql = SQL.read_text(encoding="utf-8")
-        self.assertIn("CREATE SYNONYM [dbo].[QMSInspectionPlan] FOR [dbo].[UsrQMSInspectionPlan]", sql)
+        self.assertIn(
+            "CREATE SYNONYM [dbo].[QMSInspectionPlan] FOR [dbo].[UsrQMSInspectionPlan]",
+            sql,
+        )
         self.assertIn(
             "CREATE SYNONYM [dbo].[QMSInspectionPlanTest] FOR [dbo].[UsrQMSInspectionPlanTest]",
             sql,

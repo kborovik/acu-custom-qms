@@ -79,10 +79,14 @@ class TestProjectScriptsICmd(unittest.TestCase):
         self.assertIn('lab5-qms = "lab5_qms.cli:main"', text)
         self.assertIn("[build-system]", text)
         self.assertIn("click>=8.1", text)
+        self.assertIn("[dependency-groups]", text)
+        self.assertIn("ruff", text)
+        self.assertIn("[tool.ruff]", text)
 
     def test_makefile_pack_uses_lab5_qms(self) -> None:
         makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
         self.assertIn("lab5-qms pack", makefile)
+        self.assertIn("lab5-qms deploy", makefile)
         self.assertNotIn("./pack.py", makefile)
 
 

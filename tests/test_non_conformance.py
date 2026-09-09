@@ -163,7 +163,9 @@ class TestFailPathSeedV6(unittest.TestCase):
         self.assertIn("ncr.ReceiptNbr = receiptNbr;", src)
         self.assertIn("ncr.Status = QMSNonConformanceStatus.Open;", src)
         self.assertIn("ncr.Severity = QMSSeverity.Critical;", src)
-        self.assertIn("ncr.InventoryHoldStatus = QMSInventoryHoldStatus.Quarantine;", src)
+        self.assertIn(
+            "ncr.InventoryHoldStatus = QMSInventoryHoldStatus.Quarantine;", src
+        )
         self.assertIn(AUTOMATED_OOS, src)
         self.assertIn(QUARANTINE_RTV, src)
 
@@ -186,7 +188,9 @@ class TestNonConformanceDac(unittest.TestCase):
     def test_status_and_severity_constants(self) -> None:
         src = STATUS_CS.read_text(encoding="utf-8")
         self.assertIn(f'public const string Open = "{STATUS_OPEN}"', src)
-        self.assertIn(f'public const string InInvestigation = "{STATUS_IN_INVESTIGATION}"', src)
+        self.assertIn(
+            f'public const string InInvestigation = "{STATUS_IN_INVESTIGATION}"', src
+        )
         self.assertIn(f'public const string Closed = "{STATUS_CLOSED}"', src)
         self.assertIn(f'public const string Void = "{STATUS_VOID}"', src)
         self.assertIn(f'public const string Critical = "{SEVERITY_CRITICAL}"', src)
@@ -222,7 +226,9 @@ class TestNonConformanceGraphAndScreen(unittest.TestCase):
         self.assertIn("public PXAction<QMSNonConformance> CloseNCR;", src)
         self.assertIn("public PXAction<QMSNonConformance> DispositionRTV;", src)
         self.assertIn("PXGraph.CreateInstance<POReceiptEntry>()", src)
-        self.assertIn("throw new PXRedirectRequiredException(graph, \"Return to Vendor\");", src)
+        self.assertIn(
+            'throw new PXRedirectRequiredException(graph, "Return to Vendor");', src
+        )
         self.assertIn("Receipt Nbr is required for Return to Vendor.", src)
 
     def test_screen_qm302000(self) -> None:

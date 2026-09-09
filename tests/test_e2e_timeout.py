@@ -44,9 +44,7 @@ class TestE2eTimeouts(unittest.TestCase):
         self.assertIn("E2E_TIMEOUT ?= 900", makefile)
         self.assertIn("python -u -m unittest discover -s tests", makefile)
         self.assertIn("python -u -m unittest discover -s e2e -t . -v", makefile)
-        self.assertNotIn(
-            "$(UV) run python -m unittest discover", makefile
-        )
+        self.assertNotIn("$(UV) run python -m unittest discover", makefile)
 
 
 if __name__ == "__main__":

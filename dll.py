@@ -178,9 +178,7 @@ def compile_on_vm(root: Path | None = None) -> Path:
     """SSH compile on the .env instance; write bin/Release/Lab5.QMS.dll."""
     inst = load_instance()
     if not inst.ssh:
-        raise SystemExit(
-            "ACU_SSH empty — hosted path cannot compile Lab5.QMS.dll"
-        )
+        raise SystemExit("ACU_SSH empty — hosted path cannot compile Lab5.QMS.dll")
     dest = local_dll_path(root)
     dest.parent.mkdir(parents=True, exist_ok=True)
     temp = ssh_run("$env:TEMP", host=inst.ssh).strip().splitlines()[-1].strip()

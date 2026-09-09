@@ -54,7 +54,9 @@ EMPTY_UNRELEASED = """\
 """
 
 
-def _run(*args: str, changelog: Path, check: bool = False) -> subprocess.CompletedProcess[str]:
+def _run(
+    *args: str, changelog: Path, check: bool = False
+) -> subprocess.CompletedProcess[str]:
     env = dict(os.environ)
     env["CHANGELOG_PATH"] = str(changelog)
     return subprocess.run(
@@ -90,8 +92,12 @@ class TestChangelogScript(unittest.TestCase):
         r = _run("promote", "0.2.0", "2026-07-30", changelog=self.path)
         self.assertEqual(r.returncode, 0, r.stderr)
         text = self.path.read_text()
-        self.assertLess(text.index("## Unreleased"), text.index("## [v0.2.0] - 2026-07-30"))
-        self.assertLess(text.index("## [v0.2.0] - 2026-07-30"), text.index("## [v0.1.0]"))
+        self.assertLess(
+            text.index("## Unreleased"), text.index("## [v0.2.0] - 2026-07-30")
+        )
+        self.assertLess(
+            text.index("## [v0.2.0] - 2026-07-30"), text.index("## [v0.1.0]")
+        )
         after = text.split("## Unreleased", 1)[1]
         before_next = after.split("## [", 1)[0]
         self.assertNotIn("- ", before_next)

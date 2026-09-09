@@ -150,10 +150,12 @@ class TestSharedGateWiresIsAllocatable(unittest.TestCase):
         self.assertIn("ext.UsrQMSLotStatus", src)
         self.assertIn("PXDatabase.SelectMulti<INLotSerialStatusByCostCenter>(", src)
         self.assertIn('new PXDataField("UsrQMSLotStatus")', src)
-        self.assertIn('PXDatabase.Update<INLotSerialStatusByCostCenter>(', src)
+        self.assertIn("PXDatabase.Update<INLotSerialStatusByCostCenter>(", src)
         self.assertNotIn("graph.Caches[typeof(INLotSerialStatus)].Update(lot)", src)
         self.assertIn("QMSLotDecisionRules.CanIssue(status)", src)
-        self.assertIn("QMSLotDecisionRules.RefuseIssueMessage(lotSerialNbr, status)", src)
+        self.assertIn(
+            "QMSLotDecisionRules.RefuseIssueMessage(lotSerialNbr, status)", src
+        )
         self.assertIn("throw new PXException(message);", src)
         self.assertIn("throw new PXSetPropertyException(message);", src)
         self.assertIn("typeof(INComponentTranSplit)", src)

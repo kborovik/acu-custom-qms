@@ -26,11 +26,9 @@ class TestInventoryItemExtV1(unittest.TestCase):
     def test_extension_declares_gate_fields(self) -> None:
         src = EXT_CS.read_text(encoding="utf-8")
         self.assertIn("namespace Lab5.QMS", src)
-        self.assertIn(
-            "class InventoryItemExt : PXCacheExtension<InventoryItem>", src
-        )
+        self.assertIn("class InventoryItemExt : PXCacheExtension<InventoryItem>", src)
         for name in USR_FIELDS:
-            self.assertIn(f"public virtual", src)
+            self.assertIn("public virtual", src)
             self.assertRegex(src, rf"\b{name}\b")
 
     def test_inspection_required_defaults_false(self) -> None:

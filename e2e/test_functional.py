@@ -383,7 +383,9 @@ class TestCoaIngest(unittest.TestCase):
 
     def test_put_pass_order_attach_files_evaluate_release(self) -> None:
         with client() as session:
-            qms_put(session, "InspectionOrder", _order_record(PASS_ORDER, 4.1, "PASS brown"))
+            qms_put(
+                session, "InspectionOrder", _order_record(PASS_ORDER, 4.1, "PASS brown")
+            )
             put_file(session, PASS_ORDER, f"{PASS_ORDER}.pdf", MIN_PDF)
             put_file(
                 session,
@@ -431,11 +433,17 @@ class TestCoaIngest(unittest.TestCase):
                     params={"$expand": "Results"},
                 )
             )
-            results = {row.get("LineNbr"): row for row in (evaluated.get("Results") or [])}
-            self.assertIn((results.get(10) or {}).get("Evaluation"), {LINE_PASS, "Pass"})
+            results = {
+                row.get("LineNbr"): row for row in (evaluated.get("Results") or [])
+            }
+            self.assertIn(
+                (results.get(10) or {}).get("Evaluation"), {LINE_PASS, "Pass"}
+            )
             self.assertIn(evaluated.get("OverallEvaluation"), {OVERALL_PASS, "Pass"})
 
-            qms_invoke(session, "ReleaseLotDecision", {"InspectionOrderNbr": PASS_ORDER})
+            qms_invoke(
+                session, "ReleaseLotDecision", {"InspectionOrderNbr": PASS_ORDER}
+            )
             released = unwrap(qms_get(session, "InspectionOrder", [PASS_ORDER]))
             self.assertIn(released.get("Status"), {STATUS_COMPLETED, "Completed"})
             self.assertIn(released.get("OverallEvaluation"), {OVERALL_PASS, "Pass"})
@@ -458,10 +466,16 @@ class TestCoaIngest(unittest.TestCase):
                 )
             )
             self.assertIn(evaluated.get("OverallEvaluation"), {OVERALL_FAIL, "Fail"})
-            results = {row.get("LineNbr"): row for row in (evaluated.get("Results") or [])}
-            self.assertIn((results.get(10) or {}).get("Evaluation"), {LINE_FAIL, "Fail"})
+            results = {
+                row.get("LineNbr"): row for row in (evaluated.get("Results") or [])
+            }
+            self.assertIn(
+                (results.get(10) or {}).get("Evaluation"), {LINE_FAIL, "Fail"}
+            )
 
-            qms_invoke(session, "ReleaseLotDecision", {"InspectionOrderNbr": FAIL_ORDER})
+            qms_invoke(
+                session, "ReleaseLotDecision", {"InspectionOrderNbr": FAIL_ORDER}
+            )
             ncrs = session.get_list(
                 "NonConformance",
                 {

@@ -18,10 +18,8 @@ from typing import Any
 
 import httpx
 
-from lab5_qms import pack
 from lab5_qms.acu import (
     DB_NAME,
-    HTTP_TIMEOUT,
     SSH_TIMEOUT,
     AcumaticaClient,
     Instance,
@@ -101,12 +99,19 @@ def sql_lines(query: str) -> list[str]:
 
 
 def zip_digest(zip_bytes: bytes) -> str:
+    """SHA-256 of every zip member (name + bytes), sorted.
+
+    Publish skip used to hash only project.xml + Bin/Lab5.QMS.dll, so an
+    ASPX/SQL-only change looked identical and the tenant kept old pages.
+    """
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
         digest = hashlib.sha256()
-        digest.update(zf.read("project.xml"))
-        dll_name = "Bin/" + pack.ASSEMBLY_DLL
-        if dll_name in zf.namelist():
-            digest.update(zf.read(dll_name))
+        for name in sorted(zf.namelist()):
+            if name.endswith("/"):
+                continue
+            digest.update(name.encode("utf-8"))
+            digest.update(b"\0")
+            digest.update(zf.read(name))
         return digest.hexdigest()
 
 
@@ -124,7 +129,7 @@ def published_description(session: AcumaticaClient) -> str | None:
     try:
         with zipfile.ZipFile(io.BytesIO(content)) as zf:
             root = ET.fromstring(zf.read("project.xml"))
-    except (zipfile.BadZipFile, KeyError, ET.ParseError):
+    except zipfile.BadZipFile, KeyError, ET.ParseError:
         return None
     return root.get("description")
 
@@ -145,7 +150,7 @@ def drain_publish(session: AcumaticaClient, timeout: float = 120.0) -> None:
     while time.monotonic() < deadline:
         try:
             status = session.customization_publish_end()
-        except (httpx.TransportError, RuntimeError):
+        except httpx.TransportError, RuntimeError:
             return
         if status.get("isCompleted") or status.get("isFailed"):
             return
@@ -176,7 +181,7 @@ def wait_published(timeout: float = 600.0, poll: float = 5.0) -> None:
             with client() as session:
                 if ("QMS", QMS_VERSION) in session.list_endpoints():
                     return
-        except (RuntimeError, httpx.TransportError, httpx.HTTPError):
+        except RuntimeError, httpx.TransportError, httpx.HTTPError:
             pass
         time.sleep(poll)
     raise RuntimeError(
@@ -245,9 +250,7 @@ def publish_package(zip_bytes: bytes, *, timeout: float = 600.0) -> str:
 
 def roles_in_graph_rows() -> tuple[tuple[str, str], ...]:
     """(Rolename, ScreenID) pairs for V10 RolesInGraph Delete seed."""
-    return tuple(
-        (role, screen) for role in QM_RIGHTS_ROLES for screen in QM_SCREENS
-    )
+    return tuple((role, screen) for role in QM_RIGHTS_ROLES for screen in QM_SCREENS)
 
 
 def roles_in_graph_company_ids() -> tuple[int, ...]:
@@ -372,7 +375,9 @@ def qms_detail_mapping_sql(cid: int) -> str:
     """MERGE nested EntityMapping rows for Tests/Results expand and PUT."""
     spec_unions: list[str] = []
     for parent, collection, detail, fields in QMS_DETAIL_MAPPINGS:
-        values = ", ".join(f"(N'{parent}', N'{collection}', N'{detail}', N'{name}')" for name in fields)
+        values = ", ".join(
+            f"(N'{parent}', N'{collection}', N'{detail}', N'{name}')" for name in fields
+        )
         spec_unions.append(
             f"SELECT Parent, Collection, Detail, FieldName FROM (VALUES {values}) "
             "AS v(Parent, Collection, Detail, FieldName)"

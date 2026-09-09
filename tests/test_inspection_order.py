@@ -105,7 +105,9 @@ def evaluate_numeric(
     return LINE_PASS
 
 
-def evaluate_text(actual_text: str | None, required_token: str | None, required: bool) -> str:
+def evaluate_text(
+    actual_text: str | None, required_token: str | None, required: bool
+) -> str:
     if actual_text is None or actual_text.strip() == "":
         return LINE_FAIL if required else LINE_SKIPPED
     if required_token is None or required_token.strip() == "":
@@ -197,18 +199,30 @@ class TestEvaluateNumericV4(unittest.TestCase):
         )
 
     def test_nullable_min_only(self) -> None:
-        self.assertEqual(evaluate_numeric(Decimal("0"), None, Decimal("10"), True), LINE_PASS)
-        self.assertEqual(evaluate_numeric(Decimal("11"), None, Decimal("10"), True), LINE_FAIL)
+        self.assertEqual(
+            evaluate_numeric(Decimal("0"), None, Decimal("10"), True), LINE_PASS
+        )
+        self.assertEqual(
+            evaluate_numeric(Decimal("11"), None, Decimal("10"), True), LINE_FAIL
+        )
 
     def test_nullable_max_only(self) -> None:
-        self.assertEqual(evaluate_numeric(Decimal("5"), Decimal("1"), None, True), LINE_PASS)
-        self.assertEqual(evaluate_numeric(Decimal("0"), Decimal("1"), None, True), LINE_FAIL)
+        self.assertEqual(
+            evaluate_numeric(Decimal("5"), Decimal("1"), None, True), LINE_PASS
+        )
+        self.assertEqual(
+            evaluate_numeric(Decimal("0"), Decimal("1"), None, True), LINE_FAIL
+        )
 
     def test_missing_required_fail(self) -> None:
-        self.assertEqual(evaluate_numeric(None, Decimal("1"), Decimal("10"), True), LINE_FAIL)
+        self.assertEqual(
+            evaluate_numeric(None, Decimal("1"), Decimal("10"), True), LINE_FAIL
+        )
 
     def test_missing_optional_skipped(self) -> None:
-        self.assertEqual(evaluate_numeric(None, Decimal("1"), Decimal("10"), False), LINE_SKIPPED)
+        self.assertEqual(
+            evaluate_numeric(None, Decimal("1"), Decimal("10"), False), LINE_SKIPPED
+        )
 
     def test_csharp_numeric_match_oracle(self) -> None:
         src = RULES_CS.read_text(encoding="utf-8")
@@ -217,7 +231,9 @@ class TestEvaluateNumericV4(unittest.TestCase):
             src,
         )
         self.assertIn("if (actual == null)", src)
-        self.assertIn("return required ? QMSLineEvaluation.Fail : QMSLineEvaluation.Skipped;", src)
+        self.assertIn(
+            "return required ? QMSLineEvaluation.Fail : QMSLineEvaluation.Skipped;", src
+        )
         self.assertIn("actual.Value < minValue.Value", src)
         self.assertIn("actual.Value > maxValue.Value", src)
 
@@ -298,7 +314,9 @@ class TestShelfLifeV4(unittest.TestCase):
         self.assertIn("int days = minShelfLifeDays ?? 0;", src)
         self.assertIn("if (days <= 0)", src)
         self.assertIn("if (expiryDate == null || receiptDate == null)", src)
-        self.assertIn("expiryDate.Value.Date >= receiptDate.Value.Date.AddDays(days)", src)
+        self.assertIn(
+            "expiryDate.Value.Date >= receiptDate.Value.Date.AddDays(days)", src
+        )
 
 
 class TestMissingRequiredAndRollupV4(unittest.TestCase):
@@ -348,7 +366,9 @@ class TestInspectionOrderDac(unittest.TestCase):
     def test_result_dac_fields(self) -> None:
         src = RESULT_CS.read_text(encoding="utf-8")
         self.assertIn("class UsrQMSInspectionOrderResult : PXBqlTable, IBqlTable", src)
-        self.assertIn("class QMSInspectionOrderResult : UsrQMSInspectionOrderResult", src)
+        self.assertIn(
+            "class QMSInspectionOrderResult : UsrQMSInspectionOrderResult", src
+        )
         self.assertIn("[PXTableName]", src)
         for name in RESULT_FIELDS:
             self.assertIn(f"#region {name}", src)

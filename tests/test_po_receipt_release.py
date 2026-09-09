@@ -108,12 +108,20 @@ class TestQcHoldNotReleasedV1(unittest.TestCase):
 
     def test_release_sets_qc_hold_not_released(self) -> None:
         graph = GRAPH_CS.read_text(encoding="utf-8")
-        self.assertIn("UpdateLotStatus(item.InventoryID, split.LotSerialNbr, QMSLotStatus.QcHold)", graph)
+        self.assertIn(
+            "UpdateLotStatus(item.InventoryID, split.LotSerialNbr, QMSLotStatus.QcHold)",
+            graph,
+        )
         self.assertNotIn("QMSLotStatus.Released", graph)
-        self.assertIn("QMSLotIssueGate.WriteLotStatus(Base, inventoryID, lotSerialNbr, lotStatus)", graph)
+        self.assertIn(
+            "QMSLotIssueGate.WriteLotStatus(Base, inventoryID, lotSerialNbr, lotStatus)",
+            graph,
+        )
 
     def test_draft_order_open_pending(self) -> None:
-        order = seed_draft_order("Q0000001LOT0001", 42, "LOT-1", 7, "PR000001", "QPLAN-BOT")
+        order = seed_draft_order(
+            "Q0000001LOT0001", 42, "LOT-1", 7, "PR000001", "QPLAN-BOT"
+        )
         self.assertEqual(order["Status"], STATUS_OPEN)
         self.assertEqual(order["OverallEvaluation"], OVERALL_PENDING)
         self.assertEqual(order["PlanID"], "QPLAN-BOT")
@@ -158,8 +166,14 @@ class TestThreeWayLinkV9(unittest.TestCase):
 
     def test_existing_receipt_lot_skips_duplicate(self) -> None:
         graph = GRAPH_CS.read_text(encoding="utf-8")
-        self.assertIn("QMSInspectionOrder.receiptNbr, Equal<Required<QMSInspectionOrder.receiptNbr>>", graph)
-        self.assertIn("QMSInspectionOrder.lotSerialNbr, Equal<Required<QMSInspectionOrder.lotSerialNbr>>", graph)
+        self.assertIn(
+            "QMSInspectionOrder.receiptNbr, Equal<Required<QMSInspectionOrder.receiptNbr>>",
+            graph,
+        )
+        self.assertIn(
+            "QMSInspectionOrder.lotSerialNbr, Equal<Required<QMSInspectionOrder.lotSerialNbr>>",
+            graph,
+        )
         self.assertIn("if (existing != null)", graph)
 
     def test_seed_copies_receipt_and_lot_from_split(self) -> None:
@@ -199,11 +213,16 @@ class TestDraftOrderNbr(unittest.TestCase):
         nbr = draft_order_nbr("PR0000123", "LOT-ABC-999")
         self.assertEqual(len(nbr), 15)
         self.assertTrue(nbr.startswith("Q"))
-        self.assertEqual(nbr, "Q" + compact_token("PR0000123", 7) + compact_token("LOT-ABC-999", 7))
+        self.assertEqual(
+            nbr, "Q" + compact_token("PR0000123", 7) + compact_token("LOT-ABC-999", 7)
+        )
 
     def test_csharp_draft_nbr_match_oracle(self) -> None:
         src = RULES_CS.read_text(encoding="utf-8")
-        self.assertIn('return "Q" + CompactToken(receiptNbr, 7) + CompactToken(lotSerialNbr, 7);', src)
+        self.assertIn(
+            'return "Q" + CompactToken(receiptNbr, 7) + CompactToken(lotSerialNbr, 7);',
+            src,
+        )
         self.assertIn("alnum.PadLeft(width, '0')", src)
         self.assertIn("alnum.Substring(alnum.Length - width)", src)
         self.assertIn("char.IsLetterOrDigit(c)", src)
@@ -216,7 +235,9 @@ class TestGraphOverride(unittest.TestCase):
             "class POReceiptEntry_Extension : PXGraphExtension<POReceiptEntry>",
             src,
         )
-        self.assertIn("public delegate IEnumerable ReleaseDelegate(PXAdapter adapter);", src)
+        self.assertIn(
+            "public delegate IEnumerable ReleaseDelegate(PXAdapter adapter);", src
+        )
         self.assertIn("[PXOverride]", src)
         self.assertIn(
             "public IEnumerable Release(PXAdapter adapter, ReleaseDelegate baseMethod)",
@@ -228,8 +249,13 @@ class TestGraphOverride(unittest.TestCase):
         self.assertIn("PXSelect<POReceiptLine,", src)
         self.assertIn("PXSelect<POReceiptLineSplit,", src)
         self.assertIn("PXGraph.CreateInstance<QMSInspectionOrderEntry>()", src)
-        self.assertIn("QMSLotIssueGate.WriteLotStatus(Base, inventoryID, lotSerialNbr, lotStatus)", src)
-        gate = (ROOT / "src" / "Lab5.QMS" / "QMSLotIssueGate.cs").read_text(encoding="utf-8")
+        self.assertIn(
+            "QMSLotIssueGate.WriteLotStatus(Base, inventoryID, lotSerialNbr, lotStatus)",
+            src,
+        )
+        gate = (ROOT / "src" / "Lab5.QMS" / "QMSLotIssueGate.cs").read_text(
+            encoding="utf-8"
+        )
         self.assertIn("INLotSerialStatus.lotSerialNbr", gate)
 
 

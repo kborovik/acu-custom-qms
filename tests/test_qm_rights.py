@@ -7,8 +7,10 @@
 
 from __future__ import annotations
 
+import io
 import sys
 import unittest
+import zipfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -32,6 +34,7 @@ from lab5_qms.publish import (  # noqa: E402
     expected_qms_detail_mapping_count,
     qms_detail_mapping_sql,
     seed_qm_rights,
+    zip_digest,
 )
 
 HELPER = ROOT / "e2e" / "helper.py"
@@ -71,11 +74,37 @@ class TestRolesInGraphSeedV10(unittest.TestCase):
         self.assertIn("(14, N'QM201000', N'Administrator'", sql)
         self.assertIn("(14, N'QM201000', N'Quality Manager'", sql)
 
-    def test_publish_digest_includes_dll(self) -> None:
+    def test_zip_digest_covers_all_members(self) -> None:
+        def blob(**members: bytes) -> bytes:
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w") as zf:
+                for name, body in members.items():
+                    zf.writestr(name, body)
+            return buf.getvalue()
+
+        base = {
+            "project.xml": b"<Customization/>",
+            "Bin/Lab5.QMS.dll": b"MZ",
+            "Pages/QM/QM301000.aspx": b"old-page",
+            "Scripts/CreateQMSTables.sql": b"CREATE TABLE",
+        }
+        same = zip_digest(blob(**base))
+        self.assertEqual(same, zip_digest(blob(**base)))
+        self.assertNotEqual(
+            same,
+            zip_digest(blob(**{**base, "Pages/QM/QM301000.aspx": b"new-page"})),
+        )
+        self.assertNotEqual(
+            same,
+            zip_digest(blob(**{**base, "Bin/Lab5.QMS.dll": b"MZ2"})),
+        )
+        self.assertNotEqual(
+            same,
+            zip_digest(blob(**{**base, "Scripts/CreateQMSTables.sql": b"ALTER"})),
+        )
         src = PUBLISH.read_text(encoding="utf-8")
-        self.assertIn("digest.update(zf.read(\"project.xml\"))", src)
-        self.assertIn('dll_name = "Bin/" + pack.ASSEMBLY_DLL', src)
-        self.assertIn("digest.update(zf.read(dll_name))", src)
+        self.assertIn("for name in sorted(zf.namelist())", src)
+        self.assertNotIn('dll_name = "Bin/" + pack.ASSEMBLY_DLL', src)
 
     def test_ensure_published_seeds_qm_rights(self) -> None:
         src = HELPER.read_text(encoding="utf-8")
@@ -164,8 +193,7 @@ class TestNoInspectionPlan403SkipV10(unittest.TestCase):
         skipped = [
             line
             for line in src.splitlines()
-            if "skipTest" in line
-            and ("403" in line or "PUT unavailable" in line)
+            if "skipTest" in line and ("403" in line or "PUT unavailable" in line)
         ]
         self.assertEqual(skipped, [])
 

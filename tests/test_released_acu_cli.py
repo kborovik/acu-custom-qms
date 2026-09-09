@@ -56,12 +56,8 @@ class TestPathAcuNotImportV11(unittest.TestCase):
     def test_lab5_qms_dll_e2e_do_not_import_acumatica_cli(self) -> None:
         for path in _py_sources():
             text = path.read_text(encoding="utf-8")
-            self.assertNotRegex(
-                text, r"(?m)^\s*import acumatica_cli\b", path.name
-            )
-            self.assertNotRegex(
-                text, r"(?m)^\s*from acumatica_cli\b", path.name
-            )
+            self.assertNotRegex(text, r"(?m)^\s*import acumatica_cli\b", path.name)
+            self.assertNotRegex(text, r"(?m)^\s*from acumatica_cli\b", path.name)
             self.assertNotIn('["uv", "run", "acu"]', text, path.name)
             self.assertNotIn("uv run -- acu", text, path.name)
 
@@ -84,9 +80,7 @@ class TestPathAcuNotImportV11(unittest.TestCase):
         self.assertNotIn("acumatica_cli", src)
 
     def test_wrap_unwrap_contract_values(self) -> None:
-        wrapped = wrap(
-            {"PlanID": "X", "Tests": [{"LineNbr": 10, "id": "keep"}]}
-        )
+        wrapped = wrap({"PlanID": "X", "Tests": [{"LineNbr": 10, "id": "keep"}]})
         self.assertEqual(wrapped["PlanID"], {"value": "X"})
         self.assertEqual(wrapped["Tests"][0]["LineNbr"], {"value": 10})
         self.assertEqual(wrapped["Tests"][0]["id"], "keep")

@@ -147,9 +147,13 @@ class TestPassPathV5(unittest.TestCase):
         self.assertIn("return QMSLotStatus.Released;", src)
         graph = GRAPH_CS.read_text(encoding="utf-8")
         self.assertIn("public PXAction<QMSInspectionOrder> ReleaseLotDecision;", graph)
-        self.assertIn("QMSLotDecisionRules.TargetLotStatus(order.OverallEvaluation)", graph)
+        self.assertIn(
+            "QMSLotDecisionRules.TargetLotStatus(order.OverallEvaluation)", graph
+        )
         self.assertIn("order.Status = QMSInspectionOrderStatus.Completed;", graph)
-        self.assertIn("UpdateLotStatus(order.InventoryID, order.LotSerialNbr, lotStatus)", graph)
+        self.assertIn(
+            "UpdateLotStatus(order.InventoryID, order.LotSerialNbr, lotStatus)", graph
+        )
 
 
 class TestFailPathV6(unittest.TestCase):
@@ -190,7 +194,9 @@ class TestFailPathV6(unittest.TestCase):
         self.assertIn("public static bool IsAllocatable(string lotStatus)", src)
         self.assertIn("return lotStatus == QMSLotStatus.Released;", src)
         graph = GRAPH_CS.read_text(encoding="utf-8")
-        self.assertIn("QMSLotDecisionRules.ShouldCreateNcr(order.OverallEvaluation)", graph)
+        self.assertIn(
+            "QMSLotDecisionRules.ShouldCreateNcr(order.OverallEvaluation)", graph
+        )
         self.assertIn("CreateNcrFromFailedOrder(order)", graph)
         self.assertIn("QMSNonConformanceRules.SeedFromFailedOrder(", graph)
         self.assertIn("PXGraph.CreateInstance<QMSNonConformanceEntry>()", graph)
@@ -200,7 +206,9 @@ class TestFailPathV6(unittest.TestCase):
         )
         ncr_rules = NCR_RULES_CS.read_text(encoding="utf-8")
         self.assertIn(AUTOMATED_OOS, ncr_rules)
-        self.assertIn("ncr.InventoryHoldStatus = QMSInventoryHoldStatus.Quarantine;", ncr_rules)
+        self.assertIn(
+            "ncr.InventoryHoldStatus = QMSInventoryHoldStatus.Quarantine;", ncr_rules
+        )
 
 
 class TestThreeWayLinkV9(unittest.TestCase):
@@ -233,7 +241,9 @@ class TestThreeWayLinkV9(unittest.TestCase):
         self.assertIn("order.ReceiptNbr);", graph)
         self.assertIn("order.InspectionOrderNbr,", graph)
         self.assertIn("order.InventoryID,", graph)
-        action = graph[graph.index("protected virtual IEnumerable releaseLotDecision") :]
+        action = graph[
+            graph.index("protected virtual IEnumerable releaseLotDecision") :
+        ]
         action = action[: action.index("protected virtual void UpdateLotStatus")]
         self.assertNotIn("order.ReceiptNbr =", action)
         self.assertNotIn("order.LotSerialNbr =", action)
@@ -251,7 +261,13 @@ class TestLotStatusSetILot(unittest.TestCase):
         self.assertFalse(can_release(OVERALL_PENDING, STATUS_OPEN))
         self.assertIsNone(
             apply_lot_decision(
-                OVERALL_PENDING, STATUS_OPEN, "Q0000001LOT0001", 42, "LOT-A", 7, "PR000001"
+                OVERALL_PENDING,
+                STATUS_OPEN,
+                "Q0000001LOT0001",
+                42,
+                "LOT-A",
+                7,
+                "PR000001",
             )
         )
 
@@ -271,9 +287,15 @@ class TestLotStatusSetILot(unittest.TestCase):
         self.assertIn("orderStatus == QMSInspectionOrderStatus.Cancelled", src)
         self.assertIn("overallEvaluation == QMSOverallEvaluation.Pass", src)
         self.assertIn("overallEvaluation == QMSOverallEvaluation.Fail", src)
-        self.assertIn('return "N" + QMSReceiptReleaseRules.CompactToken(inspectionOrderNbr, 14);', src)
+        self.assertIn(
+            'return "N" + QMSReceiptReleaseRules.CompactToken(inspectionOrderNbr, 14);',
+            src,
+        )
         graph = GRAPH_CS.read_text(encoding="utf-8")
-        self.assertIn("QMSLotDecisionRules.CanRelease(order.OverallEvaluation, order.Status)", graph)
+        self.assertIn(
+            "QMSLotDecisionRules.CanRelease(order.OverallEvaluation, order.Status)",
+            graph,
+        )
         self.assertIn(
             "Overall evaluation must be Pass or Fail on an open inspection order.",
             graph,
@@ -282,8 +304,10 @@ class TestLotStatusSetILot(unittest.TestCase):
             "QMSLotIssueGate.WriteLotStatus(this, inventoryID, lotSerialNbr, lotStatus)",
             graph,
         )
-        gate = (ROOT / "src" / "Lab5.QMS" / "QMSLotIssueGate.cs").read_text(encoding="utf-8")
-        self.assertIn('PXDatabase.Update<INLotSerialStatusByCostCenter>(', gate)
+        gate = (ROOT / "src" / "Lab5.QMS" / "QMSLotIssueGate.cs").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("PXDatabase.Update<INLotSerialStatusByCostCenter>(", gate)
         self.assertIn('new PXDataField("UsrQMSLotStatus")', gate)
         self.assertIn("INLotSerialStatus.lotSerialNbr", gate)
         self.assertIn("INLotSerialStatusByCostCenter.lotSerialNbr", gate)
@@ -323,7 +347,9 @@ class TestNcrNbr(unittest.TestCase):
 
     def test_csharp_ncr_nbr_used_on_insert(self) -> None:
         graph = GRAPH_CS.read_text(encoding="utf-8")
-        self.assertIn("ncr.NCRNbr = QMSLotDecisionRules.NcrNbr(order.InspectionOrderNbr);", graph)
+        self.assertIn(
+            "ncr.NCRNbr = QMSLotDecisionRules.NcrNbr(order.InspectionOrderNbr);", graph
+        )
 
 
 if __name__ == "__main__":

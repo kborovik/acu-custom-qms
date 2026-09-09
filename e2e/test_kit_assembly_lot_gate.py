@@ -36,7 +36,9 @@ RELEASED = "Released"
 GATE_TOKENS = (QC_HOLD, QUARANTINE, RELEASED)
 
 
-def _invoke_default(session, entity: str, action: str, record: dict, timeout: float = 120.0):
+def _invoke_default(
+    session, entity: str, action: str, record: dict, timeout: float = 120.0
+):
     r = session._checked(
         session._http.post(
             f"{session._url(entity)}/{action}",
@@ -149,7 +151,9 @@ class TestKitAssemblyRefusesQcHoldLotV15(unittest.TestCase):
                 session.put(
                     "InspectionPlan", GITOPS_PLANS[0], endpoint="QMS/22.200.001"
                 )
-            session.put("StockItem", dict(GITOPS_STOCK_ITEMS[0]), endpoint="QMS/22.200.001")
+            session.put(
+                "StockItem", dict(GITOPS_STOCK_ITEMS[0]), endpoint="QMS/22.200.001"
+            )
 
     def test_put_or_release_kit_with_qc_hold_lot_fails(self) -> None:
         stamp = time.strftime("%H%M%S")

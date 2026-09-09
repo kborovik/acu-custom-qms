@@ -41,9 +41,7 @@ class TestCsprojPxHintPaths(unittest.TestCase):
         self.assertEqual(set(refs), set(PX))
         for name in PX:
             self.assertEqual(refs[name], rf"$(AcumaticaDir)\Bin\{name}.dll")
-            private = root.find(
-                f"ItemGroup/Reference[@Include='{name}']/Private"
-            )
+            private = root.find(f"ItemGroup/Reference[@Include='{name}']/Private")
             self.assertIsNotNone(private)
             self.assertEqual((private.text or "").strip().lower(), "false")
 
@@ -69,7 +67,9 @@ class TestDllScript(unittest.TestCase):
         self.assertIn("build.ps1", names)
         self.assertIn("QMS.cs", names)
         self.assertIn("Graph/QMSInspectionPlanMaint.cs", names)
-        self.assertTrue(all("obj/" not in name and "bin/" not in name for name in names))
+        self.assertTrue(
+            all("obj/" not in name and "bin/" not in name for name in names)
+        )
         self.assertIn(r"Bin\roslyn\csc.exe", script)
         self.assertGreaterEqual(len(dll.source_files(ROOT)), 20)
 
@@ -85,11 +85,15 @@ class TestDllScript(unittest.TestCase):
         self.assertNotIn("QMS_DLL", makefile)
         self.assertNotIn("pad-dll", makefile)
         self.assertIn("pack: .venv", makefile)
+        self.assertIn("deploy: .venv", makefile)
         self.assertNotIn("pack: dll", makefile)
         self.assertIn("check: test preflight ##", makefile)
         self.assertIn("release: test _release-gh", makefile)
         self.assertIn("python dll.py", makefile)
         self.assertIn("lab5-qms pack", makefile)
+        self.assertIn("lab5-qms deploy", makefile)
+        self.assertIn("ruff format --check", makefile)
+        self.assertIn("ruff check", makefile)
         self.assertIn("python -u -m unittest discover -s tests", makefile)
         self.assertIn("clean: ##", makefile)
         self.assertIn("rm -rf src/Lab5.QMS/bin src/Lab5.QMS/obj", makefile)
@@ -98,6 +102,7 @@ class TestDllScript(unittest.TestCase):
         phony = makefile.split(".PHONY:", 1)[1].splitlines()[0]
         self.assertNotIn("dll", phony)
         self.assertIn("pack", phony)
+        self.assertIn("deploy", phony)
         self.assertIn("clean", phony)
 
     def test_local_dll_path_release(self) -> None:

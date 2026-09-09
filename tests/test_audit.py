@@ -105,7 +105,10 @@ class TestAuditFieldsV3(unittest.TestCase):
         self.assertIn("#region EvaluatedByID", order)
         self.assertIn("#region EvaluationDateTime", order)
         self.assertIn("[PXDBGuid]", order)
-        self.assertIn("[PXSelector(typeof(Search<Users.pKID>), SubstituteKey = typeof(Users.username))]", order)
+        self.assertIn(
+            "[PXSelector(typeof(Search<Users.pKID>), SubstituteKey = typeof(Users.username))]",
+            order,
+        )
         self.assertIn("[PXDBDateAndTime]", order)
         sql = _table_block(SQL.read_text(encoding="utf-8"), "UsrQMSInspectionOrder")
         self.assertIn("[EvaluatedByID] [uniqueidentifier] NULL", sql)
@@ -124,7 +127,9 @@ class TestPermanentEvaluationStampV3(unittest.TestCase):
         later_user = uuid4()
         first = datetime(2026, 9, 4, 12, 0, tzinfo=timezone.utc)
         later = datetime(2026, 9, 5, 8, 0, tzinfo=timezone.utc)
-        self.assertEqual(stamp_evaluated_by_id(original_user, later_user), original_user)
+        self.assertEqual(
+            stamp_evaluated_by_id(original_user, later_user), original_user
+        )
         self.assertEqual(stamp_evaluation_datetime(first, later), first)
 
     def test_csharp_stamp_match_oracle(self) -> None:
@@ -158,7 +163,9 @@ class TestReleaseGateIRoleV3(unittest.TestCase):
         self.assertTrue(has_quality_manager_role([QUALITY_MANAGER]))
         self.assertTrue(has_quality_manager_role(["quality manager"]))
         self.assertTrue(
-            may_release_lot(RELEASED, has_quality_manager_role([QUALITY_MANAGER]), False)
+            may_release_lot(
+                RELEASED, has_quality_manager_role([QUALITY_MANAGER]), False
+            )
         )
 
     def test_ingestion_service_account_may_release(self) -> None:
@@ -183,7 +190,9 @@ class TestReleaseGateIRoleV3(unittest.TestCase):
 
     def test_csharp_gate_match_oracle(self) -> None:
         src = RULES_CS.read_text(encoding="utf-8")
-        self.assertIn(f'public const string QualityManagerRole = "{QUALITY_MANAGER}"', src)
+        self.assertIn(
+            f'public const string QualityManagerRole = "{QUALITY_MANAGER}"', src
+        )
         self.assertIn(
             f'public const string IngestionServiceAccount = "{INGESTION_ACCOUNT}"',
             src,
@@ -212,12 +221,16 @@ class TestReleaseGateIRoleV3(unittest.TestCase):
         self.assertIn("return hasQualityManagerRole || isIngestionServiceAccount;", src)
         graph = GRAPH_CS.read_text(encoding="utf-8")
         self.assertIn("QMSAuditRules.MayReleaseLot(", graph)
-        self.assertIn("QMSAuditRules.HasQualityManagerRole(QMSAccess.CurrentUserRoles())", graph)
+        self.assertIn(
+            "QMSAuditRules.HasQualityManagerRole(QMSAccess.CurrentUserRoles())", graph
+        )
         self.assertIn(
             "QMSAuditRules.IsIngestionServiceAccount(QMSAccess.CurrentUserName())",
             graph,
         )
-        access = (ROOT / "src" / "Lab5.QMS" / "QMSAccess.cs").read_text(encoding="utf-8")
+        access = (ROOT / "src" / "Lab5.QMS" / "QMSAccess.cs").read_text(
+            encoding="utf-8"
+        )
         self.assertIn("PXAccess.GetRoles(PXAccess.GetUserName())", access)
         self.assertIn("list.Common", access)
         self.assertIn("PXSelect<UsersInRoles", access)

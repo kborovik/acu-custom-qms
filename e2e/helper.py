@@ -18,13 +18,13 @@ from lab5_qms import pack
 from lab5_qms.acu import (  # noqa: F401
     AcumaticaClient,
     DB_NAME,
+    HTTP_TIMEOUT,
     run_acu as _run_acu,
     unwrap,
     wrap,
 )
-from lab5_qms.publish import (
+from lab5_qms.publish import (  # noqa: F401
     ACCESSRIGHTS_DELETE,
-    HTTP_TIMEOUT,
     PACKAGE_NAME,
     QM_RIGHTS_ROLES,
     QM_SCREENS,
@@ -138,7 +138,9 @@ def ensure_published(*, timeout: float = 600.0) -> str:
         raise
 
 
-def put_file(session: AcumaticaClient, order_nbr: str, file_name: str, body: bytes) -> None:
+def put_file(
+    session: AcumaticaClient, order_nbr: str, file_name: str, body: bytes
+) -> None:
     path = f"/entity/{QMS_ENDPOINT}/InspectionOrder/{order_nbr}/files/{file_name}"
     session._checked(
         session._http.put(
@@ -160,7 +162,9 @@ def qms_get(
     return session.get_record(entity, keys, endpoint=QMS_ENDPOINT, params=params)
 
 
-def qms_put(session: AcumaticaClient, entity: str, record: dict[str, Any]) -> dict[str, Any]:
+def qms_put(
+    session: AcumaticaClient, entity: str, record: dict[str, Any]
+) -> dict[str, Any]:
     return unwrap(session.put(entity, record, endpoint=QMS_ENDPOINT))
 
 

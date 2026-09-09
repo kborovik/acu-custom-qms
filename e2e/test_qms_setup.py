@@ -32,7 +32,9 @@ GITOPS_QMS_SETUP = {
     "NCRNumberingID": "QNCR",
 }
 
-PXSETUP_EMPTY = "The required configuration data is not entered on the Quality Preferences form."
+PXSETUP_EMPTY = (
+    "The required configuration data is not entered on the Quality Preferences form."
+)
 WAREHOUSE = "WH-MISS-01"
 LOCATION = "MAIN"
 
@@ -139,9 +141,15 @@ class TestReceiptReleaseNoPxSetup422(unittest.TestCase):
                     "lot-tracked items from acu-gitops-qms"
                 )
             cls.warehouse = (
-                item.get("DefaultWarehouseID") or item.get("DefaultWarehouse") or WAREHOUSE
+                item.get("DefaultWarehouseID")
+                or item.get("DefaultWarehouse")
+                or WAREHOUSE
             ).strip() or WAREHOUSE
-            qms_put(session, "InspectionPlan", GITOPS_PLANS[0] if GITOPS_PLANS else _plan_record())
+            qms_put(
+                session,
+                "InspectionPlan",
+                GITOPS_PLANS[0] if GITOPS_PLANS else _plan_record(),
+            )
             qms_put(session, "StockItem", dict(GITOPS_STOCK_ITEMS[0]))
 
     def test_release_creates_draft_inspection_order_not_422(self) -> None:

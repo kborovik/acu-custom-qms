@@ -174,7 +174,9 @@ def list_tenants() -> list[Tenant]:
     return parse_tenant_list(result.stdout)
 
 
-def ssh_run(command: str, *, host: str | None = None, timeout: float | None = None) -> str:
+def ssh_run(
+    command: str, *, host: str | None = None, timeout: float | None = None
+) -> str:
     """SSH PowerShell on the instance; host from `acu config show` when omitted."""
     target = host if host is not None else load_instance().ssh
     if not target:
@@ -228,7 +230,11 @@ def unwrap(entity: dict[str, Any]) -> dict[str, Any]:
             nested = unwrap(value)
             if nested:
                 out[key] = nested
-        elif isinstance(value, list) and value and all(isinstance(row, dict) for row in value):
+        elif (
+            isinstance(value, list)
+            and value
+            and all(isinstance(row, dict) for row in value)
+        ):
             rows = [unwrap(row) for row in value]
             if any(rows):
                 out[key] = rows
@@ -421,8 +427,7 @@ class AcumaticaClient:
                 detail = (response.text or "")[:500]
             raise RuntimeError(
                 f"{response.request.method} {response.request.url.path} "
-                f"-> {response.status_code}"
-                + (f": {detail}" if detail else "")
+                f"-> {response.status_code}" + (f": {detail}" if detail else "")
             )
         return response
 

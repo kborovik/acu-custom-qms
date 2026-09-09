@@ -2,13 +2,27 @@
 
 ## Unreleased
 
+### Added
+
+- **`gmake deploy`:** pack `Lab5_QMS_Customization.zip`, publish via
+  CustomizationApi, and seed Role / `RolesInGraph` / `UsrQMSSetup`. No
+  live e2e — that stays `gmake check`.
+
 ### Changed
 
 - **Pack compiles `Lab5.QMS.dll` when C# changes:** `lab5-qms pack` /
-  `publish` / `deploy`, `gmake pack` / `check` / `release` rebuild the
-  assembly on the ERP VM when `src/Lab5.QMS` sources (or the compiler)
-  change. Dropped `gmake dll` — compile is a dependency of those paths,
-  not a recipe.
+  `publish` / `deploy`, `gmake pack` / `deploy` / `check` / `release`
+  rebuild the assembly on the ERP VM when `src/Lab5.QMS` sources (or the
+  compiler) change. Dropped `gmake dll` — compile is a dependency of
+  those paths, not a recipe.
+- **`gmake test`:** `ruff format --check` and `ruff check` before unit
+  tests.
+
+### Fixed
+
+- **Publish digest:** skip/import hashes every zip member (name +
+  bytes), not only `project.xml` and `Bin/Lab5.QMS.dll`. An ASPX or SQL
+  change republishes instead of leaving the tenant on old pages.
 
 ## [v0.4.0] - 2026-09-08
 

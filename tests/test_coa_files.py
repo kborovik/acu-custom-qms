@@ -71,11 +71,13 @@ class TestOrderNoteIdFilesLinkV2(unittest.TestCase):
         )
         src = RULES_CS.read_text(encoding="utf-8")
         self.assertIn(
-            'public static string FilesPath(string inspectionOrderNbr, string fileName)',
+            "public static string FilesPath(string inspectionOrderNbr, string fileName)",
             src,
         )
         self.assertIn('"/entity/" + QMS.EndpointName + "/" + QMS.EndpointVersion', src)
-        self.assertIn('"/InspectionOrder/" + inspectionOrderNbr + "/files/" + fileName', src)
+        self.assertIn(
+            '"/InspectionOrder/" + inspectionOrderNbr + "/files/" + fileName', src
+        )
         qms = QMS_CS.read_text(encoding="utf-8")
         self.assertIn('EndpointName = "QMS"', qms)
         self.assertIn('EndpointVersion = "22.200.001"', qms)
@@ -87,7 +89,10 @@ class TestRestNoteIdAndExpandFilesV2(unittest.TestCase):
         self.assertIn('<Field name="NoteID" type="GuidValue" />', xml)
         self.assertIn('<Mapping field="NoteID">', xml)
         self.assertIn('field="NoteID"', xml)
-        self.assertIn("PUT /entity/QMS/22.200.001/InspectionOrder/{InspectionOrderNbr}/files/{fileName}", xml)
+        self.assertIn(
+            "PUT /entity/QMS/22.200.001/InspectionOrder/{InspectionOrderNbr}/files/{fileName}",
+            xml,
+        )
         self.assertIn("GET ?$expand=files", xml)
         src = RULES_CS.read_text(encoding="utf-8")
         self.assertIn('public const string ExpandFiles = "files"', src)
@@ -126,7 +131,9 @@ class TestSystemOfRecordAttachmentsV3(unittest.TestCase):
             src,
         )
         self.assertIn("if (fileNames == null)", src)
-        self.assertIn("fileName.EndsWith(extension, StringComparison.OrdinalIgnoreCase)", src)
+        self.assertIn(
+            "fileName.EndsWith(extension, StringComparison.OrdinalIgnoreCase)", src
+        )
         self.assertIn("return pdf && json;", src)
 
 

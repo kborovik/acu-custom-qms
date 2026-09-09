@@ -54,9 +54,7 @@ def pack_cmd(output: Path | None) -> None:
 @click.option("--timeout", type=float, default=600.0, show_default=True)
 def publish_cmd(timeout: float) -> None:
     """Import and publish Lab5.QMS via CustomizationApi (merge with existing)."""
-    status = publish.publish_package(
-        pack.package_zip(ensure_dll=True), timeout=timeout
-    )
+    status = publish.publish_package(pack.package_zip(ensure_dll=True), timeout=timeout)
     click.echo(status)
 
 

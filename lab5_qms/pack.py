@@ -138,9 +138,7 @@ def _pkg_members(root: Path) -> list[Path]:
 def _cs_files(root: Path) -> list[Path]:
     src = root / "src" / "Lab5.QMS"
     files = [
-        p
-        for p in src.rglob("*.cs")
-        if "bin" not in p.parts and "obj" not in p.parts
+        p for p in src.rglob("*.cs") if "bin" not in p.parts and "obj" not in p.parts
     ]
     files.sort()
     if not files:

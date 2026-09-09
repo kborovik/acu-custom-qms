@@ -292,10 +292,12 @@ The customization project packs to:
 
 ```
 Lab5_QMS_Customization.zip
-├── _project/          package manifest (endpoint 22.200.001)
-├── Cst_App/bin/       Lab5.QMS.dll
-├── Pages_QM/          QM101000 … QM302000
-└── Scripts/           UsrQMS* table DDL
+├── project.xml        CustomizationApi import (endpoint, sitemap, SQL, File list)
+├── _project/          ProjectMetadata, QMS.xml, SiteMap.xml
+├── Bin/Lab5.QMS.dll
+├── Pages/QM/          QM101000 … QM302000 (aspx + aspx.cs)
+├── Pages_QM/          same screens (inspectable copy)
+└── Scripts/           CreateQMSTables.sql
 ```
 
 Click CLI on the installable `lab5-qms` package: pack that zip, publish
@@ -305,8 +307,12 @@ contain Role / UsersInRoles / RolesInGraph. No subcommand prints Click
 help and exits 0.
 
 ```sh
-uv run lab5-qms pack      # compile Lab5.QMS.dll if C# changed; write zip
-uv run lab5-qms deploy    # pack + publish + seed
+gmake test                # ruff format --check, ruff check, unit tests
+gmake pack                # compile Lab5.QMS.dll if C# changed; write zip
+gmake deploy              # pack + publish + seed (no e2e)
+gmake check               # test + preflight + live e2e (publishes)
+uv run lab5-qms pack      # same as gmake pack
+uv run lab5-qms deploy    # same as gmake deploy
 uv run lab5-qms           # Click help (exit 0)
 ```
 

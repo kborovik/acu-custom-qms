@@ -31,6 +31,7 @@ class TestPublisherV8(unittest.TestCase):
         root = tree.getroot()
         # SDK-style csproj has no xmlns; legacy has msbuild xmlns.
         query = ".//{http://schemas.microsoft.com/developer/msbuild/2003}%s"
+
         def text(tag: str) -> str | None:
             el = root.find(".//" + tag)
             if el is None:
@@ -54,7 +55,7 @@ class TestPublisherV8(unittest.TestCase):
 
     def test_qms_marker_constants(self) -> None:
         src = (ROOT / "src" / "Lab5.QMS" / "QMS.cs").read_text(encoding="utf-8")
-        self.assertIn('namespace Lab5.QMS', src)
+        self.assertIn("namespace Lab5.QMS", src)
         self.assertIn('AssemblyFile = "Lab5.QMS.dll"', src)
         self.assertIn('PackageZip = "Lab5_QMS_Customization.zip"', src)
         self.assertIn('EndpointName = "QMS"', src)

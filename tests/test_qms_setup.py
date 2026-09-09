@@ -123,7 +123,9 @@ class TestQmsSetupGraphAndScreen(unittest.TestCase):
 
     def test_sitemap_workspace_screens(self) -> None:
         tree = ET.parse(SITEMAP)
-        site_rows = tree.findall(".//{*}SiteMap/{*}row") or tree.findall(".//SiteMap/row")
+        site_rows = tree.findall(".//{*}SiteMap/{*}row") or tree.findall(
+            ".//SiteMap/row"
+        )
         by_screen = {
             row.get("ScreenID"): row for row in site_rows if row.get("ScreenID")
         }
