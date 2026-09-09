@@ -3,7 +3,7 @@ name = "lab5-qms"
 version = "0.4.0"
 description = "Acumatica Cloud xRP customization package Lab5.QMS (pack + tests)"
 authors = [{ name = "Konstantin Borovik", email = "kb@lab5.ca" }]
-license = "PolyForm-Noncommercial-1.0.0"
+license = "Apache-2.0"
 requires-python = ">=3.14"
 dependencies = [
     "click>=8.1",

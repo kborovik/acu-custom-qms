@@ -350,11 +350,6 @@ runs locally. Requires a clean tree, `gh` authenticated, and bullets under
 
 ## License
 
-This project is licensed under the PolyForm Noncommercial License 1.0.0.
-Noncommercial use is free under that license.
-
-Commercial use requires a separate license — contact [lab5.ca](https://lab5.ca).
-
-See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+This project is licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE) for details.
 
 Copyright 2026 Konstantin Borovik.

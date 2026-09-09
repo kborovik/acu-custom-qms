@@ -1,13 +1,10 @@
-ifeq ($(filter oneshell,$(.FEATURES)),)
-$(error GNU Make ≥ 3.82 required (this is $(MAKE_VERSION) from $(MAKE)). On macOS: brew install make && gmake <target>)
+ifeq ($(filter notintermediate,$(.FEATURES)),)
+$(error GNU Make ≥ 4.4 required (this is $(MAKE_VERSION) from $(MAKE)). On macOS: brew install make && gmake <target>)
 endif
 
-.EXPORT_ALL_VARIABLES:
-.ONESHELL:
 .SILENT:
 
-SHELL := /bin/bash
-.SHELLFLAGS := -euo pipefail -c
+SHELL := /bin/sh
 MAKEFLAGS += --no-builtin-rules --no-builtin-variables
 export PATH := $(abspath .venv)/bin:$(PATH)
 
@@ -15,12 +12,37 @@ UV ?= uv
 QMS_DLL := src/Lab5.QMS/bin/Release/Lab5.QMS.dll
 # Unbuffered unittest so a stuck e2e test prints its name. Process-level
 # backstop (seconds) via faulthandler in e2e/helper.py; 0 disables.
-PYTHONUNBUFFERED := 1
-E2E_TIMEOUT ?= 900
+export PYTHONUNBUFFERED := 1
+export E2E_TIMEOUT ?= 900
+
+empty :=
+space := $(empty) $(empty)
+ht := $(shell printf '\t')
+s := $(shell printf '\036')
+esc := $(shell printf '\033')
+blue := $(esc)[34m
+green := $(esc)[32m
+yellow := $(esc)[33m
+reset := $(esc)[0m
+
+header = $(info $(blue)==> $1 <==$(reset))
+
+need-env = $(if $(wildcard .env),,$(error .env missing — decrypt .env.gpg at the repo root))
+need-acu = $(if $(shell command -v acu),,$(error acu not on PATH — uv tool install acumatica-cli))
+need-gh = $(if $(shell command -v gh),,$(error gh CLI required — https://cli.github.com/))
+need-gh-auth = $(shell gh auth status >/dev/null 2>&1)$(if $(filter 0,$(.SHELLSTATUS)),,$(error gh not authenticated — run: gh auth login))
+need-clean = $(if $(shell git status --porcelain),$(error working tree not clean — commit or stash first))
+need-part = $(if $(part),,$(error usage: gmake release major|minor|patch))
+
+# Recursive glob. `*` skips dot-dirs (.git, .venv).
+rwildcard = $(strip \
+	$(wildcard $(1)$(2)) \
+	$(foreach d,$(wildcard $(1)*),$(if $(wildcard $(d)/.),$(call rwildcard,$(d)/,$(2)))))
 
 default: help
 
 .PHONY: help check test pack dll clean preflight release major minor patch
+.PHONY: _release-pre _release-bump _release-tag _release-pack _release-gh
 
 ###############################################################################
 # Tests
@@ -43,25 +65,24 @@ dll: $(QMS_DLL) ## Compile Lab5.QMS.dll on the ERP VM (SSH) if missing
 # so `uv sync` does not force a rebuild. No source prereqs — `gmake dll`
 # with an existing file is a no-op.
 $(QMS_DLL): | .venv
-	test -e .env || { echo ".env missing — decrypt .env.gpg at the repo root"; exit 1; }
+	$(call need-env)
 	$(call header,Building Lab5.QMS.dll via SSH)
 	$(UV) run python dll.py
 
 clean: ## Remove compiled DLL, pack zip, and temp artifacts
 	$(call header,Cleaning)
-	rm -rf src/Lab5.QMS/bin src/Lab5.QMS/obj
-	rm -f Lab5_QMS_Customization.zip
-	rm -rf .ruff_cache .pytest_cache findings .vs
-	find . \( -path './.venv' -o -path './.git' \) -prune -o \
-		-name '__pycache__' -type d -exec rm -rf {} +
-	find . \( -path './.venv' -o -path './.git' \) -prune -o \
-		\( -name '*.pyc' -o -name '.DS_Store' -o -name '*.user' \
-		   -o -name '*.suo' \) -delete
+	rm -rf src/Lab5.QMS/bin src/Lab5.QMS/obj \
+		.ruff_cache .pytest_cache findings .vs \
+		$(call rwildcard,,__pycache__)
+	rm -f Lab5_QMS_Customization.zip .release-notes \
+		$(call rwildcard,,*.pyc) \
+		$(call rwildcard,,.DS_Store) \
+		$(call rwildcard,,*.user) \
+		$(call rwildcard,,*.suo)
 
 preflight: .venv ## Read-only acu config check against .env
-	test -e .env || { echo ".env missing — decrypt .env.gpg at the repo root"; exit 1; }
-	command -v acu >/dev/null \
-		|| { echo "acu not on PATH — uv tool install acumatica-cli"; exit 1; }
+	$(call need-env)
+	$(call need-acu)
 	$(call header,acu config check)
 	acu config check
 
@@ -69,13 +90,11 @@ preflight: .venv ## Read-only acu config check against .env
 check_target := $(if $(FILE),$(firstword $(wildcard $(FILE) e2e/$(FILE) e2e/$(FILE).py)),e2e)
 
 check: test preflight $(QMS_DLL) ## Live e2e vs .env tenant (acu CLI + REST; publishes Lab5.QMS)
-	test -n "$(check_target)" || { echo "no e2e file matches FILE=$(FILE)"; exit 1; }
+	$(if $(FILE),$(if $(check_target),,$(error no e2e file matches FILE=$(FILE))))
 	$(call header,Live e2e)
-	if [[ "$(check_target)" == *.py ]]; then
-		$(UV) run python -u -m unittest discover -s e2e -p "$$(basename "$(check_target)")" -t . -v
-	else
-		$(UV) run python -u -m unittest discover -s e2e -t . -v
-	fi
+	$(if $(filter %.py,$(check_target)),\
+		$(UV) run python -u -m unittest discover -s e2e -p '$(notdir $(check_target))' -t . -v,\
+		$(UV) run python -u -m unittest discover -s e2e -t . -v)
 
 ###############################################################################
 # Release
@@ -85,69 +104,74 @@ check: test preflight $(QMS_DLL) ## Live e2e vs .env tenant (acu CLI + REST; pub
 # give the part words no-op recipes so make does not try to build them.
 # There is no CI publisher — this recipe tags, packs the zip, and runs
 # `gh release create` locally (unlike acumatica-cli).
-part := $(word 1,$(filter major minor patch,$(MAKECMDGOALS)))
+# Chain splits around `uv version --bump` so $(VERSION) is read after the bump.
+part := $(firstword $(filter major minor patch,$(MAKECMDGOALS)))
+VERSION = $(shell $(UV) version --short)
 
-release: test $(QMS_DLL) ## Bump version, promote CHANGELOG, pack zip, tag, push, gh release
-	test -n "$(part)" || { echo "usage: gmake release major|minor|patch"; exit 1; }
-	git diff --quiet && git diff --cached --quiet \
-		|| { echo "working tree not clean — commit or stash first"; exit 1; }
-	command -v gh >/dev/null \
-		|| { echo "gh CLI required — https://cli.github.com/"; exit 1; }
-	gh auth status >/dev/null 2>&1 \
-		|| { echo "gh not authenticated — run: gh auth login"; exit 1; }
+release: test $(QMS_DLL) _release-gh ## Bump version, promote CHANGELOG, pack zip, tag, push, gh release
+
+_release-pre: test $(QMS_DLL)
+	$(call need-part)
+	$(call need-clean)
+	$(call need-gh)
+	$(call need-gh-auth)
 	$(call header,Checking CHANGELOG Unreleased has shippable bullets)
 	./Scripts/changelog check
+
+_release-bump: _release-pre
 	$(call header,Bumping $(part) version)
 	$(UV) version --bump $(part)
-	version=$$($(UV) version --short)
-	$(call header,Promoting CHANGELOG Unreleased → v$$version)
-	./Scripts/changelog promote "$$version"
+
+_release-tag: _release-bump
+	$(call header,Promoting CHANGELOG Unreleased → v$(VERSION))
+	./Scripts/changelog promote "$(VERSION)"
 	git add pyproject.toml uv.lock CHANGELOG.md
-	git commit -m "chore: release v$$version"
-	git tag "v$$version"
+	git commit -m "chore: release v$(VERSION)"
+	git tag "v$(VERSION)"
+
+_release-pack: _release-tag
 	$(call header,Packing Lab5_QMS_Customization.zip)
 	$(UV) run lab5-qms pack
-	$(call header,Pushing v$$version)
-	git push && git push --tags
-	$(call header,Creating GitHub release v$$version)
-	./Scripts/changelog notes "$$version" | gh release create "v$$version" \
-		--title "v$$version" \
-		--notes-file - \
+
+_release-gh: _release-pack
+	$(call header,Pushing v$(VERSION))
+	git push
+	git push --tags
+	$(call header,Creating GitHub release v$(VERSION))
+	./Scripts/changelog notes "$(VERSION)" > .release-notes
+	gh release create "v$(VERSION)" \
+		--title "v$(VERSION)" \
+		--notes-file .release-notes \
 		--verify-tag \
 		Lab5_QMS_Customization.zip
-	echo "$(green)Released v$$version$(reset)"
+	rm -f .release-notes
+	$(info $(green)Released v$(VERSION)$(reset))
 
-major minor patch:
-	@:
+major minor patch: ;
 
 ###############################################################################
 # Python env
 ###############################################################################
 
 .venv: uv.lock
-	$(UV) venv --clear && hash -r && $(UV) sync
+	$(UV) venv --clear
+	$(UV) sync
 
 uv.lock: pyproject.toml
-	$(UV) lock --upgrade && touch $(@)
+	$(UV) lock --upgrade
+	touch $@
 
 ###############################################################################
-# Colors and Headers
+# Help
 ###############################################################################
 
-TERM := xterm-256color
-
-blue := $$(tput setaf 4)
-green := $$(tput setaf 2)
-yellow := $$(tput setaf 3)
-reset := $$(tput sgr0)
-
-define header
-echo "$(blue)==> $(1) <==$(reset)"
-endef
+# Target-line double-hash descriptions, read with $(file) and split with $(let).
+help-src := $(file < $(firstword $(MAKEFILE_LIST)))
+help-words := $(foreach w,$(subst $(space),$(s),$(subst $(ht),,$(help-src))),$(if $(and $(findstring $(s)##$(s),$(w)),$(filter-out \#%,$(w))),$(w)))
+show-help = $(let tgt desc,$(subst $(s)##$(s), ,$1),$(info   $(yellow)$(patsubst %:,%,$(firstword $(subst $(s),$(space),$(tgt))))$(reset)  $(strip $(subst $(s),$(space),$(desc)))))
 
 help:
-	echo "$(blue)Usage: $(green)gmake [recipe]$(reset)"
-	echo "$(blue)Recipes:$(reset)"
-	awk 'BEGIN {FS = ":.*?## "; sort_cmd = "sort"} /^[a-zA-Z0-9_-]+:.*?## / \
-	{ printf "  \033[33m%-10s\033[0m %s\n", $$1, $$2 | sort_cmd; } \
-	END {close(sort_cmd)}' $(MAKEFILE_LIST)
+	$(info $(blue)Usage: $(green)gmake [recipe]$(reset))
+	$(info $(blue)Recipes:$(reset))
+	$(foreach w,$(sort $(help-words)),$(call show-help,$(w)))
+	:
