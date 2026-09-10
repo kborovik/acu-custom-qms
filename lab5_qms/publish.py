@@ -744,34 +744,72 @@ def _webpack_tenant_screens_missing() -> bool:
     return _ssh_last_token(out) == "MISSING"
 
 
+def _qm_aspx_names() -> tuple[str, ...]:
+    return tuple(
+        f"{screen}{suffix}"
+        for screen in ("QM101000", "QM201000", "QM301000", "QM302000")
+        for suffix in (".aspx", ".aspx.cs")
+    )
+
+
+_aspx_pages_ready = False
+
+
 def _ensure_qm_aspx_pages() -> None:
-    """Copy stub aspx onto the site. REST QMS entities 500 if Pages/QM/*.aspx is missing."""
+    """Copy stub aspx onto the site. REST QMS entities 500 if Pages/QM/*.aspx is missing.
+
+    Skip scp when SHA-256 already matches. A new write time retriggers ASP.NET
+    compile; InspectionPlan PUT then 500s `The view  doesn't exist`.
+    """
+    global _aspx_pages_ready
+    if _aspx_pages_ready:
+        return
     inst = instance()
     if not inst.ssh:
         return
     root = Path(__file__).resolve().parents[1]
-    remote_dir = ACU_INSTANCE_PATH.replace("\\", "/") + "/Pages/QM"
-    ssh_run(
-        "New-Item -ItemType Directory -Force -Path '"
-        + ACU_INSTANCE_PATH
-        + r"\Pages\QM' | Out-Null"
+    names = _qm_aspx_names()
+    local_hash = {
+        name: hashlib.sha256((root / "Pages_QM" / name).read_bytes()).hexdigest()
+        for name in names
+    }
+    win_dir = (ACU_INSTANCE_PATH + r"\Pages\QM").replace("'", "''")
+    name_list = ", ".join(f"'{name}'" for name in names)
+    out = ssh_run(
+        f"New-Item -ItemType Directory -Force -Path '{win_dir}' | Out-Null; "
+        f"foreach ($name in @({name_list})) {{ "
+        f"$p = Join-Path '{win_dir}' $name; "
+        "if (Test-Path -LiteralPath $p) { "
+        "$h = (Get-FileHash -LiteralPath $p -Algorithm SHA256).Hash.ToLowerInvariant() "
+        "} else { $h = 'missing' }; "
+        "Write-Output ($name + '|' + $h) }"
     )
-    for screen in ("QM101000", "QM201000", "QM301000", "QM302000"):
-        for suffix in (".aspx", ".aspx.cs"):
-            local = root / "Pages_QM" / f"{screen}{suffix}"
-            remote = f"{inst.ssh}:{remote_dir}/{screen}{suffix}"
-            result = subprocess.run(
-                ["scp", "-o", "BatchMode=yes", str(local), remote],
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=SSH_TIMEOUT,
+    remote_hash: dict[str, str] = {}
+    for line in out.splitlines():
+        line = line.strip()
+        if "|" not in line:
+            continue
+        name, digest = line.split("|", 1)
+        remote_hash[name.strip()] = digest.strip().lower()
+    posix_dir = ACU_INSTANCE_PATH.replace("\\", "/") + "/Pages/QM"
+    for name in names:
+        if remote_hash.get(name) == local_hash[name]:
+            continue
+        local = root / "Pages_QM" / name
+        remote = f"{inst.ssh}:{posix_dir}/{name}"
+        result = subprocess.run(
+            ["scp", "-o", "BatchMode=yes", str(local), remote],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=SSH_TIMEOUT,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"scp {local.name} failed ({result.returncode}):\n"
+                f"{result.stdout}\n{result.stderr}"
             )
-            if result.returncode != 0:
-                raise RuntimeError(
-                    f"scp {local.name} failed ({result.returncode}):\n"
-                    f"{result.stdout}\n{result.stderr}"
-                )
+    _aspx_pages_ready = True
 
 
 def seed_qm_rights(session: AcumaticaClient) -> None:

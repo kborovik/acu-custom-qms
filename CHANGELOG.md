@@ -18,6 +18,9 @@
   *before* the CustomizationApi session; digest-skip also requires tenant
   `Scripts/Screens/<tenant>/QM*.html` so a failed publishBegin after import
   cannot leave webpack unrun.
+- **InspectionPlan PUT e2e:** skip re-copy of `Pages/QM/*.aspx` when SHA-256
+  matches (a new write time retriggers ASP.NET compile and PUT 500s
+  `The view  doesn't exist`). Skipped DockLot no longer seeds in setUpClass.
 
 ## [v0.5.0] - 2026-09-10
 

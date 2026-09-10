@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import io
 import sys
 import unittest
@@ -28,9 +29,12 @@ from e2e.helper import (  # noqa: E402
     roles_in_graph_merge_sql,
     roles_in_graph_rows,
 )
+from lab5_qms import publish as publish_mod  # noqa: E402
 from lab5_qms.publish import (  # noqa: E402
     QMS_DETAIL_MAPPINGS,
+    _ensure_qm_aspx_pages,
     _parse_mapping_seed_counts,
+    _qm_aspx_names,
     expected_qms_detail_mapping_count,
     qms_detail_mapping_sql,
     seed_qm_rights,
@@ -208,6 +212,60 @@ class TestQmsDetailMappingSeedV12(unittest.TestCase):
             _parse_mapping_seed_counts("ok")
         with self.assertRaises(RuntimeError):
             _parse_mapping_seed_counts("")
+
+
+class TestAspxPagesSeed(unittest.TestCase):
+    def setUp(self) -> None:
+        publish_mod._aspx_pages_ready = False
+
+    def tearDown(self) -> None:
+        publish_mod._aspx_pages_ready = False
+
+    def test_skips_scp_when_remote_hash_matches(self) -> None:
+        names = _qm_aspx_names()
+        self.assertEqual(len(names), 8)
+        lines = []
+        for name in names:
+            digest = hashlib.sha256((ROOT / "Pages_QM" / name).read_bytes()).hexdigest()
+            lines.append(f"{name}|{digest}")
+        inst = MagicMock()
+        inst.ssh = "Administrator@host"
+        with (
+            patch("lab5_qms.publish.instance", return_value=inst),
+            patch("lab5_qms.publish.ssh_run", return_value="\n".join(lines)) as ssh,
+            patch("lab5_qms.publish.subprocess.run") as scp,
+        ):
+            _ensure_qm_aspx_pages()
+            _ensure_qm_aspx_pages()
+        scp.assert_not_called()
+        self.assertEqual(ssh.call_count, 1)
+
+    def test_scps_when_remote_missing(self) -> None:
+        names = _qm_aspx_names()
+        lines = "\n".join(f"{name}|missing" for name in names)
+        inst = MagicMock()
+        inst.ssh = "Administrator@host"
+        scp_ok = MagicMock()
+        scp_ok.returncode = 0
+        scp_ok.stdout = ""
+        scp_ok.stderr = ""
+        with (
+            patch("lab5_qms.publish.instance", return_value=inst),
+            patch("lab5_qms.publish.ssh_run", return_value=lines),
+            patch("lab5_qms.publish.subprocess.run", return_value=scp_ok) as scp,
+        ):
+            _ensure_qm_aspx_pages()
+        self.assertEqual(scp.call_count, 8)
+        self.assertTrue(publish_mod._aspx_pages_ready)
+
+    def test_dock_lot_skips_before_seed(self) -> None:
+        src = FUNCTIONAL_E2E.read_text(encoding="utf-8")
+        start = src.index("class TestDockLot")
+        end = src.index("class TestPostNcr")
+        dock = src[start:end]
+        skip_at = dock.index("unittest.SkipTest")
+        seed_at = dock.index("ensure_numbering_and_role")
+        self.assertGreater(seed_at, skip_at)
 
 
 class TestNoInspectionPlan403SkipV10(unittest.TestCase):
