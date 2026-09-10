@@ -3,12 +3,9 @@
 The zip is an Acumatica CustomizationApi import: project.xml holds
 EntityEndpoint, SiteMapNode, Sql, PerTenantFile (Modern UI), and File
 items. I.pkg members ride as extra zip entries so the package is
-inspectable without unzipping project.xml. Pattern B/A HTML+TS are
-CstPerTenantFile (AppRelativePath screens\\... ScreenId=...) so publish
-copies them to customizationScreens/<tenant> and webpack-emits
-Scripts/Screens/<tenant>. Ordinary File items into src/screens skip that
-pipeline and leave Classic ASPX. Code items use the Source attribute
-(CstCodeFile shape, verified vs 26.101.0225 in acumatica-cli bootstrap).
+inspectable without unzipping project.xml. Code items use the Source
+attribute (CstCodeFile shape, verified vs 26.101.0225 in acumatica-cli
+bootstrap).
 """
 
 from __future__ import annotations
@@ -107,8 +104,7 @@ def _project_xml(root: Path) -> ET.Element:
     )
 
     # No <Page>: 26.101 NRE without path; path=~/Pages/QM/*.aspx is not OOTB.
-    # PerTenantFile, not File: File copies into src/screens and skips the
-    # tenant webpack pipeline (no Scripts/Screens/<tenant>/<ScreenId>.html).
+    # Tenant webpack only picks up screens\<Mod>\<ScreenId>\.
     for rel in _frontend_files():
         item = ET.SubElement(customization, "PerTenantFile")
         item.set("AppRelativePath", per_tenant_app_relative(rel))

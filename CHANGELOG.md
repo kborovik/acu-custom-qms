@@ -12,8 +12,12 @@
   Orders stayed Classic ASPX. SiteMap `SelectedUI=D`; post-publish seed
   clears a Classic lock (`E`) and drops leftover src/screens copies.
   Pattern A imports `src/screens/IN/IN202500/IN202500` (relative `../IN202500`
-  404s under customizationScreens). Publish sets IIS `NO_COLOR` so webpack
-  progress ANSI does not crash `CstWebsiteStorage.SaveStatus`.
+  404s under customizationScreens). Publish sets the AcumaticaERP app-pool
+  `NO_COLOR` (not machine-wide env) so webpack progress ANSI does not crash
+  `CstWebsiteStorage.SaveStatus`. Pool recycle and leftover cleanup run
+  *before* the CustomizationApi session; digest-skip also requires tenant
+  `Scripts/Screens/<tenant>/QM*.html` so a failed publishBegin after import
+  cannot leave webpack unrun.
 
 ## [v0.5.0] - 2026-09-10
 

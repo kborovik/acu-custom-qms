@@ -35,14 +35,15 @@ from lab5_qms.publish import (  # noqa: E402
 
 ELAPSED_RE = r"^\d+\.\d{2}s$"
 PUBLISH_IMPORT_STEPS = (
-    "drain in-flight publish",
-    "digest skip or import",
-    "drop File-item FrontendSources leftovers",
     "webpack NO_COLOR for SaveStatus",
+    "drain in-flight publish",
+    "drop File-item FrontendSources leftovers",
+    "digest skip or import",
     "publishBegin",
     "poll publishEnd",
     "wait QMS/22.200.001",
 )
+PUBLISH_SKIP_STEPS = PUBLISH_IMPORT_STEPS[:4]
 SEED_STEPS = (
     "seed Role",
     "seed RolesInGraph",
@@ -250,19 +251,94 @@ class TestCliProgressICmdV10(unittest.TestCase):
             patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
             patch("lab5_qms.publish.drain_publish"),
             patch("lab5_qms.publish.published_description", return_value=desc),
+            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+            patch(
+                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                return_value=False,
+            ),
+            patch(
+                "lab5_qms.publish._webpack_tenant_screens_missing",
+                return_value=False,
+            ),
             patch("lab5_qms.progress.sys.stderr", err),
         ):
             status = publish_package(zip_bytes)
         self.assertEqual(status, "already published")
         rows = parse_progress(err.getvalue())
-        self.assertEqual(
-            [row[0] for row in rows],
-            ["drain in-flight publish", "digest skip or import"],
-        )
-        self.assertEqual(rows[1][2], "skip")
+        self.assertEqual([row[0] for row in rows], list(PUBLISH_SKIP_STEPS))
+        self.assertEqual(rows[3][2], "skip")
         self.assertNotIn("publishBegin", err.getvalue())
         for row in rows:
             self.assertRegex(row[3], ELAPSED_RE)
+
+    def test_publish_skip_forced_when_webpack_missing(self) -> None:
+        zip_bytes = _tiny_zip()
+        desc = package_description(zip_bytes)
+        session = MagicMock()
+        session.customization_published.return_value = [PACKAGE_NAME]
+        session.list_endpoints.return_value = [("QMS", QMS_VERSION)]
+        session.customization_publish_end.return_value = {"isCompleted": True}
+        order: list[str] = []
+
+        def webpack() -> bool:
+            order.append("webpack")
+            return False
+
+        def make_client() -> MagicMock:
+            order.append("client")
+            return _session_ctx(session)
+
+        with (
+            patch("lab5_qms.publish.client", side_effect=make_client),
+            patch("lab5_qms.publish.drain_publish"),
+            patch("lab5_qms.publish.publish_begin"),
+            patch("lab5_qms.publish.wait_published"),
+            patch("lab5_qms.publish.published_description", return_value=desc),
+            patch("lab5_qms.publish._ensure_webpack_no_color", side_effect=webpack),
+            patch(
+                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                return_value=False,
+            ),
+            patch(
+                "lab5_qms.publish._webpack_tenant_screens_missing",
+                return_value=True,
+            ),
+            patch("lab5_qms.progress.sys.stderr", io.StringIO()),
+        ):
+            status = publish_package(zip_bytes)
+        self.assertEqual(status, "published")
+        self.assertEqual(order[0], "webpack")
+        self.assertLess(order.index("webpack"), order.index("client"))
+        session.customization_import.assert_called_once()
+        session.customization_publish_end.assert_called()
+
+    def test_publish_skip_forced_when_pool_recycled(self) -> None:
+        zip_bytes = _tiny_zip()
+        desc = package_description(zip_bytes)
+        session = MagicMock()
+        session.customization_published.return_value = [PACKAGE_NAME]
+        session.list_endpoints.return_value = [("QMS", QMS_VERSION)]
+        session.customization_publish_end.return_value = {"isCompleted": True}
+        with (
+            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
+            patch("lab5_qms.publish.drain_publish"),
+            patch("lab5_qms.publish.publish_begin"),
+            patch("lab5_qms.publish.wait_published"),
+            patch("lab5_qms.publish.published_description", return_value=desc),
+            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=True),
+            patch(
+                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                return_value=False,
+            ),
+            patch(
+                "lab5_qms.publish._webpack_tenant_screens_missing",
+                return_value=False,
+            ),
+            patch("lab5_qms.progress.sys.stderr", io.StringIO()),
+        ):
+            status = publish_package(zip_bytes)
+        self.assertEqual(status, "published")
+        session.customization_import.assert_called_once()
 
     def test_publish_import_progress(self) -> None:
         zip_bytes = _tiny_zip()
@@ -275,15 +351,22 @@ class TestCliProgressICmdV10(unittest.TestCase):
             patch("lab5_qms.publish.drain_publish"),
             patch("lab5_qms.publish.publish_begin"),
             patch("lab5_qms.publish.wait_published"),
-            patch("lab5_qms.publish._remove_file_item_frontend_leftovers"),
-            patch("lab5_qms.publish._ensure_webpack_no_color"),
+            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+            patch(
+                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                return_value=False,
+            ),
+            patch(
+                "lab5_qms.publish._webpack_tenant_screens_missing",
+                return_value=False,
+            ),
             patch("lab5_qms.progress.sys.stderr", err),
         ):
             status = publish_package(zip_bytes)
         self.assertEqual(status, "published")
         rows = parse_progress(err.getvalue())
         self.assertEqual([row[0] for row in rows], list(PUBLISH_IMPORT_STEPS))
-        self.assertEqual(rows[1][2], "import")
+        self.assertEqual(rows[3][2], "import")
         self.assertEqual(rows[4][1], PACKAGE_NAME)
         self.assertEqual(rows[6][0], "wait QMS/22.200.001")
         self.assertEqual(rows[6][1], QMS_ENDPOINT)
@@ -341,8 +424,15 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 patch("lab5_qms.publish.drain_publish"),
                 patch("lab5_qms.publish.publish_begin"),
                 patch("lab5_qms.publish.wait_published"),
-                patch("lab5_qms.publish._remove_file_item_frontend_leftovers"),
-                patch("lab5_qms.publish._ensure_webpack_no_color"),
+                patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+                patch(
+                    "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                    return_value=False,
+                ),
+                patch(
+                    "lab5_qms.publish._webpack_tenant_screens_missing",
+                    return_value=False,
+                ),
                 patch(
                     "lab5_qms.publish.bootstrap_endpoint",
                     return_value="Bootstrap/1.4.0",

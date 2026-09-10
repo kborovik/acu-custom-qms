@@ -303,15 +303,15 @@ class TestStockItemModernUiV17(unittest.TestCase):
 
     def test_qm_selected_ui_not_classic(self) -> None:
         cid = company_id()
-        rows = {
-            line.split("|")[0]: line.split("|")[1]
-            for line in sql_lines(
-                "SELECT ScreenID, SelectedUI FROM "
-                f"{DB_NAME}.dbo.SiteMap WHERE ScreenID LIKE N'QM%' "
-                f"AND CompanyID IN (1, {cid})"
-            )
-        }
-        locked = [f"{screen}={ui}" for screen, ui in rows.items() if ui == "E"]
+        locked = []
+        for line in sql_lines(
+            "SELECT ScreenID, CompanyID, SelectedUI FROM "
+            f"{DB_NAME}.dbo.SiteMap WHERE ScreenID LIKE N'QM%' "
+            f"AND CompanyID IN (1, {cid})"
+        ):
+            screen, company, ui = line.split("|")[:3]
+            if ui != "D":
+                locked.append(f"{screen} company {company}={ui}")
         self.assertEqual(locked, [], f"QM screens still Classic-locked: {locked}")
 
 

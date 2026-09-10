@@ -162,19 +162,23 @@ def drain_publish(session: AcumaticaClient, timeout: float = 120.0) -> None:
 
 def publish_begin(session: AcumaticaClient, names: list[str]) -> None:
     """Publish named projects without dropping already-published ones."""
-    session._checked_log(
-        session._http.post(
-            "/CustomizationApi/publishBegin",
-            json={
-                "isMergeWithExistingPackages": True,
-                "isOnlyValidation": False,
-                "isOnlyDbUpdates": False,
-                "isReplayPreviouslyExecutedScripts": False,
-                "projectNames": names,
-                "tenantMode": "Current",
-            },
+    payload = {
+        "isMergeWithExistingPackages": True,
+        "isOnlyValidation": False,
+        "isOnlyDbUpdates": False,
+        "isReplayPreviouslyExecutedScripts": False,
+        "projectNames": names,
+        "tenantMode": "Current",
+    }
+    try:
+        session._checked_log(
+            session._http.post("/CustomizationApi/publishBegin", json=payload)
         )
-    )
+    except httpx.TransportError:
+        session.relogin()
+        session._checked_log(
+            session._http.post("/CustomizationApi/publishBegin", json=payload)
+        )
 
 
 def wait_published(timeout: float = 600.0, poll: float = 5.0) -> None:
@@ -192,35 +196,57 @@ def wait_published(timeout: float = 600.0, poll: float = 5.0) -> None:
     )
 
 
+def wait_rest(timeout: float = 120.0, poll: float = 5.0) -> None:
+    """Wait until contract REST answers. Does not require QMS published."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            with client() as session:
+                session.list_endpoints()
+                return
+        except RuntimeError, httpx.TransportError, httpx.HTTPError:
+            pass
+        time.sleep(poll)
+    raise RuntimeError(f"site did not answer GET /entity within {timeout:.0f}s")
+
+
 def publish_package(zip_bytes: bytes, *, timeout: float = 900.0) -> str:
     """Import + publish Lab5.QMS if the live package digest differs.
 
     Merges with already-published projects (AcuBootstrap must stay).
+    IIS webpack env / recycle runs before the CustomizationApi session so a
+    pool restart cannot drop the publishBegin cookie.
     """
     description = package_description(zip_bytes)
+    with progress("webpack NO_COLOR for SaveStatus", "IIS"):
+        recycled = _ensure_webpack_no_color()
     with client() as session:
         with progress("drain in-flight publish", PACKAGE_NAME):
             drain_publish(session)
+        with progress("drop File-item FrontendSources leftovers", "QM,IN202500_QMS"):
+            leftovers = _remove_file_item_frontend_leftovers()
         names = session.customization_published()
-        same = (
+        digest_same = (
             PACKAGE_NAME in names
             and published_description(session) == description
             and ("QMS", QMS_VERSION) in session.list_endpoints()
         )
+        skip = (
+            digest_same
+            and not recycled
+            and not leftovers
+            and not _webpack_tenant_screens_missing()
+        )
         with progress("digest skip or import", PACKAGE_NAME) as p:
-            if same:
+            if skip:
                 p.result = "skip"
             else:
                 session.customization_import(
                     PACKAGE_NAME, zip_bytes, description=description
                 )
                 p.result = "import"
-        if same:
+        if skip:
             return "already published"
-        with progress("drop File-item FrontendSources leftovers", "QM,IN202500_QMS"):
-            _remove_file_item_frontend_leftovers()
-        with progress("webpack NO_COLOR for SaveStatus", "IIS"):
-            _ensure_webpack_no_color()
         with progress("publishBegin", PACKAGE_NAME):
             publish_begin(session, [PACKAGE_NAME])
         deadline = time.monotonic() + timeout
@@ -626,15 +652,18 @@ def _ensure_qm_selected_ui() -> None:
     sqlcmd(sitemap_selected_ui_sql())
 
 
-def _ensure_webpack_no_color() -> None:
-    """Stop webpack ANSI (0x1B) from crashing CstWebsiteStorage.SaveStatus."""
+def _ssh_last_token(out: str) -> str:
+    lines = [ln.strip() for ln in out.splitlines() if ln.strip()]
+    return lines[-1] if lines else ""
+
+
+def _ensure_webpack_no_color() -> bool:
+    """Set AcumaticaERP pool NO_COLOR. Recycle if changed. Return True if recycled."""
     inst = instance()
     if not inst.ssh:
-        return
-    ssh_run(
+        return False
+    out = ssh_run(
         r"""
-[Environment]::SetEnvironmentVariable('NO_COLOR','1','Machine')
-[Environment]::SetEnvironmentVariable('FORCE_COLOR','0','Machine')
 Import-Module WebAdministration
 $poolName = 'AcumaticaERP'
 $filter = "/system.applicationHost/applicationPools/add[@name='$poolName']/environmentVariables"
@@ -658,13 +687,19 @@ foreach ($name in $needed.Keys) {
 }
 if ($changed) {
   Restart-WebAppPool -Name $poolName
-  Start-Sleep -Seconds 8
+  'RECYCLED'
+} else {
+  'OK'
 }
 """
     )
+    if _ssh_last_token(out) != "RECYCLED":
+        return False
+    wait_rest(timeout=120.0)
+    return True
 
 
-def _remove_file_item_frontend_leftovers() -> None:
+def _remove_file_item_frontend_leftovers() -> bool:
     """Drop OOTB-tree copies from earlier File-item publishes.
 
     File items landed in src/screens/QM and IN202500/extensions. PerTenantFile
@@ -673,10 +708,10 @@ def _remove_file_item_frontend_leftovers() -> None:
     """
     inst = instance()
     if not inst.ssh:
-        return
+        return False
     root = ACU_INSTANCE_PATH.replace("'", "''")
-    ssh_run(
-        "$paths = @("
+    out = ssh_run(
+        "$removed = $false; $paths = @("
         f"'{root}\\FrontendSources\\screen\\src\\screens\\QM',"
         f"'{root}\\FrontendSources\\screen\\src\\screens\\IN\\IN202500"
         "\\extensions\\IN202500_QMS.html',"
@@ -684,8 +719,29 @@ def _remove_file_item_frontend_leftovers() -> None:
         "\\extensions\\IN202500_QMS.ts'"
         "); foreach ($p in $paths) { "
         "if (Test-Path -LiteralPath $p) { "
-        "Remove-Item -LiteralPath $p -Recurse -Force } }"
+        "Remove-Item -LiteralPath $p -Recurse -Force; $removed = $true } }; "
+        "if ($removed) { 'REMOVED' } else { 'OK' }"
     )
+    return _ssh_last_token(out) == "REMOVED"
+
+
+def _webpack_tenant_screens_missing() -> bool:
+    """True when tenant webpack HTML for Pattern B screens is absent."""
+    inst = instance()
+    if not inst.ssh:
+        return False
+    tenant = inst.tenant.replace("'", "''")
+    root = ACU_INSTANCE_PATH.replace("'", "''")
+    checks = "; ".join(
+        "if (-not (Test-Path -LiteralPath '"
+        + root
+        + rf"\Scripts\Screens\{tenant}\{screen}.html')) {{ $missing = $true }}"
+        for screen in ("QM101000", "QM201000", "QM301000", "QM302000")
+    )
+    out = ssh_run(
+        "$missing = $false; " + checks + "; if ($missing) { 'MISSING' } else { 'OK' }"
+    )
+    return _ssh_last_token(out) == "MISSING"
 
 
 def _ensure_qm_aspx_pages() -> None:

@@ -132,6 +132,10 @@ class TestRolesInGraphSeedV10(unittest.TestCase):
         self.assertIn("_ensure_qm_selected_ui", publish)
         self.assertIn("_remove_file_item_frontend_leftovers", publish)
         self.assertIn("_ensure_webpack_no_color", publish)
+        self.assertIn("_webpack_tenant_screens_missing", publish)
+        self.assertIn("wait_rest", publish)
+        self.assertNotIn("SetEnvironmentVariable", publish)
+        self.assertNotIn("Start-Sleep", publish)
         self.assertIn("PerTenantFile", (ROOT / "lab5_qms" / "pack.py").read_text())
 
     def test_sitemap_selected_ui_sql_clears_classic_lock(self) -> None:
