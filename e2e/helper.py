@@ -89,7 +89,7 @@ _publish_error: BaseException | None = None
 # Per-request HTTP bound lives in lab5_qms.acu (HTTP_TIMEOUT = 30.0).
 # Publish polling uses that plus a loop deadline (ensure_published
 # timeout=600); do not raise the default back to 300s — a stuck GET then
-# looks like a hung `gmake check`.
+# looks like a hung `gmake e2e`.
 ACU_TIMEOUT = 60.0
 INVOKE_TIMEOUT = 60.0
 
@@ -177,7 +177,7 @@ def qms_invoke(
     """POST InspectionOrder action; bound the 202 status poll.
 
     `AcumaticaClient.invoke` polls Location while status is 202 with no
-    deadline — a stuck EvaluateResults/ReleaseLotDecision hangs `gmake check`.
+    deadline — a stuck EvaluateResults/ReleaseLotDecision hangs `gmake e2e`.
     """
     body: dict[str, Any] = {"entity": wrap(record)}
     r = session._checked(

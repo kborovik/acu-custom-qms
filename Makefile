@@ -43,7 +43,7 @@ rwildcard = $(strip \
 
 default: help
 
-.PHONY: help check test build deploy clean preflight release major minor patch
+.PHONY: help check e2e build deploy clean preflight release major minor patch
 .PHONY: _release-pre _release-bump _release-tag _release-pack _release-gh
 
 ###############################################################################
@@ -53,7 +53,7 @@ default: help
 # PATH `acu` from `uv tool install acumatica-cli`. Never `uv run acu`.
 # Never `acu check` from this repo (destructive tenant rebuild).
 
-test: .venv ## Format check, lint, local unit tests (no live tenant)
+check: .venv ## Format check, lint, local unit tests (no live tenant)
 	$(call header,Running unit tests)
 	$(UV) run ruff format --check
 	$(UV) run ruff check
@@ -80,17 +80,17 @@ preflight: .venv
 	$(call header,acu config check)
 	acu config check
 
-# `gmake check FILE=<path-or-stem>` scopes to one e2e file; unset = whole tier.
-check_target := $(if $(FILE),$(firstword $(wildcard $(FILE) e2e/$(FILE) e2e/$(FILE).py)),e2e)
-ifneq ($(filter check,$(MAKECMDGOALS)),)
-$(if $(FILE),$(if $(check_target),,$(error no e2e file matches FILE=$(FILE))))
+# `gmake e2e FILE=<path-or-stem>` scopes to one e2e file; unset = whole tier.
+e2e_target := $(if $(FILE),$(firstword $(wildcard $(FILE) e2e/$(FILE) e2e/$(FILE).py)),e2e)
+ifneq ($(filter e2e,$(MAKECMDGOALS)),)
+$(if $(FILE),$(if $(e2e_target),,$(error no e2e file matches FILE=$(FILE))))
 endif
 
-check: test preflight ## Live e2e vs .env tenant (acu CLI + REST; publishes Lab5.QMS)
+e2e: check preflight ## Live e2e vs .env tenant (acu CLI + REST; publishes Lab5.QMS)
 	$(call header,Live e2e)
 	$(UV) run python dll.py
-	$(if $(filter %.py,$(check_target)),\
-		$(UV) run python -u -m unittest discover -s e2e -p '$(notdir $(check_target))' -t . -v,\
+	$(if $(filter %.py,$(e2e_target)),\
+		$(UV) run python -u -m unittest discover -s e2e -p '$(notdir $(e2e_target))' -t . -v,\
 		$(UV) run python -u -m unittest discover -s e2e -t . -v)
 
 ###############################################################################
@@ -108,9 +108,9 @@ $(if $(part),,$(error usage: gmake release major|minor|patch))
 endif
 VERSION = $(shell $(UV) version --short)
 
-release: test _release-gh ## Bump version, promote CHANGELOG, pack zip, tag, push, gh release
+release: check _release-gh ## Bump version, promote CHANGELOG, pack zip, tag, push, gh release
 
-_release-pre: test
+_release-pre: check
 	$(call need-part)
 	$(call need-clean)
 	$(call need-gh)
@@ -176,7 +176,7 @@ pad-deploy := deploy$(space)$(space)$(space)$(space)
 pad-build := build$(space)$(space)$(space)$(space)$(space)
 pad-preflight := preflight$(space)
 pad-release := release$(space)$(space)$(space)
-pad-test := test$(space)$(space)$(space)$(space)$(space)$(space)
+pad-e2e := e2e$(space)$(space)$(space)$(space)$(space)$(space)$(space)
 pad10 = $(or $(pad-$1),$1)
 show-help = $(let tgt desc,$(subst $(s)##$(s), ,$1),$(let name text,$(patsubst %:,%,$(firstword $(subst $(s),$(space),$(tgt)))) $(strip $(subst $(s),$(space),$(desc))),$(info   $(yellow)$(call pad10,$(name))$(reset) $(text))))
 
