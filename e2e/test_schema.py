@@ -23,13 +23,17 @@ from e2e.helper import (
     roles_in_graph_rows,
     sql_lines,
 )
+from lab5_qms.publish import QM401000_DESIGN_ID
 
-QM_WORKSPACE_TITLE = "Quality Management"
+QM_FORM_SCREENS = ("QM101000", "QM201000", "QM301000", "QM302000")
+
+QM_WORKSPACE_TITLE = "Inventory"
 QM_SEARCH_TITLES = {
     "QM101000": "Quality Preferences",
     "QM201000": "Inspection Plans",
     "QM301000": "Inspection Orders",
     "QM302000": "Non-Conformance Reports",
+    "QM401000": "Quality Queue",
 }
 
 
@@ -70,9 +74,10 @@ class TestSqlSchema(unittest.TestCase):
                 "ORDER BY ScreenID"
             )
         )
-        missing = [screen for screen in QM_SCREENS if screen not in screens]
+        expected = set(QM_SCREENS) | set(QM_SEARCH_TITLES)
+        missing = [screen for screen in expected if screen not in screens]
         self.assertEqual(missing, [], f"missing QM sitemap screens: {missing}")
-        self.assertIn("QM000000", screens)
+        self.assertNotIn("QM000000", screens)
 
     def test_sitemap_qm_workspaces(self) -> None:
         cid = company_id()
@@ -94,6 +99,7 @@ class TestSqlSchema(unittest.TestCase):
         self.assertIn("MUIScreen", mui_tables)
         self.assertNotIn("Workspaces", sitemap_cols)
         assigned = {}
+        screen_ids = tuple(QM_SEARCH_TITLES)
         for line in sql_lines(
             "SELECT sm.ScreenID, w.Title FROM "
             f"{DB_NAME}.dbo.SiteMap sm "
@@ -101,38 +107,41 @@ class TestSqlSchema(unittest.TestCase):
             f"INNER JOIN {DB_NAME}.dbo.MUIWorkspace w "
             "ON w.WorkspaceID = ms.WorkspaceID "
             "WHERE sm.ScreenID IN ("
-            + ", ".join(f"N'{screen}'" for screen in QM_SCREENS)
+            + ", ".join(f"N'{screen}'" for screen in screen_ids)
             + f") AND sm.CompanyID IN (1, {cid})"
         ):
             screen, title = line.split("|", 1)
             assigned[screen] = title
         missing = [
             screen
-            for screen in QM_SCREENS
+            for screen in screen_ids
             if assigned.get(screen) != QM_WORKSPACE_TITLE
         ]
         self.assertEqual(
             missing,
             [],
-            f"Site Map Workspaces not Quality Management: {missing} ({assigned})",
+            f"Site Map Workspaces not Inventory: {missing} ({assigned})",
         )
-        workspace = sql_lines(
+        self.assertNotIn("Configuration", set(assigned.values()))
+        qms_workspace = sql_lines(
             f"SELECT Title, ScreenID FROM {DB_NAME}.dbo.MUIWorkspace "
-            f"WHERE Title = N'{QM_WORKSPACE_TITLE}' AND CompanyID IN (1, {cid})"
+            "WHERE Title = N'Quality Management' "
+            f"AND CompanyID IN (1, {cid})"
         )
-        self.assertTrue(
-            workspace,
-            f"missing MUIWorkspace {QM_WORKSPACE_TITLE!r}",
-        )
-        self.assertTrue(
-            any(row.split("|")[1] == "QM000000" for row in workspace),
-            f"MUIWorkspace ScreenID not QM000000: {workspace}",
+        self.assertEqual(
+            qms_workspace,
+            [],
+            f"QMS MUIWorkspace still present: {qms_workspace}",
         )
         sitemap_folder = sql_lines(
             f"SELECT ScreenID FROM {DB_NAME}.dbo.SiteMap "
             f"WHERE ScreenID = N'QM000000' AND CompanyID IN (1, {cid})"
         )
-        self.assertTrue(sitemap_folder, "missing SiteMap QM000000")
+        self.assertEqual(
+            sitemap_folder,
+            [],
+            f"SiteMap QM000000 still present: {sitemap_folder}",
+        )
 
 
 class TestBootstrapNumberingAndRole(unittest.TestCase):
@@ -222,13 +231,13 @@ def _workspace_screens(payload: dict, title: str) -> dict[str, str]:
 
 
 class TestModernQmWorkspace(unittest.TestCase):
-    """T30 / V16: modern UI workspace bar/More Items, Search, ScreenId URLs."""
+    """T37 / V16: Inventory-hosted QM screens; no QMS tile; no Configuration."""
 
     @classmethod
     def setUpClass(cls) -> None:
         ensure_published()
 
-    def test_frameset_sitemap_quality_management(self) -> None:
+    def test_frameset_sitemap_inventory(self) -> None:
         with client() as session:
             response = session._checked(session._http.get("/frameset/sitemap"))
         payload = response.json()
@@ -241,8 +250,9 @@ class TestModernQmWorkspace(unittest.TestCase):
         self.assertIn(
             QM_WORKSPACE_TITLE,
             titles,
-            f"Quality Management missing from workspace bar/More Items: {titles}",
+            f"Inventory missing from workspace bar/More Items: {titles}",
         )
+        self.assertNotIn("Quality Management", titles)
         assigned = _workspace_screens(payload, QM_WORKSPACE_TITLE)
         missing = [
             f"{screen_id} {title}"
@@ -256,10 +266,19 @@ class TestModernQmWorkspace(unittest.TestCase):
             f"{missing} ({assigned})",
         )
         self.assertNotIn("QM000000", assigned)
+        configuration = _workspace_screens(payload, "Configuration")
+        leaked = [
+            screen_id for screen_id in QM_SEARCH_TITLES if screen_id in configuration
+        ]
+        self.assertEqual(
+            leaked,
+            [],
+            f"Configuration lists QM screens: {leaked} ({configuration})",
+        )
 
     def test_screenid_urls_keep_working(self) -> None:
         with client() as session:
-            for screen_id in QM_SCREENS:
+            for screen_id in QM_FORM_SCREENS:
                 response = session._checked(
                     session._http.get(
                         "/Main",
@@ -272,6 +291,30 @@ class TestModernQmWorkspace(unittest.TestCase):
                     f"ScreenId={screen_id}" in url or f"ScreenID={screen_id}" in url,
                     f"{screen_id} dropped from url after redirects: {url}",
                 )
+                self.assertNotIn(
+                    "/Pages/QM/",
+                    url,
+                    f"{screen_id} opened Classic ASPX: {url}",
+                )
+                self.assertNotRegex(
+                    url,
+                    r"\.aspx(\?|$)",
+                    f"{screen_id} opened Classic ASPX: {url}",
+                )
+            gi = session._checked(
+                session._http.get(
+                    "/Main",
+                    params={"ScreenId": "QM401000"},
+                    follow_redirects=True,
+                )
+            )
+            gi_url = str(gi.url)
+            self.assertTrue(
+                "ScreenId=QM401000" in gi_url
+                or "ScreenID=QM401000" in gi_url
+                or QM401000_DESIGN_ID in gi_url,
+                f"QM401000 not reachable by ScreenId or design id: {gi_url}",
+            )
 
 
 if __name__ == "__main__":

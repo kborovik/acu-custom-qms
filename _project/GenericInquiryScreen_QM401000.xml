@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<GenericInquiryScreen ScreenID="QM401000">
+  <data-set>
+    <relations format-version="4" relations-version="6" main-table="GIDesign">
+      <link from="GIFilter (DesignID)" to="GIDesign (DesignID)" />
+      <link from="GIGroupBy (DesignID)" to="GIDesign (DesignID)" />
+      <link from="GIMassAction (DesignID)" to="GIDesign (DesignID)" />
+      <link from="GIMassUpdateField (DesignID)" to="GIDesign (DesignID)" />
+      <link from="GINavigationScreen (DesignID)" to="GIDesign (DesignID)" />
+      <link from="GINavigationParameter (DesignID, NavigationScreenLineNbr)" to="GINavigationScreen (DesignID, LineNbr)" />
+      <link from="GIOn (DesignID, RelationNbr)" to="GIRelation (DesignID, LineNbr)" />
+      <link from="GIRecordDefault (DesignID)" to="GIDesign (DesignID)" />
+      <link from="GIRelation (DesignID, ParentTable)" to="GITable (DesignID, Alias)" />
+      <link from="GIRelation (DesignID, ChildTable)" to="GITable (DesignID, Alias)" />
+      <link from="GIResult (DesignID)" to="GIDesign (DesignID)" />
+      <link from="GIResult (ObjectName, DesignID)" to="GITable (Alias, DesignID)" />
+      <link from="GISort (DesignID)" to="GIDesign (DesignID)" />
+      <link from="GITable (DesignID)" to="GIDesign (DesignID)" />
+      <link from="GIWhere (DesignID)" to="GIDesign (DesignID)" />
+    </relations>
+    <layout>
+      <table name="GIDesign">
+        <table name="GINavigationScreen" uplink="(DesignID) = (DesignID)">
+          <table name="GINavigationParameter" uplink="(DesignID, NavigationScreenLineNbr) = (DesignID, LineNbr)" />
+        </table>
+        <table name="GISort" uplink="(DesignID) = (DesignID)" />
+        <table name="GIGroupBy" uplink="(DesignID) = (DesignID)" />
+        <table name="GITable" uplink="(DesignID) = (DesignID)">
+          <table name="GIRelation" uplink="(DesignID, Alias) = (DesignID, ParentTable)">
+            <table name="GIOn" uplink="(DesignID, LineNbr) = (DesignID, RelationNbr)" />
+          </table>
+          <table name="GIResult" uplink="(Alias, DesignID) = (ObjectName, DesignID)" />
+        </table>
+        <table name="GIWhere" uplink="(DesignID) = (DesignID)" />
+      </table>
+    </layout>
+    <data>
+      <GIDesign>
+        <row DesignID="9f9483b9-6427-40c6-9c91-96b22c67c28e" Name="Quality Queue">
+          <GITable Alias="Order" Name="Lab5.QMS.QMSInspectionOrder">
+            <GIRelation LineNbr="1" ChildTable="Lot" JoinType="L">
+              <GIOn LineNbr="1" ParentField="inventoryID" Condition="E" ChildField="inventoryID" Operation="A" />
+              <GIOn LineNbr="2" ParentField="lotSerialNbr" Condition="E" ChildField="lotSerialNbr" Operation="A" />
+            </GIRelation>
+            <GIRelation LineNbr="2" ChildTable="NCR" JoinType="L">
+              <GIOn LineNbr="1" ParentField="inspectionOrderNbr" Condition="E" ChildField="inspectionOrderNbr" Operation="A" />
+            </GIRelation>
+            <GIRelation LineNbr="3" ChildTable="Item" JoinType="L">
+              <GIOn LineNbr="1" ParentField="inventoryID" Condition="E" ChildField="inventoryID" Operation="A" />
+            </GIRelation>
+            <GIRelation LineNbr="4" ChildTable="Vendor" JoinType="L">
+              <GIOn LineNbr="1" ParentField="vendorID" Condition="E" ChildField="bAccountID" Operation="A" />
+            </GIRelation>
+            <GIResult LineNbr="2" Field="lotSerialNbr" Caption="Lot" AggregateFunction="MAX" />
+            <GIResult LineNbr="3" Field="receiptNbr" Caption="Receipt" AggregateFunction="MAX" />
+            <GIResult LineNbr="5" Field="planID" Caption="Plan" AggregateFunction="MAX" />
+            <GIResult LineNbr="7" Field="inspectionOrderNbr" Caption="Order Nbr" DefaultNav="1" NavigationNbr="1" />
+            <GIResult LineNbr="8" Field="status" Caption="Order Status" AggregateFunction="MAX" />
+          </GITable>
+          <GITable Alias="Lot" Name="PX.Objects.IN.INLotSerialStatusByCostCenter">
+            <GIResult LineNbr="6" Field="usrQMSLotStatus" Caption="Lot Status" AggregateFunction="MAX" />
+          </GITable>
+          <GITable Alias="NCR" Name="Lab5.QMS.QMSNonConformance">
+            <GIResult LineNbr="9" Field="nCRNbr" Caption="NCR Nbr" DefaultNav="1" NavigationNbr="2" AggregateFunction="MAX" />
+            <GIResult LineNbr="10" Field="status" Caption="NCR Status" AggregateFunction="MAX" />
+          </GITable>
+          <GITable Alias="Item" Name="PX.Objects.IN.InventoryItem">
+            <GIResult LineNbr="1" Field="inventoryCD" Caption="Inventory" AggregateFunction="MAX" />
+          </GITable>
+          <GITable Alias="Vendor" Name="PX.Objects.AP.Vendor">
+            <GIResult LineNbr="4" Field="acctCD" Caption="Vendor" AggregateFunction="MAX" />
+          </GITable>
+          <GIWhere LineNbr="1" IsActive="1" OpenBrackets="(" DataFieldName="Lot.usrQMSLotStatus" Condition="E" Value1="QC Hold" CloseBrackets=")" Operation="O" />
+          <GIWhere LineNbr="2" IsActive="1" OpenBrackets="(" DataFieldName="Order.status" Condition="NE" Value1="C" CloseBrackets=")" Operation="O" />
+          <GIWhere LineNbr="3" IsActive="1" OpenBrackets="(" DataFieldName="NCR.nCRNbr" Condition="NN" Operation="A" />
+          <GIWhere LineNbr="4" IsActive="1" DataFieldName="NCR.status" Condition="NE" Value1="C" CloseBrackets=")" Operation="A" />
+          <GISort LineNbr="1" DataFieldName="Order.inspectionOrderNbr" SortOrder="A" />
+          <GIGroupBy LineNbr="1" IsActive="1" DataFieldName="Order.inspectionOrderNbr" />
+          <GINavigationScreen ScreenID="QM301000" LineNbr="1">
+            <GINavigationParameter LineNbr="1" FieldName="InspectionOrderNbr" ParameterName="Order.inspectionOrderNbr" />
+          </GINavigationScreen>
+          <GINavigationScreen ScreenID="QM302000" LineNbr="2">
+            <GINavigationParameter LineNbr="1" FieldName="NCRNbr" ParameterName="NCR.nCRNbr" />
+          </GINavigationScreen>
+        </row>
+      </GIDesign>
+    </data>
+  </data-set>
+</GenericInquiryScreen>

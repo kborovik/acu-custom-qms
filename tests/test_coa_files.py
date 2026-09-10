@@ -13,7 +13,26 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ORDER_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSInspectionOrder.cs"
 RULES_CS = ROOT / "src" / "Lab5.QMS" / "QMSCoAFileRules.cs"
-ASPX = ROOT / "Pages_QM" / "QM301000.aspx"
+HTML = (
+    ROOT
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "screens"
+    / "QM"
+    / "QM301000"
+    / "QM301000.html"
+)
+TS = (
+    ROOT
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "screens"
+    / "QM"
+    / "QM301000"
+    / "QM301000.ts"
+)
 ENDPOINT_XML = ROOT / "_project" / "QMS.xml"
 SQL = ROOT / "Scripts" / "CreateQMSTables.sql"
 QMS_CS = ROOT / "src" / "Lab5.QMS" / "QMS.cs"
@@ -100,10 +119,11 @@ class TestRestNoteIdAndExpandFilesV2(unittest.TestCase):
 
 class TestScreenPaperclipV3(unittest.TestCase):
     def test_order_form_files_indicator(self) -> None:
-        aspx = ASPX.read_text(encoding="utf-8")
-        self.assertIn('DataMember="Document"', aspx)
-        self.assertIn('NoteIndicator="True"', aspx)
-        self.assertIn('FilesIndicator="True"', aspx)
+        html = HTML.read_text(encoding="utf-8")
+        ts = TS.read_text(encoding="utf-8")
+        self.assertIn('view.bind="Document"', html)
+        self.assertIn("hideFilesIndicator: false", ts)
+        self.assertIn("hideNotesIndicator: false", ts)
 
 
 class TestSystemOfRecordAttachmentsV3(unittest.TestCase):

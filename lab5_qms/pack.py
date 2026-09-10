@@ -29,6 +29,7 @@ PAGES = (
     "QM302000",
 )
 
+
 CLASS_RE = re.compile(
     r"public\s+(?:static\s+)?class\s+(\w+)(?:\s*:\s*([^{\n]+))?",
 )
@@ -58,10 +59,8 @@ def package_zip(root: Path | None = None, *, ensure_dll: bool = False) -> bytes:
         zf.writestr("project.xml", xml_bytes)
         for rel in _pkg_members(root):
             zf.write(root / rel, arcname=rel.as_posix())
-        for screen in PAGES:
-            for suffix in (".aspx", ".aspx.cs"):
-                src = root / "Pages_QM" / f"{screen}{suffix}"
-                zf.write(src, arcname=f"Pages/QM/{screen}{suffix}")
+        for src in _aspx_sources(root):
+            zf.write(root / src, arcname=_aspx_arcname(src))
         dll = _dll_path(root)
         if dll is not None:
             zf.write(dll, arcname="Bin/" + ASSEMBLY_DLL)
@@ -101,15 +100,13 @@ def _project_xml(root: Path) -> ET.Element:
         (root / "Scripts" / "CreateQMSTables.sql").read_text(encoding="utf-8"),
     )
 
-    # C# CstCodeFile <Graph Source FileType=NewDac|NewGraph|NewFile> import
-    # succeeds but publishBegin CstCodeFile.Upgrade KeyNotFoundException on
-    # 26.101.0225 (includedAspxFiles). Training packages ship Bin\*.dll.
-    # Keep DAC/graph source in src/; pack/publish/deploy compile on the ERP
-    # VM when those sources change, then add File Bin\Lab5.QMS.dll.
-    for screen in PAGES:
-        for suffix in (".aspx", ".aspx.cs"):
-            file_el = ET.SubElement(customization, "File")
-            file_el.set("AppRelativePath", rf"Pages\QM\{screen}{suffix}")
+    # No <Page>: 26.101 NRE without path; path=~/Pages/QM/*.aspx is not OOTB.
+    for rel in _frontend_files():
+        file_el = ET.SubElement(customization, "File")
+        file_el.set("AppRelativePath", _app_relative(rel))
+    for src in _aspx_sources(root):
+        file_el = ET.SubElement(customization, "File")
+        file_el.set("AppRelativePath", _aspx_app_relative(src))
 
     dll = _dll_path(root)
     if dll is not None:
@@ -124,15 +121,71 @@ def _pkg_members(root: Path) -> list[Path]:
         Path("_project") / "ProjectMetadata.xml",
         Path("_project") / "QMS.xml",
         Path("_project") / "SiteMap.xml",
+        Path("_project") / "GenericInquiryScreen_QM401000.xml",
         Path("Scripts") / "CreateQMSTables.sql",
     ]
-    for screen in PAGES:
-        members.append(Path("Pages_QM") / f"{screen}.aspx")
-        members.append(Path("Pages_QM") / f"{screen}.aspx.cs")
+    members.extend(_frontend_files())
     for path in members:
         if not (root / path).is_file():
             raise FileNotFoundError(path)
     return members
+
+
+def _frontend_qm_files() -> list[Path]:
+    files: list[Path] = []
+    for screen in PAGES:
+        for suffix in (".html", ".ts"):
+            files.append(
+                Path("FrontendSources")
+                / "screen"
+                / "src"
+                / "screens"
+                / "QM"
+                / screen
+                / f"{screen}{suffix}"
+            )
+    return files
+
+
+def _frontend_in202500_qms() -> list[Path]:
+    base = (
+        Path("FrontendSources")
+        / "screen"
+        / "src"
+        / "screens"
+        / "IN"
+        / "IN202500"
+        / "extensions"
+    )
+    return [base / "IN202500_QMS.html", base / "IN202500_QMS.ts"]
+
+
+def _frontend_files() -> list[Path]:
+    return [*_frontend_qm_files(), *_frontend_in202500_qms()]
+
+
+def _aspx_sources(root: Path) -> list[Path]:
+    files = [
+        Path("Pages_QM") / f"{screen}{suffix}"
+        for screen in PAGES
+        for suffix in (".aspx", ".aspx.cs")
+    ]
+    for path in files:
+        if not (root / path).is_file():
+            raise FileNotFoundError(path)
+    return files
+
+
+def _aspx_arcname(src: Path) -> str:
+    return f"Pages/QM/{src.name}"
+
+
+def _aspx_app_relative(src: Path) -> str:
+    return rf"Pages\QM\{src.name}"
+
+
+def _app_relative(rel: Path) -> str:
+    return "\\".join(rel.parts)
 
 
 def _cs_files(root: Path) -> list[Path]:

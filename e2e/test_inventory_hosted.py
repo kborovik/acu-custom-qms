@@ -1,0 +1,280 @@
+#!/usr/bin/env -S uv run
+"""T37 / V16 / V17: Inventory-hosted Modern UI, Quality Queue GI, package shape."""
+
+from __future__ import annotations
+
+import io
+import unittest
+import zipfile
+import xml.etree.ElementTree as ET
+
+from e2e.helper import (
+    DB_NAME,
+    PACKAGE_NAME,
+    ROOT,
+    client,
+    company_id,
+    ensure_numbering_and_role,
+    ensure_published,
+    instance,
+    qms_put,
+    sql_lines,
+)
+from lab5_qms import pack
+from lab5_qms.acu import ACU_INSTANCE_PATH, ssh_run
+from lab5_qms.publish import ACCESSRIGHTS_DELETE, QM_RIGHTS_ROLES
+
+GI_DESIGN_ID = "9f9483b9-6427-40c6-9c91-96b22c67c28e"
+PATTERN_B = (
+    "FrontendSources/screen/src/screens/QM/QM101000/QM101000.ts",
+    "FrontendSources/screen/src/screens/QM/QM201000/QM201000.ts",
+    "FrontendSources/screen/src/screens/QM/QM301000/QM301000.ts",
+    "FrontendSources/screen/src/screens/QM/QM302000/QM302000.ts",
+)
+PATTERN_A = (
+    "FrontendSources/screen/src/screens/IN/IN202500/extensions/IN202500_QMS.html",
+    "FrontendSources/screen/src/screens/IN/IN202500/extensions/IN202500_QMS.ts",
+)
+
+
+class TestPublishedPackageV17(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        ensure_published()
+
+    def test_live_package_has_gi_pattern_b_pattern_a_pages_qm(self) -> None:
+        shipped = pack.package_zip(ROOT)
+        with zipfile.ZipFile(io.BytesIO(shipped)) as zf:
+            shipped_names = set(zf.namelist())
+        self.assertIn(
+            "_project/GenericInquiryScreen_QM401000.xml",
+            shipped_names,
+        )
+        with client() as session:
+            content = session.customization_project_content(PACKAGE_NAME)
+        self.assertIsNotNone(content)
+        with zipfile.ZipFile(io.BytesIO(content)) as zf:
+            names = set(zf.namelist())
+            project = ET.fromstring(zf.read("project.xml"))
+            qm301 = zf.read(
+                "FrontendSources/screen/src/screens/QM/QM301000/QM301000.ts"
+            ).decode("utf-8")
+            qm302 = zf.read(
+                "FrontendSources/screen/src/screens/QM/QM302000/QM302000.ts"
+            ).decode("utf-8")
+        for member in PATTERN_B + PATTERN_A:
+            self.assertIn(member, names, member)
+        pages_qm = [name for name in names if name.startswith("Pages_QM/")]
+        self.assertEqual(pages_qm, [])
+        for screen in ("QM101000", "QM201000", "QM301000", "QM302000"):
+            self.assertIn(f"Pages/QM/{screen}.aspx", names, screen)
+            self.assertIn(f"Pages/QM/{screen}.aspx.cs", names, screen)
+        self.assertEqual(project.findall("Page"), [])
+        self.assertIn("EvaluateResults: PXActionState", qm301)
+        self.assertIn("ReleaseLotDecision: PXActionState", qm301)
+        self.assertIn("hideFilesIndicator: false", qm301)
+        self.assertIn("hideNotesIndicator: false", qm301)
+        self.assertIn("CloseNCR: PXActionState", qm302)
+        self.assertIn("DispositionRTV: PXActionState", qm302)
+
+
+class TestQualityQueueLiveV16(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        if not instance().ssh:
+            raise unittest.SkipTest("hosted path (blank ACU_SSH) — no sqlcmd")
+        ensure_published()
+
+    def test_gidesign_and_drills(self) -> None:
+        cid = company_id()
+        names = sql_lines(
+            f"SELECT Name FROM {DB_NAME}.dbo.GIDesign "
+            f"WHERE DesignID = '{GI_DESIGN_ID}' AND CompanyID IN (1, {cid})"
+        )
+        self.assertTrue(names, "missing GIDesign Quality Queue")
+        self.assertTrue(
+            any("Quality Queue" in row for row in names),
+            names,
+        )
+        links = set(
+            sql_lines(
+                f"SELECT Link FROM {DB_NAME}.dbo.GINavigationScreen "
+                f"WHERE DesignID = '{GI_DESIGN_ID}' AND CompanyID IN (1, {cid})"
+            )
+        )
+        self.assertIn("QM301000", links)
+        self.assertIn("QM302000", links)
+        self.assertNotIn("EvaluateResults", links)
+        grouped = sql_lines(
+            f"SELECT DataFieldName FROM {DB_NAME}.dbo.GIGroupBy "
+            f"WHERE DesignID = '{GI_DESIGN_ID}' AND CompanyID IN (1, {cid})"
+        )
+        self.assertIn(
+            "Order.inspectionOrderNbr",
+            grouped,
+            f"Quality Queue GIGroupBy missing: {grouped}",
+        )
+        screens = sql_lines(
+            f"SELECT ScreenID FROM {DB_NAME}.dbo.SiteMap "
+            f"WHERE ScreenID = N'QM401000' AND CompanyID IN (1, {cid})"
+        )
+        self.assertTrue(screens, "missing SiteMap QM401000")
+
+    def test_work_row_grain(self) -> None:
+        cid = company_id()
+        aggs = {}
+        for line in sql_lines(
+            "SELECT ObjectName, Field, AggregateFunction FROM "
+            f"{DB_NAME}.dbo.GIResult "
+            f"WHERE DesignID = '{GI_DESIGN_ID}' AND CompanyID IN (1, {cid})"
+        ):
+            parts = line.split("|")
+            obj, field = parts[0], parts[1]
+            aggs[f"{obj}.{field}"] = parts[2] if len(parts) > 2 else ""
+        for key in (
+            "Lot.usrQMSLotStatus",
+            "NCR.nCRNbr",
+            "NCR.status",
+            "Item.inventoryCD",
+            "Order.lotSerialNbr",
+            "Order.receiptNbr",
+            "Vendor.acctCD",
+            "Order.planID",
+            "Order.status",
+        ):
+            self.assertEqual(
+                aggs.get(key),
+                "MAX",
+                f"{key} AggregateFunction missing MAX: {aggs}",
+            )
+        self.assertNotEqual(aggs.get("Order.inspectionOrderNbr"), "MAX")
+        work = (
+            f"{DB_NAME}.dbo.UsrQMSInspectionOrder o "
+            f"LEFT JOIN {DB_NAME}.dbo.INLotSerialStatusByCostCenter lot "
+            "ON lot.CompanyID = o.CompanyID "
+            "AND lot.InventoryID = o.InventoryID "
+            "AND lot.LotSerialNbr = o.LotSerialNbr "
+            f"LEFT JOIN {DB_NAME}.dbo.UsrQMSNonConformance n "
+            "ON n.CompanyID = o.CompanyID "
+            "AND n.InspectionOrderNbr = o.InspectionOrderNbr "
+            f"WHERE o.CompanyID IN (1, {cid}) AND ("
+            "lot.UsrQMSLotStatus = N'QC Hold' "
+            "OR o.Status <> N'C' "
+            "OR (n.NCRNbr IS NOT NULL AND n.Status <> N'C'))"
+        )
+        distinct = sql_lines("SELECT COUNT(DISTINCT o.InspectionOrderNbr) FROM " + work)
+        self.assertTrue(distinct)
+        if int(distinct[0]) == 0:
+            from e2e.test_functional import _order_record, _plan_record, _seed_ready
+
+            with client() as session:
+                reason = _seed_ready(session)
+                if reason:
+                    raise unittest.SkipTest(reason)
+                ensure_numbering_and_role(session)
+                qms_put(session, "InspectionPlan", _plan_record())
+                qms_put(
+                    session,
+                    "InspectionOrder",
+                    _order_record("E2EQQUEUE00001", 0.5, "brown"),
+                )
+            distinct = sql_lines(
+                "SELECT COUNT(DISTINCT o.InspectionOrderNbr) FROM " + work
+            )
+        self.assertGreater(
+            int(distinct[0]),
+            0,
+            "Quality Queue has no work rows after seeding an open order",
+        )
+        ncr_rows = sql_lines(
+            "SELECT COUNT(*) FROM (SELECT o.InspectionOrderNbr "
+            "FROM " + work + " AND n.NCRNbr IS NOT NULL AND n.Status <> N'C' "
+            "GROUP BY o.InspectionOrderNbr) q"
+        )
+        self.assertTrue(ncr_rows)
+        if int(ncr_rows[0]) > 0:
+            links = set(
+                sql_lines(
+                    f"SELECT Link FROM {DB_NAME}.dbo.GINavigationScreen "
+                    f"WHERE DesignID = '{GI_DESIGN_ID}' "
+                    f"AND CompanyID IN (1, {cid})"
+                )
+            )
+            self.assertIn("QM301000", links)
+            self.assertIn("QM302000", links)
+
+    def test_roles_in_graph_qm401000(self) -> None:
+        cid = company_id()
+        present = {
+            (role, int(rights))
+            for line in sql_lines(
+                "SELECT Rolename, Accessrights FROM "
+                f"{DB_NAME}.dbo.RolesInGraph WHERE ScreenID = N'QM401000' "
+                f"AND CompanyID IN (1, {cid})"
+            )
+            for role, rights in [line.split("|", 1)]
+        }
+        missing = [
+            role
+            for role in QM_RIGHTS_ROLES
+            if (role, ACCESSRIGHTS_DELETE) not in present
+        ]
+        self.assertEqual(missing, [], f"missing QM401000 rights: {missing} ({present})")
+
+
+class TestStockItemModernUiV17(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        if not instance().ssh:
+            raise unittest.SkipTest("hosted path (blank ACU_SSH) — no ssh")
+        ensure_published()
+
+    def test_in202500_qms_published_to_instance(self) -> None:
+        path = (
+            ACU_INSTANCE_PATH
+            + r"\FrontendSources\screen\src\screens\IN\IN202500\extensions"
+            r"\IN202500_QMS.html"
+        )
+        html = ssh_run(
+            "if (Test-Path -LiteralPath '"
+            + path.replace("'", "''")
+            + "') { Get-Content -LiteralPath '"
+            + path.replace("'", "''")
+            + "' -Raw } else { Write-Output 'MISSING' }"
+        )
+        self.assertNotIn("MISSING", html)
+        self.assertIn("UsrQMSInspectionRequired", html)
+        self.assertIn("UsrQMSInspectionPlanID", html)
+        self.assertIn("UsrMinShelfLifeDays", html)
+        self.assertIn("visible.bind", html)
+        self.assertNotIn("if.bind", html)
+
+    def test_pattern_b_actions_notes_files_on_instance(self) -> None:
+        def _read_ts(screen: str) -> str:
+            path = (
+                ACU_INSTANCE_PATH
+                + rf"\FrontendSources\screen\src\screens\QM\{screen}\{screen}.ts"
+            )
+            literal = path.replace("'", "''")
+            text = ssh_run(
+                "if (Test-Path -LiteralPath '"
+                + literal
+                + "') { Get-Content -LiteralPath '"
+                + literal
+                + "' -Raw } else { Write-Output 'MISSING' }"
+            )
+            self.assertNotIn("MISSING", text, path)
+            return text
+
+        qm301 = _read_ts("QM301000")
+        qm302 = _read_ts("QM302000")
+        self.assertIn("EvaluateResults: PXActionState", qm301)
+        self.assertIn("ReleaseLotDecision: PXActionState", qm301)
+        self.assertIn("hideFilesIndicator: false", qm301)
+        self.assertIn("hideNotesIndicator: false", qm301)
+        self.assertIn("CloseNCR: PXActionState", qm302)
+        self.assertIn("DispositionRTV: PXActionState", qm302)
+
+
+if __name__ == "__main__":
+    unittest.main()

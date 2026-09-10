@@ -6,17 +6,20 @@
 
 - **`gmake deploy`:** pack `Lab5_QMS_Customization.zip`, publish via
   CustomizationApi, and seed Role / `RolesInGraph` / `UsrQMSSetup`. No
-  live e2e — that stays `gmake check`.
+  live e2e — that stays `gmake e2e`.
 
 ### Changed
 
+- **Recipes:** `gmake test` renamed to `gmake check` (ruff format, ruff
+  lint, unit tests; no tenant). `gmake check` renamed to `gmake e2e`
+  (`gmake check` + `acu config check` + live e2e). Matches acumatica-cli.
+- **`gmake build`:** renamed from `gmake pack`. Still runs
+  `lab5-qms pack`.
 - **Pack compiles `Lab5.QMS.dll` when C# changes:** `lab5-qms pack` /
-  `publish` / `deploy`, `gmake pack` / `deploy` / `check` / `release`
+  `publish` / `deploy`, `gmake build` / `deploy` / `e2e` / `release`
   rebuild the assembly on the ERP VM when `src/Lab5.QMS` sources (or the
   compiler) change. Dropped `gmake dll` — compile is a dependency of
   those paths, not a recipe.
-- **`gmake test`:** `ruff format --check` and `ruff check` before unit
-  tests.
 
 ### Fixed
 

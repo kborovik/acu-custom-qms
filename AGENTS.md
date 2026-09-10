@@ -23,13 +23,13 @@ Recipes (never `acu check` — destructive tenant rebuild):
 
 | Recipe | What it does |
 | --- | --- |
-| `gmake test` | `ruff format --check`, `ruff check`, unit tests (no tenant) |
-| `gmake pack` | compile `Lab5.QMS.dll` if `src/Lab5.QMS` C# changed; write zip |
+| `gmake check` | `ruff format --check`, `ruff check`, unit tests (no tenant) |
+| `gmake build` | compile `Lab5.QMS.dll` if `src/Lab5.QMS` C# changed; write zip |
 | `gmake deploy` | pack + CustomizationApi publish + Role / `RolesInGraph` / `UsrQMSSetup` seed |
-| `gmake check` | `gmake test` + `acu config check` + live e2e (publishes if the package digest differs) |
+| `gmake e2e` | `gmake check` + `acu config check` + live e2e (publishes if the package digest differs) |
 | `gmake release` | unit tests, compile if stale, bump, tag, pack, `gh release` (no e2e) |
 
-`gmake deploy` is the inner loop after a C# / screen / SQL change. `gmake check` is the proof. There is no `gmake dll`.
+`gmake deploy` is the inner loop after a C# / screen / SQL change. `gmake e2e` is the proof. There is no `gmake dll`.
 
 Install released `acu` with `uv tool install acumatica-cli`. This project does not depend on that package; do not launch acu through uv.
 
@@ -58,11 +58,11 @@ acu tenant list    # SSH; confirm ACU_TENANT exists
 
 **Never** `acu check` from this repo — that is a destructive cold tenant rebuild (`delete` then create then apply then run).
 
-Python probes: `uv run python` (project env has click + httpx; ruff is a dev dependency used by `gmake test`). REST and SSH go through PATH `acu` plus `lab5_qms.acu`. System `python3` will not see the package.
+Python probes: `uv run python` (project env has click + httpx; ruff is a dev dependency used by `gmake check`). REST and SSH go through PATH `acu` plus `lab5_qms.acu`. System `python3` will not see the package.
 
 ### Package presence
 
-`gmake deploy` / `uv run lab5-qms deploy` packs `Lab5_QMS_Customization.zip`, publishes via `/CustomizationApi` (same cookie session as `acu`; field is `projectContentBase64`, not `projectContents`), and seeds post-publish Role `Quality Manager` plus QM `RolesInGraph` and `UsrQMSSetup`. Publish skip is a SHA-256 of **every zip member** (pages, SQL, DLL, `project.xml`); an ASPX-only change must republish. Subcommands: `pack`, `publish`, `seed`, `deploy`. Naked `lab5-qms` prints Click help and exits 0 (does not deploy). `gmake pack` runs `lab5-qms pack`. Then prove the tenant has the package:
+`gmake deploy` / `uv run lab5-qms deploy` packs `Lab5_QMS_Customization.zip`, publishes via `/CustomizationApi` (same cookie session as `acu`; field is `projectContentBase64`, not `projectContents`), and seeds post-publish Role `Quality Manager` plus QM `RolesInGraph` and `UsrQMSSetup`. Publish skip is a SHA-256 of **every zip member** (pages, SQL, DLL, `project.xml`); an ASPX-only change must republish. Subcommands: `pack`, `publish`, `seed`, `deploy`. Naked `lab5-qms` prints Click help and exits 0 (does not deploy). `gmake build` runs `lab5-qms pack`. Then prove the tenant has the package:
 
 | Check | Expect |
 | --- | --- |

@@ -15,7 +15,26 @@ DAC_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSNonConformance.cs"
 STATUS_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSNonConformanceStatus.cs"
 GRAPH_CS = ROOT / "src" / "Lab5.QMS" / "Graph" / "QMSNonConformanceEntry.cs"
 RULES_CS = ROOT / "src" / "Lab5.QMS" / "QMSNonConformanceRules.cs"
-ASPX = ROOT / "Pages_QM" / "QM302000.aspx"
+HTML = (
+    ROOT
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "screens"
+    / "QM"
+    / "QM302000"
+    / "QM302000.html"
+)
+TS = (
+    ROOT
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "screens"
+    / "QM"
+    / "QM302000"
+    / "QM302000.ts"
+)
 SQL = ROOT / "Scripts" / "CreateQMSTables.sql"
 
 STATUS_OPEN = "O"
@@ -232,15 +251,17 @@ class TestNonConformanceGraphAndScreen(unittest.TestCase):
         self.assertIn("Receipt Nbr is required for Return to Vendor.", src)
 
     def test_screen_qm302000(self) -> None:
-        aspx = ASPX.read_text(encoding="utf-8")
-        self.assertIn('TypeName="Lab5.QMS.QMSNonConformanceEntry"', aspx)
-        self.assertIn('PrimaryView="Document"', aspx)
-        self.assertIn('DataMember="Document"', aspx)
-        self.assertIn('Name="CloseNCR"', aspx)
-        self.assertIn('Name="DispositionRTV"', aspx)
-        self.assertIn("QM302000", aspx)
+        html = HTML.read_text(encoding="utf-8")
+        ts = TS.read_text(encoding="utf-8")
+        self.assertIn("export class QM302000 extends PXScreen", ts)
+        self.assertIn('graphType: "Lab5.QMS.QMSNonConformanceEntry"', ts)
+        self.assertIn('primaryView: "Document"', ts)
+        self.assertIn("Document = createSingle", ts)
+        self.assertIn("CloseNCR: PXActionState", ts)
+        self.assertIn("DispositionRTV: PXActionState", ts)
+        self.assertIn('view.bind="Document"', html)
         for field in SUMMARY_FIELDS:
-            self.assertIn(f'DataField="{field}"', aspx)
+            self.assertIn(f'name="{field}"', html)
 
 
 if __name__ == "__main__":

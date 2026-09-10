@@ -17,7 +17,16 @@ PLAN_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSInspectionPlan.cs"
 ORDER_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSInspectionOrder.cs"
 GRAPH_CS = ROOT / "src" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
 RULES_CS = ROOT / "src" / "Lab5.QMS" / "QMSAuditRules.cs"
-ASPX = ROOT / "Pages_QM" / "QM301000.aspx"
+HTML = (
+    ROOT
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "screens"
+    / "QM"
+    / "QM301000"
+    / "QM301000.html"
+)
 SQL = ROOT / "Scripts" / "CreateQMSTables.sql"
 
 QUALITY_MANAGER = "Quality Manager"
@@ -153,9 +162,9 @@ class TestPermanentEvaluationStampV3(unittest.TestCase):
             "order.EvaluationDateTime = QMSAuditRules.StampEvaluationDateTime(order.EvaluationDateTime, DateTime.UtcNow);",
             graph,
         )
-        aspx = ASPX.read_text(encoding="utf-8")
-        self.assertIn('DataField="EvaluatedByID"', aspx)
-        self.assertIn('DataField="EvaluationDateTime"', aspx)
+        html = HTML.read_text(encoding="utf-8")
+        self.assertIn('name="EvaluatedByID"', html)
+        self.assertIn('name="EvaluationDateTime"', html)
 
 
 class TestReleaseGateIRoleV3(unittest.TestCase):

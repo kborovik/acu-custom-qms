@@ -3,7 +3,7 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""e2e hang bounds: HTTP / acu / 202-poll / process timeout (gmake check)."""
+"""e2e hang bounds: HTTP / acu / 202-poll / process timeout (gmake e2e)."""
 
 from __future__ import annotations
 

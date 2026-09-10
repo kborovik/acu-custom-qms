@@ -37,6 +37,20 @@ SCREENS = (
     "QM301000",
     "QM302000",
 )
+SITEMAP_SCREENS = SCREENS + ("QM401000",)
+INVENTORY_WORKSPACE_ID = "6557C1C6-747E-45BB-9072-54F096598D61"
+CONFIGURATION_WORKSPACE_ID = "3206E17E-8A34-4E3E-9648-5CEE25DEFDE5"
+QMS_WORKSPACE_ID = "C0A1B1E5-0110-4D16-8A00-51E0A1B1E500"
+SUBCATEGORY = {
+    "QM101000": "8A93637D-B507-4667-A739-ADAF6FB5F7EA",
+    "QM201000": "6D40B0B6-18F4-4139-ADAC-8EC8CB2A17EA",
+    "QM301000": "38D13A6E-3076-42FB-9FCE-62FA33897DA6",
+    "QM302000": "38D13A6E-3076-42FB-9FCE-62FA33897DA6",
+    "QM401000": "98E86774-69E3-41EA-B94F-EB2C7A8426D4",
+}
+QM401000_URL = (
+    "~/GenericInquiry/GenericInquiry.aspx?id=9f9483b9-6427-40c6-9c91-96b22c67c28e"
+)
 
 CODE_CLASSES = {
     "QMSInspectionPlan": "NewDac",
@@ -94,9 +108,13 @@ class TestPackIPkg(unittest.TestCase):
             names = set(zf.namelist())
         self.assertIn("project.xml", names)
         self.assertIn("_project/ProjectMetadata.xml", names)
+        self.assertIn("_project/GenericInquiryScreen_QM401000.xml", names)
         self.assertIn("Scripts/CreateQMSTables.sql", names)
+        for name in names:
+            self.assertFalse(name.startswith("Pages_QM/"), name)
         for screen in SCREENS:
-            self.assertIn(f"Pages_QM/{screen}.aspx", names, screen)
+            self.assertIn(f"Pages/QM/{screen}.aspx", names, screen)
+            self.assertIn(f"Pages/QM/{screen}.aspx.cs", names, screen)
         meta = ET.parse(ROOT / "_project" / "ProjectMetadata.xml").getroot()
         self.assertEqual(meta.get("name"), "Lab5.QMS")
         self.assertIn("22.200.001", meta.get("description") or "")
@@ -167,29 +185,31 @@ class TestProjectXmlPackedItems(unittest.TestCase):
         with _zip() as zf:
             root = _project(zf)
             names = set(zf.namelist())
-        paths = {
+        aspx_files = [
             item.get("AppRelativePath")
             for item in root.findall("File")
             if (item.get("AppRelativePath") or "").endswith(".aspx")
-        }
+            or (item.get("AppRelativePath") or "").endswith(".aspx.cs")
+        ]
         for screen in SCREENS:
-            self.assertIn(rf"Pages\QM\{screen}.aspx", paths, screen)
-            self.assertIn(f"Pages_QM/{screen}.aspx", names, screen)
+            self.assertIn(rf"Pages\QM\{screen}.aspx", aspx_files, screen)
+            self.assertIn(rf"Pages\QM\{screen}.aspx.cs", aspx_files, screen)
             self.assertIn(f"Pages/QM/{screen}.aspx", names, screen)
+            self.assertIn(f"Pages/QM/{screen}.aspx.cs", names, screen)
+        for name in names:
+            self.assertNotIn("Pages_QM/", name)
         sitemap = root.find("SiteMapNode")
         self.assertIsNotNone(sitemap)
         site_rows = sitemap.findall(".//SiteMap/row")
         screens = {row.get("ScreenID"): row for row in site_rows if row.get("ScreenID")}
-        self.assertIn("QM000000", screens)
-        workspace = sitemap.find(".//MUIWorkspace/row")
-        self.assertIsNotNone(workspace, "packed SiteMap missing MUIWorkspace")
-        self.assertEqual(workspace.get("Title"), "Quality Management")
-        self.assertEqual(workspace.get("ScreenID"), "QM000000")
-        workspace_id = workspace.get("WorkspaceID")
-        folder = screens["QM000000"]
-        self.assertNotEqual(folder.get("SelectedUI"), "E")
-        self.assertIsNone(folder.find("MUIScreen"))
-        for screen in SCREENS:
+        self.assertNotIn("QM000000", screens)
+        self.assertIsNone(sitemap.find(".//MUIWorkspace/row"))
+        blob = ET.tostring(sitemap, encoding="unicode")
+        self.assertNotIn("Quality Management", blob)
+        self.assertNotIn(QMS_WORKSPACE_ID, blob)
+        self.assertNotIn(CONFIGURATION_WORKSPACE_ID, blob)
+        self.assertNotIn(">Configuration<", blob)
+        for screen in SITEMAP_SCREENS:
             self.assertIn(screen, screens, screen)
             row = screens[screen]
             self.assertNotEqual(
@@ -199,11 +219,96 @@ class TestProjectXmlPackedItems(unittest.TestCase):
             )
             mui = row.find("MUIScreen")
             self.assertIsNotNone(mui, f"{screen} missing MUIScreen")
-            self.assertEqual(mui.get("WorkspaceID"), workspace_id, screen)
+            self.assertEqual(mui.get("WorkspaceID"), INVENTORY_WORKSPACE_ID, screen)
+            self.assertEqual(mui.get("SubcategoryID"), SUBCATEGORY[screen], screen)
+        for screen in SCREENS:
             self.assertEqual(
-                row.get("Url"),
+                screens[screen].get("Url"),
                 f"~/Pages/QM/{screen}.aspx",
                 screen,
+            )
+        self.assertEqual(screens["QM401000"].get("Title"), "Quality Queue")
+        self.assertEqual(screens["QM401000"].get("Url"), QM401000_URL)
+        self.assertEqual(root.findall("Page"), [])
+        file_paths = {item.get("AppRelativePath") for item in root.findall("File")}
+        for screen in SCREENS:
+            for suffix in (".html", ".ts"):
+                rel = (
+                    rf"FrontendSources\screen\src\screens\QM\{screen}\{screen}{suffix}"
+                )
+                self.assertIn(rel, file_paths, rel)
+                self.assertIn(
+                    f"FrontendSources/screen/src/screens/QM/{screen}/{screen}{suffix}",
+                    names,
+                    screen,
+                )
+
+
+GRAPH_TYPES = {
+    "QM101000": "Lab5.QMS.QMSSetupMaint",
+    "QM201000": "Lab5.QMS.QMSInspectionPlanMaint",
+    "QM301000": "Lab5.QMS.QMSInspectionOrderEntry",
+    "QM302000": "Lab5.QMS.QMSNonConformanceEntry",
+}
+
+
+class TestPatternBModernUi(unittest.TestCase):
+    def test_screen_class_and_graph_type(self) -> None:
+        for screen, graph_type in GRAPH_TYPES.items():
+            ts = (
+                ROOT
+                / "FrontendSources"
+                / "screen"
+                / "src"
+                / "screens"
+                / "QM"
+                / screen
+                / f"{screen}.ts"
+            ).read_text(encoding="utf-8")
+            self.assertIn(f"export class {screen} extends PXScreen", ts, screen)
+            self.assertIn(f'graphType: "{graph_type}"', ts, screen)
+
+
+class TestPatternAStockItem(unittest.TestCase):
+    def test_in202500_qms_fields_and_visible_bind(self) -> None:
+        base = (
+            ROOT
+            / "FrontendSources"
+            / "screen"
+            / "src"
+            / "screens"
+            / "IN"
+            / "IN202500"
+            / "extensions"
+        )
+        html = (base / "IN202500_QMS.html").read_text(encoding="utf-8")
+        ts = (base / "IN202500_QMS.ts").read_text(encoding="utf-8")
+        self.assertIn("export class IN202500_QMS", ts)
+        self.assertIn("export class InventoryItem", ts)
+        self.assertNotIn("InventoryItemExtension", ts)
+        self.assertNotIn("if.bind", html)
+        self.assertIn("visible.bind", html)
+        for field in (
+            "UsrQMSInspectionRequired",
+            "UsrQMSInspectionPlanID",
+            "UsrMinShelfLifeDays",
+        ):
+            self.assertIn(f'name="{field}"', html, field)
+            self.assertIn(field, ts, field)
+        with _zip() as zf:
+            root = _project(zf)
+            names = set(zf.namelist())
+        paths = {item.get("AppRelativePath") for item in root.findall("File")}
+        for suffix in (".html", ".ts"):
+            rel = (
+                r"FrontendSources\screen\src\screens\IN\IN202500\extensions"
+                rf"\IN202500_QMS{suffix}"
+            )
+            self.assertIn(rel, paths, rel)
+            self.assertIn(
+                "FrontendSources/screen/src/screens/IN/IN202500/extensions/"
+                f"IN202500_QMS{suffix}",
+                names,
             )
 
 
@@ -228,6 +333,32 @@ class TestPackDllFile(unittest.TestCase):
                 dest.unlink(missing_ok=True)
             elif previous is not None:
                 dest.write_bytes(previous)
+
+
+class TestE2eInventoryHostedT37(unittest.TestCase):
+    """T37 / V16 / V17: live e2e covers Inventory-hosted QM after publish."""
+
+    def test_e2e_covers_inventory_search_package_and_queue(self) -> None:
+        hosted = (ROOT / "e2e" / "test_inventory_hosted.py").read_text(encoding="utf-8")
+        schema = (ROOT / "e2e" / "test_schema.py").read_text(encoding="utf-8")
+        blob = hosted + schema
+        self.assertIn("GenericInquiryScreen_QM401000.xml", hosted)
+        self.assertIn("EvaluateResults: PXActionState", hosted)
+        self.assertIn("ReleaseLotDecision: PXActionState", hosted)
+        self.assertIn("CloseNCR: PXActionState", hosted)
+        self.assertIn("DispositionRTV: PXActionState", hosted)
+        self.assertIn("hideFilesIndicator: false", hosted)
+        self.assertIn("hideNotesIndicator: false", hosted)
+        self.assertIn("UsrQMSInspectionRequired", hosted)
+        self.assertIn("Pages_QM/", hosted)
+        self.assertIn("Pages/QM/", hosted)
+        self.assertIn('QM_WORKSPACE_TITLE = "Inventory"', schema)
+        self.assertIn("Quality Queue", blob)
+        self.assertIn("Quality Management", schema)
+        self.assertIn("Configuration", schema)
+        self.assertIn("QM000000", schema)
+        self.assertIn("ScreenId", schema)
+        self.assertIn("/Pages/QM/", schema)
 
 
 if __name__ == "__main__":

@@ -51,7 +51,8 @@ class TestRolesInGraphSeedV10(unittest.TestCase):
             set(rows),
             {(role, screen) for role in QM_RIGHTS_ROLES for screen in QM_SCREENS},
         )
-        self.assertEqual(len(rows), 8)
+        self.assertEqual(len(rows), 10)
+        self.assertIn("QM401000", QM_SCREENS)
         self.assertEqual(ROLES_IN_GRAPH_COMPANY_ID, 1)
         self.assertEqual(ROLES_IN_GRAPH_APPLICATION, "/")
         self.assertEqual(ACCESSRIGHTS_DELETE, 4)
@@ -85,14 +86,21 @@ class TestRolesInGraphSeedV10(unittest.TestCase):
         base = {
             "project.xml": b"<Customization/>",
             "Bin/Lab5.QMS.dll": b"MZ",
-            "Pages/QM/QM301000.aspx": b"old-page",
+            "FrontendSources/screen/src/screens/QM/QM301000/QM301000.html": b"old-page",
             "Scripts/CreateQMSTables.sql": b"CREATE TABLE",
         }
         same = zip_digest(blob(**base))
         self.assertEqual(same, zip_digest(blob(**base)))
         self.assertNotEqual(
             same,
-            zip_digest(blob(**{**base, "Pages/QM/QM301000.aspx": b"new-page"})),
+            zip_digest(
+                blob(
+                    **{
+                        **base,
+                        "FrontendSources/screen/src/screens/QM/QM301000/QM301000.html": b"new-page",
+                    }
+                )
+            ),
         )
         self.assertNotEqual(
             same,
@@ -152,6 +160,8 @@ class TestQmsDetailMappingSeedV12(unittest.TestCase):
             patch("lab5_qms.publish._ensure_qm_roles_in_graph"),
             patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=1),
             patch("lab5_qms.publish._ensure_qms_setup_rows"),
+            patch("lab5_qms.publish._ensure_quality_queue_gi"),
+            patch("lab5_qms.publish._ensure_qm_aspx_pages"),
             patch("lab5_qms.publish._recycle_app_pool") as recycle,
         ):
             seed_qm_rights(session)
@@ -168,6 +178,8 @@ class TestQmsDetailMappingSeedV12(unittest.TestCase):
             patch("lab5_qms.publish._ensure_qm_roles_in_graph"),
             patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
             patch("lab5_qms.publish._ensure_qms_setup_rows"),
+            patch("lab5_qms.publish._ensure_quality_queue_gi"),
+            patch("lab5_qms.publish._ensure_qm_aspx_pages"),
             patch("lab5_qms.publish._recycle_app_pool") as recycle,
         ):
             seed_qm_rights(session)
