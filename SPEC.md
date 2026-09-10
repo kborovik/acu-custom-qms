@@ -37,7 +37,7 @@ V6: fail-path — `OverallEvaluation` Fail → `UsrQMSLotStatus` Quarantine + in
 V7: plan-bounds — `MinValue` and `MaxValue` both set → `MinValue` ≤ `MaxValue`; `PlanID` unique uppercase
 V8: publisher-lab5 — namespace `Lab5.QMS`; assembly `Lab5.QMS.dll`; zip `Lab5_QMS_Customization.zip`; zip ! Role `UsersInRoles` `RolesInGraph`
 V9: three-way-link — `POReceipt.ReceiptNbr` + `POReceiptLineSplit.LotSerialNbr` + `QMSInspectionOrder` stay consistent
-V10: post-publish-qm-rights — after `Lab5.QMS` publish, Role `Quality Manager` exists + `RolesInGraph` Accessrights=4 on QM101000 QM201000 QM301000 QM302000 QM401000 for Administrator (CompanyID 1) and Quality Manager; `gmake check` ! skip 403 on those screens; `ACU_USER` ← Quality Manager e2e-only
+V10: post-publish-qm-rights — after `Lab5.QMS` publish, Role `Quality Manager` exists + `RolesInGraph` Accessrights=4 on QM101000 QM201000 QM301000 QM302000 QM401000 for Administrator (CompanyID 1) and Quality Manager; `gmake e2e` ! skip 403 on those screens; `ACU_USER` ← Quality Manager e2e-only
 V11: released-acu-cli — project ! declare `acumatica-cli` (`pyproject.toml` deps / `[tool.uv.sources]` / lock); live e2e + publish + dll SSH invoke PATH `acu` from `uv tool install`; ! `uv run acu`; Python ! `import acumatica_cli`
 V12: inspection-plan-rest-write — PUT `/entity/QMS/22.200.001/InspectionPlan` w/ Tests → 200 create/update plan + test lines; GET `{PlanID}?$expand=Tests` returns those lines; GitOps `config/qms/10-inspection-plans.yaml` applies w/o 500
 V13: stock-item-qms-rest — PUT StockItem persists `UsrQMSInspectionRequired` `UsrQMSInspectionPlanID` `UsrMinShelfLifeDays` on `InventoryItem`; GET same contract returns the three fields; GitOps `config/qms/20-stock-item-qms.yaml` apply sets flags on all six PARTS items w/o SQL
@@ -75,7 +75,7 @@ T24|x|map QMSSetup GET PUT on `QMS/22.200.001` (QM101000)|V14,I.rest,I.dac,I.gra
 T25|x|post-publish seed insert `UsrQMSSetup` (QORD QNCR) per company when missing|V14,I.cmd
 T26|x|e2e prove QMSSetup GET PUT; GitOps PUT Quality Preferences no UI/SQL; PO receipt Release no prior QM101000 Save → draft InspectionOrder not 422|V14,I.rest,T24,T25
 T27|x|add Kit Assembly IN307000 + BOM/issue graph extensions: refuse `UsrQMSLotStatus` QC Hold or Quarantine; allow issue only when Released|V15,V1,I.lot,I.graph
-T28|x|e2e or GitOps scenario fail when QC Hold lot allocated on kit|V15,I.lot,T27
+T28|x|unit-test Kit Assembly IN307000 refuse QC Hold / Quarantine; live e2e ! kit|V15,I.lot,T27
 T29|x|assign QM* Site Map rows to Quality Management workspace in `_project/SiteMap.xml` (not SelectedUI=E folder-only empty Workspaces)|V16,I.screen,I.pkg
 T30|x|e2e prove after publish: modern UI workspace bar or More Items shows Quality Management; Search finds Quality Preferences Inspection Plans Inspection Orders Non-Conformance Reports; Site Map Workspaces populated `QM.00.00.00` `QM.10.10.00` `QM.20.10.00` `QM.30.10.00` `QM.30.20.00`; ScreenId URLs keep working|V16,I.screen,T29
 T31|x|patch `_project/SiteMap.xml` Inventory workspace QM101000 QM201000 QM301000 QM302000 QM401000 (Preferences Profiles Transactions Transactions Inquiries); drop MUIWorkspace QMS + QM000000; ! Configuration membership|V16,I.screen,I.pkg
@@ -85,6 +85,7 @@ T34|x|add GenericInquiryScreen `QM401000` Quality Queue + sitemap Inquiries; row
 T35|x|ship File items `Pages/QM/*.aspx` REST graph host (repo `Pages_QM/`); zip ! `Pages_QM/` members; zip ! `<Page>` items|V17,I.pkg
 T36|x|seed RolesInGraph Accessrights=4 `QM401000` for Administrator and Quality Manager|V10,I.role
 T37|.|e2e prove after publish: Inventory lists Quality Preferences Inspection Plans Inspection Orders Non-Conformance Reports Quality Queue; Search finds five titles; workspace bar ! QMS tile; Configuration ! list those screens; ScreenId URLs QM101000 QM201000 QM301000 QM302000 open Modern; Evaluate ReleaseLot CloseNCR DispositionRTV Notes Files work; Quality Queue lists work rows + drills (one row per order); Stock Items IN202500 shows three Usr* fields; Site Map ! QM000000; zip GenericInquiryScreen QM401000 + Pattern B + Pattern A + File items Pages/QM ASPX + ! Pages_QM/ members + ! `<Page>`|V16,V17,V10,I.screen,I.stock,T31,T32,T33,T34,T35,T36
+T38|.|drop e2e/test_kit_assembly_lot_gate.py; live e2e inventory-only|V16,T28,T37
 
 ## §B BUGS
 id|date|cause|fix
