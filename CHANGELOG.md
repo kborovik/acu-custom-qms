@@ -7,9 +7,24 @@
 - **`gmake deploy`:** pack `Lab5_QMS_Customization.zip`, publish via
   CustomizationApi, and seed Role / `RolesInGraph` / `UsrQMSSetup`. No
   live e2e — that stays `gmake e2e`.
+- **Quality Queue GI (V16):** `QM401000` Generic Inquiry of Inspection
+  Orders still work (lot QC Hold, order not Completed, or related NCR
+  not Closed). One row per order; drills to Inspection Orders and NCR.
+  Zip ships `_project/GenericInquiryScreen_QM401000.xml`.
+- **Modern UI Pattern B / A (V17):** zip ships PXScreen HTML+TS for
+  Quality Preferences, Inspection Plans, Inspection Orders, and
+  Non-Conformance Reports, plus `IN202500_QMS` extensions so Stock Items
+  shows `UsrQMSInspectionRequired`, `UsrQMSInspectionPlanID`, and
+  `UsrMinShelfLifeDays`. REST host `Pages/QM/*.aspx` File items remain.
 
 ### Changed
 
+- **Inventory-hosted QM (V16):** `_project/SiteMap.xml` assigns
+  QM101000 / QM201000 / QM301000 / QM302000 / QM401000 to the system
+  Inventory workspace (Preferences, Profiles, Transactions, Inquiries).
+  Drops the QMS workspace tile and `QM000000`. After publish, Inventory
+  lists those five screens; Search finds the titles; ScreenId URLs open
+  Modern UI.
 - **Recipes:** `gmake test` renamed to `gmake check` (ruff format, ruff
   lint, unit tests; no tenant). `gmake check` renamed to `gmake e2e`
   (`gmake check` + `acu config check` + live e2e). Matches acumatica-cli.
@@ -20,6 +35,7 @@
   rebuild the assembly on the ERP VM when `src/Lab5.QMS` sources (or the
   compiler) change. Dropped `gmake dll` — compile is a dependency of
   those paths, not a recipe.
+- **License:** relicense from PolyForm Noncommercial 1.0.0 to Apache-2.0.
 
 ### Fixed
 
