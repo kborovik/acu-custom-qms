@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [v0.5.0] - 2026-09-10
+
 ### Added
 
 - **`gmake deploy`:** pack `Lab5_QMS_Customization.zip`, publish via
