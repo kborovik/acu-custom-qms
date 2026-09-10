@@ -112,6 +112,18 @@ class TestQualityQueueGI(unittest.TestCase):
         self.assertEqual(maxed.get("Lot Status"), "MAX")
         self.assertEqual(maxed.get("NCR Nbr"), "MAX")
         self.assertEqual(maxed.get("NCR Status"), "MAX")
+        self.assertEqual(maxed.get("Inventory"), "MAX")
+        self.assertEqual(maxed.get("Lot"), "MAX")
+        self.assertEqual(maxed.get("Receipt"), "MAX")
+        self.assertEqual(maxed.get("Vendor"), "MAX")
+        self.assertEqual(maxed.get("Plan"), "MAX")
+        self.assertEqual(maxed.get("Order Status"), "MAX")
+        self.assertIsNone(maxed.get("Order Nbr"))
+        wheres = root.findall(".//{*}GIWhere") or root.findall(".//GIWhere")
+        self.assertEqual(len(wheres), 4)
+        self.assertEqual(wheres[0].get("OpenBrackets"), "(")
+        self.assertEqual(wheres[0].get("CloseBrackets"), ")")
+        self.assertEqual(wheres[3].get("CloseBrackets"), ")")
 
     def test_packed_project_has_generic_inquiry_screen(self) -> None:
         with _zip() as zf:
@@ -141,7 +153,7 @@ class TestQualityQueueGI(unittest.TestCase):
         self.assertIn("DELETE FROM", sql)
         self.assertIn("N'Order.inspectionOrderNbr'", sql)
         self.assertIn("AggregateFunction", sql)
-        self.assertEqual(sql.count("N'MAX'"), 3)
+        self.assertEqual(sql.count("N'MAX'"), 9)
         self.assertIn("N'usrQMSLotStatus'", sql)
         self.assertIn("N'nCRNbr'", sql)
 

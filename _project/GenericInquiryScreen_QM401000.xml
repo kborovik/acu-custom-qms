@@ -51,11 +51,11 @@
             <GIRelation LineNbr="4" ChildTable="Vendor" JoinType="L">
               <GIOn LineNbr="1" ParentField="vendorID" Condition="E" ChildField="bAccountID" Operation="A" />
             </GIRelation>
-            <GIResult LineNbr="2" Field="lotSerialNbr" Caption="Lot" />
-            <GIResult LineNbr="3" Field="receiptNbr" Caption="Receipt" />
-            <GIResult LineNbr="5" Field="planID" Caption="Plan" />
+            <GIResult LineNbr="2" Field="lotSerialNbr" Caption="Lot" AggregateFunction="MAX" />
+            <GIResult LineNbr="3" Field="receiptNbr" Caption="Receipt" AggregateFunction="MAX" />
+            <GIResult LineNbr="5" Field="planID" Caption="Plan" AggregateFunction="MAX" />
             <GIResult LineNbr="7" Field="inspectionOrderNbr" Caption="Order Nbr" DefaultNav="1" NavigationNbr="1" />
-            <GIResult LineNbr="8" Field="status" Caption="Order Status" />
+            <GIResult LineNbr="8" Field="status" Caption="Order Status" AggregateFunction="MAX" />
           </GITable>
           <GITable Alias="Lot" Name="PX.Objects.IN.INLotSerialStatusByCostCenter">
             <GIResult LineNbr="6" Field="usrQMSLotStatus" Caption="Lot Status" AggregateFunction="MAX" />
@@ -65,15 +65,15 @@
             <GIResult LineNbr="10" Field="status" Caption="NCR Status" AggregateFunction="MAX" />
           </GITable>
           <GITable Alias="Item" Name="PX.Objects.IN.InventoryItem">
-            <GIResult LineNbr="1" Field="inventoryCD" Caption="Inventory" />
+            <GIResult LineNbr="1" Field="inventoryCD" Caption="Inventory" AggregateFunction="MAX" />
           </GITable>
           <GITable Alias="Vendor" Name="PX.Objects.AP.Vendor">
-            <GIResult LineNbr="4" Field="acctCD" Caption="Vendor" />
+            <GIResult LineNbr="4" Field="acctCD" Caption="Vendor" AggregateFunction="MAX" />
           </GITable>
-          <GIWhere LineNbr="1" DataFieldName="Lot.usrQMSLotStatus" Condition="E" Value1="QC Hold" Operation="O" />
-          <GIWhere LineNbr="2" DataFieldName="Order.status" Condition="NE" Value1="C" Operation="O" />
-          <GIWhere LineNbr="3" DataFieldName="NCR.nCRNbr" Condition="NN" Operation="A" />
-          <GIWhere LineNbr="4" DataFieldName="NCR.status" Condition="NE" Value1="C" Operation="A" />
+          <GIWhere LineNbr="1" IsActive="1" OpenBrackets="(" DataFieldName="Lot.usrQMSLotStatus" Condition="E" Value1="QC Hold" CloseBrackets=")" Operation="O" />
+          <GIWhere LineNbr="2" IsActive="1" OpenBrackets="(" DataFieldName="Order.status" Condition="NE" Value1="C" CloseBrackets=")" Operation="O" />
+          <GIWhere LineNbr="3" IsActive="1" OpenBrackets="(" DataFieldName="NCR.nCRNbr" Condition="NN" Operation="A" />
+          <GIWhere LineNbr="4" IsActive="1" DataFieldName="NCR.status" Condition="NE" Value1="C" CloseBrackets=")" Operation="A" />
           <GISort LineNbr="1" DataFieldName="Order.inspectionOrderNbr" SortOrder="A" />
           <GIGroupBy LineNbr="1" IsActive="1" DataFieldName="Order.inspectionOrderNbr" />
           <GINavigationScreen ScreenID="QM301000" LineNbr="1">

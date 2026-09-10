@@ -74,7 +74,7 @@ clean: ## Remove compiled DLL, pack zip, and temp artifacts
 	rm -rf src/Lab5.QMS/bin src/Lab5.QMS/obj .ruff_cache .pytest_cache findings .vs $(call rwildcard,,__pycache__)
 	rm -f Lab5_QMS_Customization.zip .release-notes $(call rwildcard,,*.pyc) $(call rwildcard,,.DS_Store) $(call rwildcard,,*.user) $(call rwildcard,,*.suo)
 
-preflight: .venv
+preflight: .venv ## Read-only acu config check against .env
 	$(call need-env)
 	$(call need-acu)
 	$(call header,acu config check)

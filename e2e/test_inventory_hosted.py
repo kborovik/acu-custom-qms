@@ -42,7 +42,7 @@ class TestPublishedPackageV17(unittest.TestCase):
     def setUpClass(cls) -> None:
         ensure_published()
 
-    def test_live_package_has_gi_pattern_b_pattern_a_no_aspx(self) -> None:
+    def test_live_package_has_gi_pattern_b_pattern_a_pages_qm(self) -> None:
         shipped = pack.package_zip(ROOT)
         with zipfile.ZipFile(io.BytesIO(shipped)) as zf:
             shipped_names = set(zf.namelist())
@@ -131,12 +131,23 @@ class TestQualityQueueLiveV16(unittest.TestCase):
             parts = line.split("|")
             obj, field = parts[0], parts[1]
             aggs[f"{obj}.{field}"] = parts[2] if len(parts) > 2 else ""
-        for key in ("Lot.usrQMSLotStatus", "NCR.nCRNbr", "NCR.status"):
+        for key in (
+            "Lot.usrQMSLotStatus",
+            "NCR.nCRNbr",
+            "NCR.status",
+            "Item.inventoryCD",
+            "Order.lotSerialNbr",
+            "Order.receiptNbr",
+            "Vendor.acctCD",
+            "Order.planID",
+            "Order.status",
+        ):
             self.assertEqual(
                 aggs.get(key),
                 "MAX",
                 f"{key} AggregateFunction missing MAX: {aggs}",
             )
+        self.assertNotEqual(aggs.get("Order.inspectionOrderNbr"), "MAX")
         work = (
             f"{DB_NAME}.dbo.UsrQMSInspectionOrder o "
             f"LEFT JOIN {DB_NAME}.dbo.INLotSerialStatusByCostCenter lot "
@@ -152,13 +163,7 @@ class TestQualityQueueLiveV16(unittest.TestCase):
             "OR (n.NCRNbr IS NOT NULL AND n.Status <> N'C'))"
         )
         distinct = sql_lines("SELECT COUNT(DISTINCT o.InspectionOrderNbr) FROM " + work)
-        grouped = sql_lines(
-            "SELECT COUNT(*) FROM (SELECT o.InspectionOrderNbr FROM "
-            + work
-            + " GROUP BY o.InspectionOrderNbr) q"
-        )
         self.assertTrue(distinct)
-        self.assertTrue(grouped)
         if int(distinct[0]) == 0:
             from e2e.test_functional import _order_record, _plan_record, _seed_ready
 
@@ -176,20 +181,10 @@ class TestQualityQueueLiveV16(unittest.TestCase):
             distinct = sql_lines(
                 "SELECT COUNT(DISTINCT o.InspectionOrderNbr) FROM " + work
             )
-            grouped = sql_lines(
-                "SELECT COUNT(*) FROM (SELECT o.InspectionOrderNbr FROM "
-                + work
-                + " GROUP BY o.InspectionOrderNbr) q"
-            )
         self.assertGreater(
             int(distinct[0]),
             0,
             "Quality Queue has no work rows after seeding an open order",
-        )
-        self.assertEqual(
-            int(grouped[0]),
-            int(distinct[0]),
-            "Quality Queue grain is not one row per inspectionOrderNbr",
         )
         ncr_rows = sql_lines(
             "SELECT COUNT(*) FROM (SELECT o.InspectionOrderNbr "
