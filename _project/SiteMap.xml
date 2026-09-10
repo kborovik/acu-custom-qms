@@ -27,27 +27,27 @@
     </layout>
     <data>
       <SiteMap>
-        <row Position="1" Title="Quality Preferences" Url="~/Pages/QM/QM101000.aspx" Expanded="0" IsFolder="0" ScreenID="QM101000" NodeID="2E602620-2D0B-4492-879B-539750C3B711" ParentID="00000000-0000-0000-0000-000000000000">
+        <row Position="1" Title="Quality Preferences" Url="~/Pages/QM/QM101000.aspx" Expanded="0" IsFolder="0" ScreenID="QM101000" SelectedUI="D" NodeID="2E602620-2D0B-4492-879B-539750C3B711" ParentID="00000000-0000-0000-0000-000000000000">
           <MUIScreen IsPortal="0" WorkspaceID="6557C1C6-747E-45BB-9072-54F096598D61" Order="800.0" SubcategoryID="8A93637D-B507-4667-A739-ADAF6FB5F7EA">
             <MUIPinnedScreen IsPinned="0" Username="" IsPortal="0" />
           </MUIScreen>
         </row>
-        <row Position="2" Title="Inspection Plans" Url="~/Pages/QM/QM201000.aspx" Expanded="0" IsFolder="0" ScreenID="QM201000" NodeID="E056CF36-148D-448B-B0C6-55739CBFAF05" ParentID="00000000-0000-0000-0000-000000000000">
+        <row Position="2" Title="Inspection Plans" Url="~/Pages/QM/QM201000.aspx" Expanded="0" IsFolder="0" ScreenID="QM201000" SelectedUI="D" NodeID="E056CF36-148D-448B-B0C6-55739CBFAF05" ParentID="00000000-0000-0000-0000-000000000000">
           <MUIScreen IsPortal="0" WorkspaceID="6557C1C6-747E-45BB-9072-54F096598D61" Order="800.0" SubcategoryID="6D40B0B6-18F4-4139-ADAC-8EC8CB2A17EA">
             <MUIPinnedScreen IsPinned="0" Username="" IsPortal="0" />
           </MUIScreen>
         </row>
-        <row Position="3" Title="Inspection Orders" Url="~/Pages/QM/QM301000.aspx" Expanded="0" IsFolder="0" ScreenID="QM301000" NodeID="D3F000BF-007E-479F-9636-361A17DC7E57" ParentID="00000000-0000-0000-0000-000000000000">
+        <row Position="3" Title="Inspection Orders" Url="~/Pages/QM/QM301000.aspx" Expanded="0" IsFolder="0" ScreenID="QM301000" SelectedUI="D" NodeID="D3F000BF-007E-479F-9636-361A17DC7E57" ParentID="00000000-0000-0000-0000-000000000000">
           <MUIScreen IsPortal="0" WorkspaceID="6557C1C6-747E-45BB-9072-54F096598D61" Order="800.0" SubcategoryID="38D13A6E-3076-42FB-9FCE-62FA33897DA6">
             <MUIPinnedScreen IsPinned="0" Username="" IsPortal="0" />
           </MUIScreen>
         </row>
-        <row Position="4" Title="Non-Conformance Reports" Url="~/Pages/QM/QM302000.aspx" Expanded="0" IsFolder="0" ScreenID="QM302000" NodeID="03BF7A0F-35DB-41F0-B79E-B50319C7BB0D" ParentID="00000000-0000-0000-0000-000000000000">
+        <row Position="4" Title="Non-Conformance Reports" Url="~/Pages/QM/QM302000.aspx" Expanded="0" IsFolder="0" ScreenID="QM302000" SelectedUI="D" NodeID="03BF7A0F-35DB-41F0-B79E-B50319C7BB0D" ParentID="00000000-0000-0000-0000-000000000000">
           <MUIScreen IsPortal="0" WorkspaceID="6557C1C6-747E-45BB-9072-54F096598D61" Order="810.0" SubcategoryID="38D13A6E-3076-42FB-9FCE-62FA33897DA6">
             <MUIPinnedScreen IsPinned="0" Username="" IsPortal="0" />
           </MUIScreen>
         </row>
-        <row Position="5" Title="Quality Queue" Url="~/GenericInquiry/GenericInquiry.aspx?id=9f9483b9-6427-40c6-9c91-96b22c67c28e" Expanded="0" IsFolder="0" ScreenID="QM401000" NodeID="4B71B730-6114-4FA3-86EF-87EBA78E1DB0" ParentID="00000000-0000-0000-0000-000000000000">
+        <row Position="5" Title="Quality Queue" Url="~/GenericInquiry/GenericInquiry.aspx?id=9f9483b9-6427-40c6-9c91-96b22c67c28e" Expanded="0" IsFolder="0" ScreenID="QM401000" SelectedUI="D" NodeID="4B71B730-6114-4FA3-86EF-87EBA78E1DB0" ParentID="00000000-0000-0000-0000-000000000000">
           <MUIScreen IsPortal="0" WorkspaceID="6557C1C6-747E-45BB-9072-54F096598D61" Order="800.0" SubcategoryID="98E86774-69E3-41EA-B94F-EB2C7A8426D4">
             <MUIPinnedScreen IsPinned="0" Username="" IsPortal="0" />
           </MUIScreen>

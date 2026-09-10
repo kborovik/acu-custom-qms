@@ -164,10 +164,10 @@ class TestQmsSetupGraphAndScreen(unittest.TestCase):
             self.assertIn(screen_id, by_screen, screen_id)
             row = by_screen[screen_id]
             self.assertEqual(row.get("Title"), title, screen_id)
-            self.assertNotEqual(
+            self.assertEqual(
                 row.get("SelectedUI"),
-                "E",
-                f"{screen_id} still SelectedUI=E folder-only",
+                "D",
+                f"{screen_id} SelectedUI={row.get('SelectedUI')!r} (want D)",
             )
             mui = row.find("{*}MUIScreen")
             if mui is None:

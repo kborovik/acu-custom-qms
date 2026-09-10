@@ -34,6 +34,7 @@ from lab5_qms.publish import (  # noqa: E402
     expected_qms_detail_mapping_count,
     qms_detail_mapping_sql,
     seed_qm_rights,
+    sitemap_selected_ui_sql,
     zip_digest,
 )
 
@@ -128,6 +129,16 @@ class TestRolesInGraphSeedV10(unittest.TestCase):
         self.assertIn("_recycle_app_pool", publish)
         self.assertIn("_ensure_qms_setup_rows", publish)
         self.assertIn("qms_setup_insert_sql", publish)
+        self.assertIn("_ensure_qm_selected_ui", publish)
+        self.assertIn("_remove_file_item_frontend_leftovers", publish)
+        self.assertIn("_ensure_webpack_no_color", publish)
+        self.assertIn("PerTenantFile", (ROOT / "lab5_qms" / "pack.py").read_text())
+
+    def test_sitemap_selected_ui_sql_clears_classic_lock(self) -> None:
+        sql = sitemap_selected_ui_sql()
+        self.assertIn("SelectedUI = N'D'", sql)
+        self.assertIn("N'QM301000'", sql)
+        self.assertIn("SelectedUI <> N'D'", sql)
 
 
 class TestQmsDetailMappingSeedV12(unittest.TestCase):
@@ -162,6 +173,7 @@ class TestQmsDetailMappingSeedV12(unittest.TestCase):
             patch("lab5_qms.publish._ensure_qms_setup_rows"),
             patch("lab5_qms.publish._ensure_quality_queue_gi"),
             patch("lab5_qms.publish._ensure_qm_aspx_pages"),
+            patch("lab5_qms.publish._ensure_qm_selected_ui"),
             patch("lab5_qms.publish._recycle_app_pool") as recycle,
         ):
             seed_qm_rights(session)
@@ -180,6 +192,7 @@ class TestQmsDetailMappingSeedV12(unittest.TestCase):
             patch("lab5_qms.publish._ensure_qms_setup_rows"),
             patch("lab5_qms.publish._ensure_quality_queue_gi"),
             patch("lab5_qms.publish._ensure_qm_aspx_pages"),
+            patch("lab5_qms.publish._ensure_qm_selected_ui"),
             patch("lab5_qms.publish._recycle_app_pool") as recycle,
         ):
             seed_qm_rights(session)

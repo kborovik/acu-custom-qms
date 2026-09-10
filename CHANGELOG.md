@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Fixed
+
+- **Modern UI compile (V17 / B6):** Pattern B/A HTML+TS now pack as
+  `PerTenantFile` (`screens/QM/<ScreenID>/`, `screens/IN/IN202500/extensions/`)
+  so publish copies them to `customizationScreens/<tenant>` and webpack-emits
+  `Scripts/Screens/<tenant>/<ScreenID>.html`. Ordinary `File` items into
+  `FrontendSources/screen/src/screens` skipped that pipeline, so Inspection
+  Orders stayed Classic ASPX. SiteMap `SelectedUI=D`; post-publish seed
+  clears a Classic lock (`E`) and drops leftover src/screens copies.
+  Pattern A imports `src/screens/IN/IN202500/IN202500` (relative `../IN202500`
+  404s under customizationScreens). Publish sets IIS `NO_COLOR` so webpack
+  progress ANSI does not crash `CstWebsiteStorage.SaveStatus`.
+
 ## [v0.5.0] - 2026-09-10
 
 ### Added

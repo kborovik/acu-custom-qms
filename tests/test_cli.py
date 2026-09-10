@@ -37,6 +37,8 @@ ELAPSED_RE = r"^\d+\.\d{2}s$"
 PUBLISH_IMPORT_STEPS = (
     "drain in-flight publish",
     "digest skip or import",
+    "drop File-item FrontendSources leftovers",
+    "webpack NO_COLOR for SaveStatus",
     "publishBegin",
     "poll publishEnd",
     "wait QMS/22.200.001",
@@ -48,6 +50,7 @@ SEED_STEPS = (
     "seed UsrQMSSetup",
     "seed Quality Queue GI",
     "seed Pages/QM aspx",
+    "seed SiteMap SelectedUI=D",
 )
 
 
@@ -175,7 +178,7 @@ class TestCliDeployPipelineICmd(unittest.TestCase):
                 r = CliRunner().invoke(cli, ["deploy"])
             self.assertEqual(r.exit_code, 0, r.output)
             wp.assert_called_once()
-            pp.assert_called_once_with(dest.read_bytes(), timeout=600.0)
+            pp.assert_called_once_with(dest.read_bytes(), timeout=900.0)
             seed.assert_called_once_with(session)
             self.assertIn("published", r.output)
             self.assertIn("seeded", r.output)
@@ -272,6 +275,8 @@ class TestCliProgressICmdV10(unittest.TestCase):
             patch("lab5_qms.publish.drain_publish"),
             patch("lab5_qms.publish.publish_begin"),
             patch("lab5_qms.publish.wait_published"),
+            patch("lab5_qms.publish._remove_file_item_frontend_leftovers"),
+            patch("lab5_qms.publish._ensure_webpack_no_color"),
             patch("lab5_qms.progress.sys.stderr", err),
         ):
             status = publish_package(zip_bytes)
@@ -279,9 +284,9 @@ class TestCliProgressICmdV10(unittest.TestCase):
         rows = parse_progress(err.getvalue())
         self.assertEqual([row[0] for row in rows], list(PUBLISH_IMPORT_STEPS))
         self.assertEqual(rows[1][2], "import")
-        self.assertEqual(rows[2][1], PACKAGE_NAME)
-        self.assertEqual(rows[4][0], "wait QMS/22.200.001")
-        self.assertEqual(rows[4][1], QMS_ENDPOINT)
+        self.assertEqual(rows[4][1], PACKAGE_NAME)
+        self.assertEqual(rows[6][0], "wait QMS/22.200.001")
+        self.assertEqual(rows[6][1], QMS_ENDPOINT)
         session.customization_import.assert_called_once()
         for row in rows:
             self.assertEqual(row[2], "import" if row[0].startswith("digest") else "ok")
@@ -301,6 +306,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
             patch("lab5_qms.publish._ensure_qms_setup_rows"),
             patch("lab5_qms.publish._ensure_quality_queue_gi"),
             patch("lab5_qms.publish._ensure_qm_aspx_pages"),
+            patch("lab5_qms.publish._ensure_qm_selected_ui"),
             patch("lab5_qms.progress.sys.stderr", err),
         ):
             seed_qm_rights(session)
@@ -312,6 +318,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
         self.assertEqual(rows[3][1], "QORD,QNCR")
         self.assertEqual(rows[4][1], "QM401000")
         self.assertEqual(rows[5][1], "REST")
+        self.assertEqual(rows[6][1], ",".join(QM_SCREENS))
         session.put.assert_called_once()
         for row in rows:
             self.assertEqual(row[2], "ok")
@@ -334,6 +341,8 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 patch("lab5_qms.publish.drain_publish"),
                 patch("lab5_qms.publish.publish_begin"),
                 patch("lab5_qms.publish.wait_published"),
+                patch("lab5_qms.publish._remove_file_item_frontend_leftovers"),
+                patch("lab5_qms.publish._ensure_webpack_no_color"),
                 patch(
                     "lab5_qms.publish.bootstrap_endpoint",
                     return_value="Bootstrap/1.4.0",
@@ -344,6 +353,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 patch("lab5_qms.publish._ensure_qms_setup_rows"),
                 patch("lab5_qms.publish._ensure_quality_queue_gi"),
                 patch("lab5_qms.publish._ensure_qm_aspx_pages"),
+                patch("lab5_qms.publish._ensure_qm_selected_ui"),
             ):
                 r = CliRunner().invoke(cli, ["deploy", "-o", str(dest)])
         self.assertEqual(r.exit_code, 0, r.output)

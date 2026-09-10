@@ -3,7 +3,7 @@ import {
   PXFieldOptions,
   controlConfig,
 } from "client-controls";
-import { IN202500 } from "../IN202500";
+import { IN202500 } from "src/screens/IN/IN202500/IN202500";
 
 export interface IN202500_QMS extends IN202500 {}
 export class IN202500_QMS {}

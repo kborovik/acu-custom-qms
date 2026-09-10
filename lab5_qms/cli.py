@@ -51,7 +51,7 @@ def pack_cmd(output: Path | None) -> None:
 
 
 @cli.command("publish")
-@click.option("--timeout", type=float, default=600.0, show_default=True)
+@click.option("--timeout", type=float, default=900.0, show_default=True)
 def publish_cmd(timeout: float) -> None:
     """Import and publish Lab5.QMS via CustomizationApi (merge with existing)."""
     status = publish.publish_package(pack.package_zip(ensure_dll=True), timeout=timeout)
@@ -74,7 +74,7 @@ def seed_cmd() -> None:
     default=None,
     help="output zip path (default: ./Lab5_QMS_Customization.zip)",
 )
-@click.option("--timeout", type=float, default=600.0, show_default=True)
+@click.option("--timeout", type=float, default=900.0, show_default=True)
 def deploy(output: Path | None, timeout: float) -> None:
     """Pack, CustomizationApi publish, and post-publish Role + EntityMapping + UsrQMSSetup seed."""
     path = _write_zip(output)

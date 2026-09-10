@@ -192,7 +192,7 @@ def wait_published(timeout: float = 600.0, poll: float = 5.0) -> None:
     )
 
 
-def publish_package(zip_bytes: bytes, *, timeout: float = 600.0) -> str:
+def publish_package(zip_bytes: bytes, *, timeout: float = 900.0) -> str:
     """Import + publish Lab5.QMS if the live package digest differs.
 
     Merges with already-published projects (AcuBootstrap must stay).
@@ -217,6 +217,10 @@ def publish_package(zip_bytes: bytes, *, timeout: float = 600.0) -> str:
                 p.result = "import"
         if same:
             return "already published"
+        with progress("drop File-item FrontendSources leftovers", "QM,IN202500_QMS"):
+            _remove_file_item_frontend_leftovers()
+        with progress("webpack NO_COLOR for SaveStatus", "IIS"):
+            _ensure_webpack_no_color()
         with progress("publishBegin", PACKAGE_NAME):
             publish_begin(session, [PACKAGE_NAME])
         deadline = time.monotonic() + timeout
@@ -605,6 +609,85 @@ def _ensure_quality_queue_gi() -> None:
     sqlcmd(quality_queue_seed_sql(company_id()))
 
 
+def sitemap_selected_ui_sql() -> str:
+    """Force QM screens to Default UI (D). E locks Classic for all users."""
+    screens = ", ".join(f"N'{screen}'" for screen in QM_SCREENS)
+    return (
+        f"UPDATE {DB_NAME}.dbo.SiteMap SET SelectedUI = N'D' "
+        f"WHERE ScreenID IN ({screens}) AND SelectedUI <> N'D'"
+    )
+
+
+def _ensure_qm_selected_ui() -> None:
+    """Clear per-form Classic lock (Tools > Switch to Classic UI → SelectedUI=E)."""
+    inst = instance()
+    if not inst.ssh:
+        return
+    sqlcmd(sitemap_selected_ui_sql())
+
+
+def _ensure_webpack_no_color() -> None:
+    """Stop webpack ANSI (0x1B) from crashing CstWebsiteStorage.SaveStatus."""
+    inst = instance()
+    if not inst.ssh:
+        return
+    ssh_run(
+        r"""
+[Environment]::SetEnvironmentVariable('NO_COLOR','1','Machine')
+[Environment]::SetEnvironmentVariable('FORCE_COLOR','0','Machine')
+Import-Module WebAdministration
+$poolName = 'AcumaticaERP'
+$filter = "/system.applicationHost/applicationPools/add[@name='$poolName']/environmentVariables"
+$needed = @{ NO_COLOR = '1'; FORCE_COLOR = '0'; CI = 'true' }
+$changed = $false
+$existing = @{}
+try {
+  $col = Get-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter $filter -Name '.' |
+    Select-Object -ExpandProperty Collection
+  foreach ($e in $col) { $existing[$e.name] = $e.value }
+} catch { }
+foreach ($name in $needed.Keys) {
+  $value = $needed[$name]
+  if ($existing[$name] -eq $value) { continue }
+  $changed = $true
+  if ($existing.ContainsKey($name)) {
+    Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter "$filter/add[@name='$name']" -Name value -Value $value
+  } else {
+    Add-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter $filter -Name '.' -Value @{name=$name; value=$value}
+  }
+}
+if ($changed) {
+  Restart-WebAppPool -Name $poolName
+  Start-Sleep -Seconds 8
+}
+"""
+    )
+
+
+def _remove_file_item_frontend_leftovers() -> None:
+    """Drop OOTB-tree copies from earlier File-item publishes.
+
+    File items landed in src/screens/QM and IN202500/extensions. PerTenantFile
+    webpack also reads that tree; leftovers collide with
+    customizationScreens/<tenant>/screens.
+    """
+    inst = instance()
+    if not inst.ssh:
+        return
+    root = ACU_INSTANCE_PATH.replace("'", "''")
+    ssh_run(
+        "$paths = @("
+        f"'{root}\\FrontendSources\\screen\\src\\screens\\QM',"
+        f"'{root}\\FrontendSources\\screen\\src\\screens\\IN\\IN202500"
+        "\\extensions\\IN202500_QMS.html',"
+        f"'{root}\\FrontendSources\\screen\\src\\screens\\IN\\IN202500"
+        "\\extensions\\IN202500_QMS.ts'"
+        "); foreach ($p in $paths) { "
+        "if (Test-Path -LiteralPath $p) { "
+        "Remove-Item -LiteralPath $p -Recurse -Force } }"
+    )
+
+
 def _ensure_qm_aspx_pages() -> None:
     """Copy stub aspx onto the site. REST QMS entities 500 if Pages/QM/*.aspx is missing."""
     inst = instance()
@@ -656,3 +739,5 @@ def seed_qm_rights(session: AcumaticaClient) -> None:
         _ensure_quality_queue_gi()
     with progress("seed Pages/QM aspx", "REST"):
         _ensure_qm_aspx_pages()
+    with progress("seed SiteMap SelectedUI=D", ",".join(QM_SCREENS)):
+        _ensure_qm_selected_ui()

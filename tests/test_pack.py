@@ -212,10 +212,10 @@ class TestProjectXmlPackedItems(unittest.TestCase):
         for screen in SITEMAP_SCREENS:
             self.assertIn(screen, screens, screen)
             row = screens[screen]
-            self.assertNotEqual(
+            self.assertEqual(
                 row.get("SelectedUI"),
-                "E",
-                f"{screen} still SelectedUI=E folder-only",
+                "D",
+                f"{screen} SelectedUI={row.get('SelectedUI')!r} (want D)",
             )
             mui = row.find("MUIScreen")
             self.assertIsNotNone(mui, f"{screen} missing MUIScreen")
@@ -231,15 +231,18 @@ class TestProjectXmlPackedItems(unittest.TestCase):
         self.assertEqual(screens["QM401000"].get("Url"), QM401000_URL)
         self.assertEqual(root.findall("Page"), [])
         file_paths = {item.get("AppRelativePath") for item in root.findall("File")}
+        per_tenant = {
+            (item.get("AppRelativePath"), item.get("ScreenId"))
+            for item in root.findall("PerTenantFile")
+        }
         for screen in SCREENS:
             for suffix in (".html", ".ts"):
-                rel = (
-                    rf"FrontendSources\screen\src\screens\QM\{screen}\{screen}{suffix}"
-                )
-                self.assertIn(rel, file_paths, rel)
-                self.assertIn(
-                    f"FrontendSources/screen/src/screens/QM/{screen}/{screen}{suffix}",
-                    names,
+                rel = rf"screens\QM\{screen}\{screen}{suffix}"
+                self.assertIn((rel, screen), per_tenant, rel)
+                self.assertIn(f"screens/QM/{screen}/{screen}{suffix}", names, screen)
+                self.assertNotIn(
+                    rf"FrontendSources\screen\src\screens\QM\{screen}\{screen}{suffix}",
+                    file_paths,
                     screen,
                 )
 
@@ -250,6 +253,26 @@ GRAPH_TYPES = {
     "QM301000": "Lab5.QMS.QMSInspectionOrderEntry",
     "QM302000": "Lab5.QMS.QMSNonConformanceEntry",
 }
+
+
+class TestPerTenantFileHelpers(unittest.TestCase):
+    def test_arcname_and_screen_id(self) -> None:
+        qm = Path("FrontendSources/screen/src/screens/QM/QM301000/QM301000.ts")
+        self.assertEqual(pack.per_tenant_arcname(qm), "screens/QM/QM301000/QM301000.ts")
+        self.assertEqual(
+            pack.per_tenant_app_relative(qm),
+            r"screens\QM\QM301000\QM301000.ts",
+        )
+        self.assertEqual(pack.per_tenant_screen_id(qm), "QM301000")
+        ext = Path(
+            "FrontendSources/screen/src/screens/IN/IN202500/extensions/"
+            "IN202500_QMS.html"
+        )
+        self.assertEqual(
+            pack.per_tenant_arcname(ext),
+            "screens/IN/IN202500/extensions/IN202500_QMS.html",
+        )
+        self.assertEqual(pack.per_tenant_screen_id(ext), "IN202500")
 
 
 class TestPatternBModernUi(unittest.TestCase):
@@ -285,6 +308,7 @@ class TestPatternAStockItem(unittest.TestCase):
         ts = (base / "IN202500_QMS.ts").read_text(encoding="utf-8")
         self.assertIn("export class IN202500_QMS", ts)
         self.assertIn("export class InventoryItem", ts)
+        self.assertIn('from "src/screens/IN/IN202500/IN202500"', ts)
         self.assertNotIn("InventoryItemExtension", ts)
         self.assertNotIn("if.bind", html)
         self.assertIn("visible.bind", html)
@@ -298,17 +322,22 @@ class TestPatternAStockItem(unittest.TestCase):
         with _zip() as zf:
             root = _project(zf)
             names = set(zf.namelist())
-        paths = {item.get("AppRelativePath") for item in root.findall("File")}
+        file_paths = {item.get("AppRelativePath") for item in root.findall("File")}
+        per_tenant = {
+            (item.get("AppRelativePath"), item.get("ScreenId"))
+            for item in root.findall("PerTenantFile")
+        }
         for suffix in (".html", ".ts"):
-            rel = (
-                r"FrontendSources\screen\src\screens\IN\IN202500\extensions"
-                rf"\IN202500_QMS{suffix}"
-            )
-            self.assertIn(rel, paths, rel)
+            rel = rf"screens\IN\IN202500\extensions\IN202500_QMS{suffix}"
+            self.assertIn((rel, "IN202500"), per_tenant, rel)
             self.assertIn(
-                "FrontendSources/screen/src/screens/IN/IN202500/extensions/"
-                f"IN202500_QMS{suffix}",
+                f"screens/IN/IN202500/extensions/IN202500_QMS{suffix}",
                 names,
+            )
+            self.assertNotIn(
+                r"FrontendSources\screen\src\screens\IN\IN202500\extensions"
+                rf"\IN202500_QMS{suffix}",
+                file_paths,
             )
 
 
@@ -359,6 +388,10 @@ class TestE2eInventoryHostedT37(unittest.TestCase):
         self.assertIn("QM000000", schema)
         self.assertIn("ScreenId", schema)
         self.assertIn("/Pages/QM/", schema)
+        self.assertIn("PerTenantFile", hosted)
+        self.assertIn("customizationScreens", hosted)
+        self.assertIn("Scripts/Screens", hosted)
+        self.assertIn("SelectedUI", hosted)
 
 
 if __name__ == "__main__":

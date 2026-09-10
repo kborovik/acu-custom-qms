@@ -115,7 +115,7 @@ def run_acu(
     return _run_acu(*args, timeout=timeout, cwd=ROOT)
 
 
-def ensure_published(*, timeout: float = 600.0) -> str:
+def ensure_published(*, timeout: float = 900.0) -> str:
     """Import + publish Lab5.QMS if the live package digest differs.
 
     Merges with already-published projects (AcuBootstrap must stay).

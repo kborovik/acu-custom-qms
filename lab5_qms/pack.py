@@ -1,10 +1,14 @@
 """Pack Lab5_QMS_Customization.zip (T12 / T14 / V8 / I.pkg).
 
 The zip is an Acumatica CustomizationApi import: project.xml holds
-EntityEndpoint, SiteMapNode, Sql, Code, and File items. I.pkg members
-ride as extra zip entries so the package is inspectable without unzipping
-project.xml. Code items use the Source attribute (CstCodeFile shape,
-verified vs 26.101.0225 in acumatica-cli bootstrap).
+EntityEndpoint, SiteMapNode, Sql, PerTenantFile (Modern UI), and File
+items. I.pkg members ride as extra zip entries so the package is
+inspectable without unzipping project.xml. Pattern B/A HTML+TS are
+CstPerTenantFile (AppRelativePath screens\\... ScreenId=...) so publish
+copies them to customizationScreens/<tenant> and webpack-emits
+Scripts/Screens/<tenant>. Ordinary File items into src/screens skip that
+pipeline and leave Classic ASPX. Code items use the Source attribute
+(CstCodeFile shape, verified vs 26.101.0225 in acumatica-cli bootstrap).
 """
 
 from __future__ import annotations
@@ -59,6 +63,8 @@ def package_zip(root: Path | None = None, *, ensure_dll: bool = False) -> bytes:
         zf.writestr("project.xml", xml_bytes)
         for rel in _pkg_members(root):
             zf.write(root / rel, arcname=rel.as_posix())
+        for rel in _frontend_files():
+            zf.write(root / rel, arcname=per_tenant_arcname(rel))
         for src in _aspx_sources(root):
             zf.write(root / src, arcname=_aspx_arcname(src))
         dll = _dll_path(root)
@@ -101,9 +107,12 @@ def _project_xml(root: Path) -> ET.Element:
     )
 
     # No <Page>: 26.101 NRE without path; path=~/Pages/QM/*.aspx is not OOTB.
+    # PerTenantFile, not File: File copies into src/screens and skips the
+    # tenant webpack pipeline (no Scripts/Screens/<tenant>/<ScreenId>.html).
     for rel in _frontend_files():
-        file_el = ET.SubElement(customization, "File")
-        file_el.set("AppRelativePath", _app_relative(rel))
+        item = ET.SubElement(customization, "PerTenantFile")
+        item.set("AppRelativePath", per_tenant_app_relative(rel))
+        item.set("ScreenId", per_tenant_screen_id(rel))
     for src in _aspx_sources(root):
         file_el = ET.SubElement(customization, "File")
         file_el.set("AppRelativePath", _aspx_app_relative(src))
@@ -124,8 +133,7 @@ def _pkg_members(root: Path) -> list[Path]:
         Path("_project") / "GenericInquiryScreen_QM401000.xml",
         Path("Scripts") / "CreateQMSTables.sql",
     ]
-    members.extend(_frontend_files())
-    for path in members:
+    for path in [*members, *_frontend_files()]:
         if not (root / path).is_file():
             raise FileNotFoundError(path)
     return members
@@ -164,6 +172,28 @@ def _frontend_files() -> list[Path]:
     return [*_frontend_qm_files(), *_frontend_in202500_qms()]
 
 
+def per_tenant_arcname(rel: Path) -> str:
+    """Zip member / CstPerTenantFile path: screens/<Mod>/<ScreenID>/..."""
+    parts = rel.parts
+    try:
+        idx = parts.index("screens")
+    except ValueError as exc:
+        raise ValueError(f"frontend path missing screens/: {rel}") from exc
+    return "/".join(parts[idx:])
+
+
+def per_tenant_app_relative(rel: Path) -> str:
+    return "\\".join(per_tenant_arcname(rel).split("/"))
+
+
+def per_tenant_screen_id(rel: Path) -> str:
+    parts = Path(per_tenant_arcname(rel)).parts
+    # screens/<Module>/<ScreenID>/...
+    if len(parts) < 3:
+        raise ValueError(f"frontend path missing screen id: {rel}")
+    return parts[2]
+
+
 def _aspx_sources(root: Path) -> list[Path]:
     files = [
         Path("Pages_QM") / f"{screen}{suffix}"
@@ -182,10 +212,6 @@ def _aspx_arcname(src: Path) -> str:
 
 def _aspx_app_relative(src: Path) -> str:
     return rf"Pages\QM\{src.name}"
-
-
-def _app_relative(rel: Path) -> str:
-    return "\\".join(rel.parts)
 
 
 def _cs_files(root: Path) -> list[Path]:

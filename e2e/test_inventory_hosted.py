@@ -26,14 +26,14 @@ from lab5_qms.publish import ACCESSRIGHTS_DELETE, QM_RIGHTS_ROLES
 
 GI_DESIGN_ID = "9f9483b9-6427-40c6-9c91-96b22c67c28e"
 PATTERN_B = (
-    "FrontendSources/screen/src/screens/QM/QM101000/QM101000.ts",
-    "FrontendSources/screen/src/screens/QM/QM201000/QM201000.ts",
-    "FrontendSources/screen/src/screens/QM/QM301000/QM301000.ts",
-    "FrontendSources/screen/src/screens/QM/QM302000/QM302000.ts",
+    "screens/QM/QM101000/QM101000.ts",
+    "screens/QM/QM201000/QM201000.ts",
+    "screens/QM/QM301000/QM301000.ts",
+    "screens/QM/QM302000/QM302000.ts",
 )
 PATTERN_A = (
-    "FrontendSources/screen/src/screens/IN/IN202500/extensions/IN202500_QMS.html",
-    "FrontendSources/screen/src/screens/IN/IN202500/extensions/IN202500_QMS.ts",
+    "screens/IN/IN202500/extensions/IN202500_QMS.html",
+    "screens/IN/IN202500/extensions/IN202500_QMS.ts",
 )
 
 
@@ -56,12 +56,8 @@ class TestPublishedPackageV17(unittest.TestCase):
         with zipfile.ZipFile(io.BytesIO(content)) as zf:
             names = set(zf.namelist())
             project = ET.fromstring(zf.read("project.xml"))
-            qm301 = zf.read(
-                "FrontendSources/screen/src/screens/QM/QM301000/QM301000.ts"
-            ).decode("utf-8")
-            qm302 = zf.read(
-                "FrontendSources/screen/src/screens/QM/QM302000/QM302000.ts"
-            ).decode("utf-8")
+            qm301 = zf.read("screens/QM/QM301000/QM301000.ts").decode("utf-8")
+            qm302 = zf.read("screens/QM/QM302000/QM302000.ts").decode("utf-8")
         for member in PATTERN_B + PATTERN_A:
             self.assertIn(member, names, member)
         pages_qm = [name for name in names if name.startswith("Pages_QM/")]
@@ -70,6 +66,12 @@ class TestPublishedPackageV17(unittest.TestCase):
             self.assertIn(f"Pages/QM/{screen}.aspx", names, screen)
             self.assertIn(f"Pages/QM/{screen}.aspx.cs", names, screen)
         self.assertEqual(project.findall("Page"), [])
+        per_tenant = {
+            (item.get("AppRelativePath"), item.get("ScreenId"))
+            for item in project.findall("PerTenantFile")
+        }
+        self.assertIn((r"screens\QM\QM301000\QM301000.ts", "QM301000"), per_tenant)
+        self.assertIn((r"screens\QM\QM302000\QM302000.ts", "QM302000"), per_tenant)
         self.assertIn("EvaluateResults: PXActionState", qm301)
         self.assertIn("ReleaseLotDecision: PXActionState", qm301)
         self.assertIn("hideFilesIndicator: false", qm301)
@@ -230,10 +232,11 @@ class TestStockItemModernUiV17(unittest.TestCase):
         ensure_published()
 
     def test_in202500_qms_published_to_instance(self) -> None:
+        tenant = instance().tenant
         path = (
             ACU_INSTANCE_PATH
-            + r"\FrontendSources\screen\src\screens\IN\IN202500\extensions"
-            r"\IN202500_QMS.html"
+            + rf"\FrontendSources\screen\src\customizationScreens\{tenant}"
+            r"\screens\IN\IN202500\extensions\IN202500_QMS.html"
         )
         html = ssh_run(
             "if (Test-Path -LiteralPath '"
@@ -251,9 +254,11 @@ class TestStockItemModernUiV17(unittest.TestCase):
 
     def test_pattern_b_actions_notes_files_on_instance(self) -> None:
         def _read_ts(screen: str) -> str:
+            tenant = instance().tenant
             path = (
                 ACU_INSTANCE_PATH
-                + rf"\FrontendSources\screen\src\screens\QM\{screen}\{screen}.ts"
+                + rf"\FrontendSources\screen\src\customizationScreens\{tenant}"
+                rf"\screens\QM\{screen}\{screen}.ts"
             )
             literal = path.replace("'", "''")
             text = ssh_run(
@@ -274,6 +279,40 @@ class TestStockItemModernUiV17(unittest.TestCase):
         self.assertIn("hideNotesIndicator: false", qm301)
         self.assertIn("CloseNCR: PXActionState", qm302)
         self.assertIn("DispositionRTV: PXActionState", qm302)
+
+    def test_webpack_emitted_tenant_qm_html(self) -> None:
+        tenant = instance().tenant
+        missing = []
+        for screen in ("QM101000", "QM201000", "QM301000", "QM302000"):
+            path = ACU_INSTANCE_PATH + rf"\Scripts\Screens\{tenant}\{screen}.html"
+            literal = path.replace("'", "''")
+            exists = ssh_run(
+                "if (Test-Path -LiteralPath '" + literal + "') { 'YES' } else { 'NO' }"
+            ).strip()
+            if exists != "YES":
+                missing.append(path)
+        self.assertEqual(missing, [], f"webpack missed tenant screens: {missing}")
+        with client() as session:
+            for screen in ("QM101000", "QM201000", "QM301000", "QM302000"):
+                response = session._http.get(f"/Scripts/Screens/{tenant}/{screen}.html")
+                self.assertEqual(
+                    response.status_code,
+                    200,
+                    f"{screen} compiled html -> {response.status_code}",
+                )
+
+    def test_qm_selected_ui_not_classic(self) -> None:
+        cid = company_id()
+        rows = {
+            line.split("|")[0]: line.split("|")[1]
+            for line in sql_lines(
+                "SELECT ScreenID, SelectedUI FROM "
+                f"{DB_NAME}.dbo.SiteMap WHERE ScreenID LIKE N'QM%' "
+                f"AND CompanyID IN (1, {cid})"
+            )
+        }
+        locked = [f"{screen}={ui}" for screen, ui in rows.items() if ui == "E"]
+        self.assertEqual(locked, [], f"QM screens still Classic-locked: {locked}")
 
 
 if __name__ == "__main__":
