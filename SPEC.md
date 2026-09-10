@@ -85,7 +85,7 @@ T34|x|add GenericInquiryScreen `QM401000` Quality Queue + sitemap Inquiries; row
 T35|x|ship File items `Pages/QM/*.aspx` REST graph host (repo `Pages_QM/`); zip ! `Pages_QM/` members; zip ! `<Page>` items|V17,I.pkg
 T36|x|seed RolesInGraph Accessrights=4 `QM401000` for Administrator and Quality Manager|V10,I.role
 T37|x|e2e prove after publish: Inventory lists Quality Preferences Inspection Plans Inspection Orders Non-Conformance Reports Quality Queue; Search finds five titles; workspace bar ! QMS tile; Configuration ! list those screens; ScreenId URLs QM101000 QM201000 QM301000 QM302000 open Modern; Evaluate ReleaseLot CloseNCR DispositionRTV Notes Files work; Quality Queue lists work rows + drills (one row per order); Stock Items IN202500 shows three Usr* fields; Site Map ! QM000000; zip GenericInquiryScreen QM401000 + Pattern B + Pattern A + File items Pages/QM ASPX + ! Pages_QM/ members + ! `<Page>`|V16,V17,V10,I.screen,I.stock,T31,T32,T33,T34,T35,T36
-T38|.|drop e2e/test_kit_assembly_lot_gate.py; live e2e inventory-only|V16,T28,T37
+T38|x|drop e2e/test_kit_assembly_lot_gate.py; live e2e inventory-only|V16,T28,T37
 
 ## §B BUGS
 id|date|cause|fix

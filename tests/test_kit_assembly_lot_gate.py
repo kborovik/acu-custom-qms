@@ -164,5 +164,11 @@ class TestSharedGateWiresIsAllocatable(unittest.TestCase):
         self.assertNotIn('== "QC Hold"', src)
 
 
+class TestLiveE2eInventoryOnlyT38(unittest.TestCase):
+    def test_e2e_kit_assembly_file_dropped(self) -> None:
+        self.assertFalse((ROOT / "e2e" / "test_kit_assembly_lot_gate.py").exists())
+        self.assertTrue((ROOT / "e2e" / "test_inventory_hosted.py").is_file())
+
+
 if __name__ == "__main__":
     unittest.main()
