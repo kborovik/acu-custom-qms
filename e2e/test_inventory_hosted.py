@@ -11,12 +11,16 @@ import xml.etree.ElementTree as ET
 from e2e.helper import (
     DB_NAME,
     PACKAGE_NAME,
+    ROOT,
     client,
     company_id,
+    ensure_numbering_and_role,
     ensure_published,
     instance,
+    qms_put,
     sql_lines,
 )
+from lab5_qms import pack
 from lab5_qms.acu import ACU_INSTANCE_PATH, ssh_run
 from lab5_qms.publish import ACCESSRIGHTS_DELETE, QM_RIGHTS_ROLES
 
@@ -39,12 +43,25 @@ class TestPublishedPackageV17(unittest.TestCase):
         ensure_published()
 
     def test_live_package_has_gi_pattern_b_pattern_a_no_aspx(self) -> None:
+        shipped = pack.package_zip(ROOT)
+        with zipfile.ZipFile(io.BytesIO(shipped)) as zf:
+            shipped_names = set(zf.namelist())
+        self.assertIn(
+            "_project/GenericInquiryScreen_QM401000.xml",
+            shipped_names,
+        )
         with client() as session:
             content = session.customization_project_content(PACKAGE_NAME)
         self.assertIsNotNone(content)
         with zipfile.ZipFile(io.BytesIO(content)) as zf:
             names = set(zf.namelist())
             project = ET.fromstring(zf.read("project.xml"))
+            qm301 = zf.read(
+                "FrontendSources/screen/src/screens/QM/QM301000/QM301000.ts"
+            ).decode("utf-8")
+            qm302 = zf.read(
+                "FrontendSources/screen/src/screens/QM/QM302000/QM302000.ts"
+            ).decode("utf-8")
         for member in PATTERN_B + PATTERN_A:
             self.assertIn(member, names, member)
         pages_qm = [name for name in names if name.startswith("Pages_QM/")]
@@ -53,6 +70,12 @@ class TestPublishedPackageV17(unittest.TestCase):
             self.assertIn(f"Pages/QM/{screen}.aspx", names, screen)
             self.assertIn(f"Pages/QM/{screen}.aspx.cs", names, screen)
         self.assertEqual(project.findall("Page"), [])
+        self.assertIn("EvaluateResults: PXActionState", qm301)
+        self.assertIn("ReleaseLotDecision: PXActionState", qm301)
+        self.assertIn("hideFilesIndicator: false", qm301)
+        self.assertIn("hideNotesIndicator: false", qm301)
+        self.assertIn("CloseNCR: PXActionState", qm302)
+        self.assertIn("DispositionRTV: PXActionState", qm302)
 
 
 class TestQualityQueueLiveV16(unittest.TestCase):
@@ -137,16 +160,39 @@ class TestQualityQueueLiveV16(unittest.TestCase):
         self.assertTrue(distinct)
         self.assertTrue(grouped)
         if int(distinct[0]) == 0:
-            raise unittest.SkipTest(
-                "no inspection-order work rows — seed tenant from acu-gitops-qms"
+            from e2e.test_functional import _order_record, _plan_record, _seed_ready
+
+            with client() as session:
+                reason = _seed_ready(session)
+                if reason:
+                    raise unittest.SkipTest(reason)
+                ensure_numbering_and_role(session)
+                qms_put(session, "InspectionPlan", _plan_record())
+                qms_put(
+                    session,
+                    "InspectionOrder",
+                    _order_record("E2EQQUEUE00001", 0.5, "brown"),
+                )
+            distinct = sql_lines(
+                "SELECT COUNT(DISTINCT o.InspectionOrderNbr) FROM " + work
             )
+            grouped = sql_lines(
+                "SELECT COUNT(*) FROM (SELECT o.InspectionOrderNbr FROM "
+                + work
+                + " GROUP BY o.InspectionOrderNbr) q"
+            )
+        self.assertGreater(
+            int(distinct[0]),
+            0,
+            "Quality Queue has no work rows after seeding an open order",
+        )
         self.assertEqual(
             int(grouped[0]),
             int(distinct[0]),
             "Quality Queue grain is not one row per inspectionOrderNbr",
         )
         ncr_rows = sql_lines(
-            "SELECT COUNT(*) FROM (SELECT o.InspectionOrderNbr, MAX(n.NCRNbr) "
+            "SELECT COUNT(*) FROM (SELECT o.InspectionOrderNbr "
             "FROM " + work + " AND n.NCRNbr IS NOT NULL AND n.Status <> N'C' "
             "GROUP BY o.InspectionOrderNbr) q"
         )
@@ -207,6 +253,32 @@ class TestStockItemModernUiV17(unittest.TestCase):
         self.assertIn("UsrMinShelfLifeDays", html)
         self.assertIn("visible.bind", html)
         self.assertNotIn("if.bind", html)
+
+    def test_pattern_b_actions_notes_files_on_instance(self) -> None:
+        def _read_ts(screen: str) -> str:
+            path = (
+                ACU_INSTANCE_PATH
+                + rf"\FrontendSources\screen\src\screens\QM\{screen}\{screen}.ts"
+            )
+            literal = path.replace("'", "''")
+            text = ssh_run(
+                "if (Test-Path -LiteralPath '"
+                + literal
+                + "') { Get-Content -LiteralPath '"
+                + literal
+                + "' -Raw } else { Write-Output 'MISSING' }"
+            )
+            self.assertNotIn("MISSING", text, path)
+            return text
+
+        qm301 = _read_ts("QM301000")
+        qm302 = _read_ts("QM302000")
+        self.assertIn("EvaluateResults: PXActionState", qm301)
+        self.assertIn("ReleaseLotDecision: PXActionState", qm301)
+        self.assertIn("hideFilesIndicator: false", qm301)
+        self.assertIn("hideNotesIndicator: false", qm301)
+        self.assertIn("CloseNCR: PXActionState", qm302)
+        self.assertIn("DispositionRTV: PXActionState", qm302)
 
 
 if __name__ == "__main__":

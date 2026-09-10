@@ -335,5 +335,31 @@ class TestPackDllFile(unittest.TestCase):
                 dest.write_bytes(previous)
 
 
+class TestE2eInventoryHostedT37(unittest.TestCase):
+    """T37 / V16 / V17: live e2e covers Inventory-hosted QM after publish."""
+
+    def test_e2e_covers_inventory_search_package_and_queue(self) -> None:
+        hosted = (ROOT / "e2e" / "test_inventory_hosted.py").read_text(encoding="utf-8")
+        schema = (ROOT / "e2e" / "test_schema.py").read_text(encoding="utf-8")
+        blob = hosted + schema
+        self.assertIn("GenericInquiryScreen_QM401000.xml", hosted)
+        self.assertIn("EvaluateResults: PXActionState", hosted)
+        self.assertIn("ReleaseLotDecision: PXActionState", hosted)
+        self.assertIn("CloseNCR: PXActionState", hosted)
+        self.assertIn("DispositionRTV: PXActionState", hosted)
+        self.assertIn("hideFilesIndicator: false", hosted)
+        self.assertIn("hideNotesIndicator: false", hosted)
+        self.assertIn("UsrQMSInspectionRequired", hosted)
+        self.assertIn("Pages_QM/", hosted)
+        self.assertIn("Pages/QM/", hosted)
+        self.assertIn('QM_WORKSPACE_TITLE = "Inventory"', schema)
+        self.assertIn("Quality Queue", blob)
+        self.assertIn("Quality Management", schema)
+        self.assertIn("Configuration", schema)
+        self.assertIn("QM000000", schema)
+        self.assertIn("ScreenId", schema)
+        self.assertIn("/Pages/QM/", schema)
+
+
 if __name__ == "__main__":
     unittest.main()
