@@ -3,7 +3,6 @@
 Packs Lab5_QMS_Customization.zip, publishes via CustomizationApi, and
 seeds post-publish Role Quality Manager + RolesInGraph Delete on QM*
 screens + UsrQMSSetup (QORD QNCR) per company when missing.
-Skip then seed then re-check InspectionPlan 200 JSON array (V18 / B8).
 Zip never includes Role, UsersInRoles, or RolesInGraph.
 ACU_USER Quality Manager attach stays e2e-only.
 Never prints ACU_PASSWORD.
