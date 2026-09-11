@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Fixed
+
+- **Publish skip (V18 / B7):** `lab5-qms` publish skips `already published`
+  only when the current tenant `GET /entity/QMS/22.200.001/InspectionPlan`
+  returns 200 (empty list OK). CustomizationApi `getPublished` listing
+  `Lab5.QMS` plus `GET /entity` listing `QMS/22.200.001` is instance-wide
+  leftover after tenant delete+create, so a new tenant would skip import.
+  Missing endpoint now imports, publishes, and waits for InspectionPlan
+  200.
+
 ## [v0.5.1] - 2026-09-10
 
 ### Fixed
