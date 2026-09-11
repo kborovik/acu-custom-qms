@@ -1,8 +1,9 @@
-"""CustomizationApi publish + post-publish QM Role seed (T14 / T16 / T25 / V10 / V8 / V14).
+"""CustomizationApi publish + post-publish QM Role seed (T14 / T16 / T25 / T40 / V10 / V8 / V14 / V18).
 
 Zip never carries Role / UsersInRoles / RolesInGraph (V8 / I.pkg).
 `ACU_USER` Quality Manager attach stays e2e-only (V10).
 Post-publish seed inserts UsrQMSSetup (QORD QNCR) per company when missing (V14).
+Skip already-published only when current-tenant InspectionPlan GET is 200 (V18).
 Never prints ACU_PASSWORD.
 """
 
@@ -35,6 +36,7 @@ from lab5_qms.progress import progress
 PACKAGE_NAME = "Lab5.QMS"
 QMS_ENDPOINT = "QMS/22.200.001"
 QMS_VERSION = "22.200.001"
+INSPECTION_PLAN_PATH = f"/entity/{QMS_ENDPOINT}/InspectionPlan"
 
 QM_SCREENS = ("QM101000", "QM201000", "QM301000", "QM302000", "QM401000")
 QUALITY_MANAGER_ROLE = "Quality Manager"
@@ -181,18 +183,27 @@ def publish_begin(session: AcumaticaClient, names: list[str]) -> None:
         )
 
 
+def qms_endpoint_live(session: AcumaticaClient) -> bool:
+    """True when current-tenant GET InspectionPlan is 200 (empty list OK). V18."""
+    try:
+        response = session._http.get(INSPECTION_PLAN_PATH)
+    except httpx.TransportError, httpx.HTTPError:
+        return False
+    return response.status_code == 200
+
+
 def wait_published(timeout: float = 600.0, poll: float = 5.0) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         try:
             with client() as session:
-                if ("QMS", QMS_VERSION) in session.list_endpoints():
+                if qms_endpoint_live(session):
                     return
         except RuntimeError, httpx.TransportError, httpx.HTTPError:
             pass
         time.sleep(poll)
     raise RuntimeError(
-        f"{QMS_ENDPOINT} did not appear on GET /entity within {timeout:.0f}s"
+        f"{QMS_ENDPOINT} InspectionPlan did not answer 200 within {timeout:.0f}s"
     )
 
 
@@ -216,6 +227,8 @@ def publish_package(zip_bytes: bytes, *, timeout: float = 900.0) -> str:
     Merges with already-published projects (AcuBootstrap must stay).
     IIS webpack env / recycle runs before the CustomizationApi session so a
     pool restart cannot drop the publishBegin cookie.
+    Skip already-published only when current-tenant InspectionPlan GET is 200
+    (V18); getPublished + GET /entity listing are not a live tenant contract.
     """
     description = package_description(zip_bytes)
     with progress("webpack NO_COLOR for SaveStatus", "IIS"):
@@ -229,7 +242,7 @@ def publish_package(zip_bytes: bytes, *, timeout: float = 900.0) -> str:
         digest_same = (
             PACKAGE_NAME in names
             and published_description(session) == description
-            and ("QMS", QMS_VERSION) in session.list_endpoints()
+            and qms_endpoint_live(session)
         )
         skip = (
             digest_same
