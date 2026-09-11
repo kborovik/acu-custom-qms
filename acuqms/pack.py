@@ -13,12 +13,11 @@ from __future__ import annotations
 import argparse
 import io
 import re
-import sys
 import zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from lab5_qms.paths import cs_root, customization_root, sql_file
+from acuqms.paths import cs_root, customization_root, sql_file
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -40,12 +39,10 @@ CLASS_RE = re.compile(
 
 def ensure_assembly(root: Path | None = None) -> Path:
     """Compile Lab5.QMS.dll when QMS/Lab5.QMS C# is newer than the assembly."""
-    root = ROOT if root is None else Path(root)
-    if str(root) not in sys.path:
-        sys.path.insert(0, str(root))
-    import dll
+    from acuqms.dll import ensure_compiled
 
-    return dll.ensure_compiled(root)
+    root = ROOT if root is None else Path(root)
+    return ensure_compiled(root)
 
 
 def package_zip(root: Path | None = None, *, ensure_dll: bool = False) -> bytes:

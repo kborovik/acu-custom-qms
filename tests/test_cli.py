@@ -3,7 +3,7 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""T14 / T15 / T16 / T40 / T41 / T42 / T43 / I.cmd / V8 / V10 / V18 / V19 / V20 / B8 / B9 / B10: Click console script lab5-qms pack+publish+seed+deploy."""
+"""T14 / T15 / T16 / T40 / T41 / T42 / T43 / T47 / I.cmd / V8 / V10 / V18 / V19 / V20 / B8 / B9 / B10: Click console script acuqms build+publish+seed+deploy."""
 
 from __future__ import annotations
 
@@ -23,8 +23,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from lab5_qms.cli import cli  # noqa: E402
-from lab5_qms.publish import (  # noqa: E402
+from acuqms.cli import cli  # noqa: E402
+from acuqms.publish import (  # noqa: E402
     INSPECTION_PLAN_PATH,
     PACKAGE_NAME,
     QM_SCREENS,
@@ -112,28 +112,35 @@ def parse_progress(text: str) -> list[tuple[str, str, str, str]]:
 
 
 class TestProjectScriptsICmd(unittest.TestCase):
-    def test_pyproject_wires_lab5_qms_console_script(self) -> None:
+    def test_pyproject_wires_acuqms_console_script(self) -> None:
         text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
         self.assertIn("[project.scripts]", text)
-        self.assertIn('lab5-qms = "lab5_qms.cli:main"', text)
+        self.assertIn('name = "acuqms"', text)
+        self.assertIn('acuqms = "acuqms.cli:main"', text)
+        self.assertIn('include = ["acuqms*"]', text)
+        self.assertNotIn("lab5-qms", text)
+        self.assertNotIn("lab5_qms", text)
         self.assertIn("[build-system]", text)
         self.assertIn("click>=8.1", text)
         self.assertIn("[dependency-groups]", text)
         self.assertIn("ruff", text)
         self.assertIn("[tool.ruff]", text)
 
-    def test_makefile_pack_uses_lab5_qms(self) -> None:
+    def test_makefile_build_uses_acuqms(self) -> None:
         makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
-        self.assertIn("lab5-qms pack", makefile)
-        self.assertIn("lab5-qms deploy", makefile)
+        self.assertIn("acuqms build", makefile)
+        self.assertIn("acuqms deploy", makefile)
+        self.assertNotIn("lab5-qms", makefile)
         self.assertNotIn("./pack.py", makefile)
 
 
 class TestCliHelpICmd(unittest.TestCase):
-    def test_help_lists_pack_publish_seed_deploy(self) -> None:
+    def test_help_lists_build_publish_seed_deploy(self) -> None:
         r = CliRunner().invoke(cli, ["--help"])
         self.assertEqual(r.exit_code, 0, r.output)
-        self.assertIn("pack", r.output)
+        self.assertIn("build", cli.commands)
+        self.assertNotIn("pack", cli.commands)
+        self.assertIn("build", r.output)
         self.assertIn("publish", r.output)
         self.assertIn("seed", r.output)
         self.assertIn("deploy", r.output)
@@ -143,10 +150,10 @@ class TestCliHelpICmd(unittest.TestCase):
 
     def test_naked_emits_help_not_deploy(self) -> None:
         with (
-            patch("lab5_qms.cli.pack.write_package") as wp,
-            patch("lab5_qms.cli.publish.publish_package") as pp,
-            patch("lab5_qms.cli.publish.seed_qm_rights") as seed,
-            patch("lab5_qms.cli.publish.client") as client,
+            patch("acuqms.cli.pack.write_package") as wp,
+            patch("acuqms.cli.publish.publish_package") as pp,
+            patch("acuqms.cli.publish.seed_qm_rights") as seed,
+            patch("acuqms.cli.publish.client") as client,
         ):
             r = CliRunner().invoke(cli, [])
         self.assertEqual(r.exit_code, 0, r.output)
@@ -155,7 +162,7 @@ class TestCliHelpICmd(unittest.TestCase):
         seed.assert_not_called()
         client.assert_not_called()
         self.assertIn("Usage:", r.output)
-        self.assertIn("pack", r.output)
+        self.assertIn("build", r.output)
         self.assertIn("publish", r.output)
         self.assertIn("seed", r.output)
         self.assertIn("deploy", r.output)
@@ -165,16 +172,16 @@ class TestCliPackV8(unittest.TestCase):
     def test_pack_ensures_assembly(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             dest = Path(tmp) / "Lab5_QMS_Customization.zip"
-            with patch("lab5_qms.pack.ensure_assembly") as ensure:
-                r = CliRunner().invoke(cli, ["pack", "-o", str(dest)])
+            with patch("acuqms.pack.ensure_assembly") as ensure:
+                r = CliRunner().invoke(cli, ["build", "-o", str(dest)])
             self.assertEqual(r.exit_code, 0, r.output)
             ensure.assert_called_once()
 
     def test_pack_writes_zip_without_role_rows(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             dest = Path(tmp) / "Lab5_QMS_Customization.zip"
-            with patch("lab5_qms.pack.ensure_assembly"):
-                r = CliRunner().invoke(cli, ["pack", "-o", str(dest)])
+            with patch("acuqms.pack.ensure_assembly"):
+                r = CliRunner().invoke(cli, ["build", "-o", str(dest)])
             self.assertEqual(r.exit_code, 0, r.output)
             self.assertTrue(dest.is_file())
             with zipfile.ZipFile(dest) as zf:
@@ -201,14 +208,14 @@ class TestCliDeployPipelineICmd(unittest.TestCase):
             ctx.__enter__.return_value = session
             ctx.__exit__.return_value = None
             with (
-                patch("lab5_qms.cli.pack.write_package", return_value=dest) as wp,
+                patch("acuqms.cli.pack.write_package", return_value=dest) as wp,
                 patch(
-                    "lab5_qms.cli.publish.publish_package",
+                    "acuqms.cli.publish.publish_package",
                     return_value="published",
                 ) as pp,
-                patch("lab5_qms.cli.publish.seed_qm_rights") as seed,
-                patch("lab5_qms.cli.publish.client", return_value=ctx),
-                patch("lab5_qms.cli.publish.qms_endpoint_live", return_value=True),
+                patch("acuqms.cli.publish.seed_qm_rights") as seed,
+                patch("acuqms.cli.publish.client", return_value=ctx),
+                patch("acuqms.cli.publish.qms_endpoint_live", return_value=True),
             ):
                 r = CliRunner().invoke(cli, ["deploy"])
             self.assertEqual(r.exit_code, 0, r.output)
@@ -228,14 +235,14 @@ class TestCliDeployPipelineICmd(unittest.TestCase):
             ctx.__enter__.return_value = session
             ctx.__exit__.return_value = None
             with (
-                patch("lab5_qms.cli.pack.write_package", return_value=dest),
+                patch("acuqms.cli.pack.write_package", return_value=dest),
                 patch(
-                    "lab5_qms.cli.publish.publish_package",
+                    "acuqms.cli.publish.publish_package",
                     side_effect=["already published", "published"],
                 ) as pp,
-                patch("lab5_qms.cli.publish.seed_qm_rights") as seed,
-                patch("lab5_qms.cli.publish.client", return_value=ctx),
-                patch("lab5_qms.cli.publish.qms_endpoint_live", return_value=False),
+                patch("acuqms.cli.publish.seed_qm_rights") as seed,
+                patch("acuqms.cli.publish.client", return_value=ctx),
+                patch("acuqms.cli.publish.qms_endpoint_live", return_value=False),
             ):
                 r = CliRunner().invoke(cli, ["deploy"])
         self.assertEqual(r.exit_code, 0, r.output)
@@ -250,7 +257,7 @@ class TestCliDeployPipelineICmd(unittest.TestCase):
 
 class TestSeedQmRightsV10(unittest.TestCase):
     def test_seed_function_has_no_acu_user_attach(self) -> None:
-        src = (ROOT / "lab5_qms" / "publish.py").read_text(encoding="utf-8")
+        src = (ROOT / "acuqms" / "publish.py").read_text(encoding="utf-8")
         start = src.index("def seed_qm_rights")
         body = src[start:]
         self.assertIn("QUALITY_MANAGER_ROLE", body)
@@ -268,8 +275,8 @@ class TestSeedQmRightsV10(unittest.TestCase):
         ctx.__enter__.return_value = session
         ctx.__exit__.return_value = None
         with (
-            patch("lab5_qms.cli.publish.client", return_value=ctx),
-            patch("lab5_qms.cli.publish.seed_qm_rights") as seed,
+            patch("acuqms.cli.publish.client", return_value=ctx),
+            patch("acuqms.cli.publish.seed_qm_rights") as seed,
         ):
             r = CliRunner().invoke(cli, ["seed"])
         self.assertEqual(r.exit_code, 0, r.output)
@@ -279,7 +286,7 @@ class TestSeedQmRightsV10(unittest.TestCase):
 
 class TestCliProgressICmdV10(unittest.TestCase):
     def test_progress_line_shape(self) -> None:
-        from lab5_qms.progress import emit
+        from acuqms.progress import emit
 
         buf = io.StringIO()
         emit("pack zip", "Lab5_QMS_Customization.zip", "ok", 0.12, file=buf)
@@ -292,8 +299,8 @@ class TestCliProgressICmdV10(unittest.TestCase):
     def test_pack_progress_on_stderr_stdout_is_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             dest = Path(tmp) / "Lab5_QMS_Customization.zip"
-            with patch("lab5_qms.pack.ensure_assembly"):
-                r = CliRunner().invoke(cli, ["pack", "-o", str(dest)])
+            with patch("acuqms.pack.ensure_assembly"):
+                r = CliRunner().invoke(cli, ["build", "-o", str(dest)])
         self.assertEqual(r.exit_code, 0, r.output)
         self.assertEqual(r.stdout.strip(), str(dest))
         self.assertNotIn("\t", r.stdout)
@@ -309,19 +316,19 @@ class TestCliProgressICmdV10(unittest.TestCase):
         session = _session_with_plan(plan_status=200)
         err = io.StringIO()
         with (
-            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
-            patch("lab5_qms.publish.drain_publish"),
-            patch("lab5_qms.publish.published_description", return_value=desc),
-            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.drain_publish"),
+            patch("acuqms.publish.published_description", return_value=desc),
+            patch("acuqms.publish._ensure_webpack_no_color", return_value=False),
             patch(
-                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                "acuqms.publish._remove_file_item_frontend_leftovers",
                 return_value=False,
             ),
             patch(
-                "lab5_qms.publish._webpack_tenant_screens_missing",
+                "acuqms.publish._webpack_tenant_screens_missing",
                 return_value=False,
             ),
-            patch("lab5_qms.progress.sys.stderr", err),
+            patch("acuqms.progress.sys.stderr", err),
         ):
             status = publish_package(zip_bytes)
         self.assertEqual(status, "already published")
@@ -348,22 +355,22 @@ class TestCliProgressICmdV10(unittest.TestCase):
             return _session_ctx(session)
 
         with (
-            patch("lab5_qms.publish.client", side_effect=make_client),
-            patch("lab5_qms.publish.drain_publish"),
-            patch("lab5_qms.publish.publish_begin"),
-            patch("lab5_qms.publish.wait_published"),
-            patch("lab5_qms.publish.published_description", return_value=desc),
-            patch("lab5_qms.publish._ensure_webpack_no_color", side_effect=webpack),
+            patch("acuqms.publish.client", side_effect=make_client),
+            patch("acuqms.publish.drain_publish"),
+            patch("acuqms.publish.publish_begin"),
+            patch("acuqms.publish.wait_published"),
+            patch("acuqms.publish.published_description", return_value=desc),
+            patch("acuqms.publish._ensure_webpack_no_color", side_effect=webpack),
             patch(
-                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                "acuqms.publish._remove_file_item_frontend_leftovers",
                 return_value=False,
             ),
             patch(
-                "lab5_qms.publish._webpack_tenant_screens_missing",
+                "acuqms.publish._webpack_tenant_screens_missing",
                 return_value=True,
             ),
-            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
-            patch("lab5_qms.progress.sys.stderr", io.StringIO()),
+            patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
         self.assertEqual(status, "published")
@@ -377,22 +384,22 @@ class TestCliProgressICmdV10(unittest.TestCase):
         desc = package_description(zip_bytes)
         session = _session_with_plan(plan_status=200)
         with (
-            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
-            patch("lab5_qms.publish.drain_publish"),
-            patch("lab5_qms.publish.publish_begin"),
-            patch("lab5_qms.publish.wait_published"),
-            patch("lab5_qms.publish.published_description", return_value=desc),
-            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=True),
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.drain_publish"),
+            patch("acuqms.publish.publish_begin"),
+            patch("acuqms.publish.wait_published"),
+            patch("acuqms.publish.published_description", return_value=desc),
+            patch("acuqms.publish._ensure_webpack_no_color", return_value=True),
             patch(
-                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                "acuqms.publish._remove_file_item_frontend_leftovers",
                 return_value=False,
             ),
             patch(
-                "lab5_qms.publish._webpack_tenant_screens_missing",
+                "acuqms.publish._webpack_tenant_screens_missing",
                 return_value=False,
             ),
-            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
-            patch("lab5_qms.progress.sys.stderr", io.StringIO()),
+            patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
         self.assertEqual(status, "published")
@@ -403,21 +410,21 @@ class TestCliProgressICmdV10(unittest.TestCase):
         session = _session_with_plan(published=False, plan_status=404)
         err = io.StringIO()
         with (
-            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
-            patch("lab5_qms.publish.drain_publish"),
-            patch("lab5_qms.publish.publish_begin"),
-            patch("lab5_qms.publish.wait_published"),
-            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.drain_publish"),
+            patch("acuqms.publish.publish_begin"),
+            patch("acuqms.publish.wait_published"),
+            patch("acuqms.publish._ensure_webpack_no_color", return_value=False),
             patch(
-                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                "acuqms.publish._remove_file_item_frontend_leftovers",
                 return_value=False,
             ),
             patch(
-                "lab5_qms.publish._webpack_tenant_screens_missing",
+                "acuqms.publish._webpack_tenant_screens_missing",
                 return_value=False,
             ),
-            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
-            patch("lab5_qms.progress.sys.stderr", err),
+            patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("acuqms.progress.sys.stderr", err),
         ):
             status = publish_package(zip_bytes)
         self.assertEqual(status, "published")
@@ -442,19 +449,19 @@ class TestCliProgressICmdV10(unittest.TestCase):
         desc = package_description(zip_bytes)
         session = _session_with_plan(plan_status=200)
         with (
-            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
-            patch("lab5_qms.publish.drain_publish"),
-            patch("lab5_qms.publish.published_description", return_value=desc),
-            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.drain_publish"),
+            patch("acuqms.publish.published_description", return_value=desc),
+            patch("acuqms.publish._ensure_webpack_no_color", return_value=False),
             patch(
-                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                "acuqms.publish._remove_file_item_frontend_leftovers",
                 return_value=False,
             ),
             patch(
-                "lab5_qms.publish._webpack_tenant_screens_missing",
+                "acuqms.publish._webpack_tenant_screens_missing",
                 return_value=False,
             ),
-            patch("lab5_qms.progress.sys.stderr", io.StringIO()),
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
         self.assertEqual(status, "already published")
@@ -469,22 +476,22 @@ class TestCliProgressICmdV10(unittest.TestCase):
         desc = package_description(zip_bytes)
         session = _session_with_plan(plan_status=404)
         with (
-            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
-            patch("lab5_qms.publish.drain_publish"),
-            patch("lab5_qms.publish.publish_begin"),
-            patch("lab5_qms.publish.wait_published") as wait,
-            patch("lab5_qms.publish.published_description", return_value=desc),
-            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.drain_publish"),
+            patch("acuqms.publish.publish_begin"),
+            patch("acuqms.publish.wait_published") as wait,
+            patch("acuqms.publish.published_description", return_value=desc),
+            patch("acuqms.publish._ensure_webpack_no_color", return_value=False),
             patch(
-                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                "acuqms.publish._remove_file_item_frontend_leftovers",
                 return_value=False,
             ),
             patch(
-                "lab5_qms.publish._webpack_tenant_screens_missing",
+                "acuqms.publish._webpack_tenant_screens_missing",
                 return_value=False,
             ),
-            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
-            patch("lab5_qms.progress.sys.stderr", io.StringIO()),
+            patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
         self.assertEqual(status, "published")
@@ -501,22 +508,22 @@ class TestCliProgressICmdV10(unittest.TestCase):
         session = _session_with_plan(plan_status=200)
         session._http.get.return_value = _plan_get(200, html=True)
         with (
-            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
-            patch("lab5_qms.publish.drain_publish"),
-            patch("lab5_qms.publish.publish_begin"),
-            patch("lab5_qms.publish.wait_published") as wait,
-            patch("lab5_qms.publish.published_description", return_value=desc),
-            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.drain_publish"),
+            patch("acuqms.publish.publish_begin"),
+            patch("acuqms.publish.wait_published") as wait,
+            patch("acuqms.publish.published_description", return_value=desc),
+            patch("acuqms.publish._ensure_webpack_no_color", return_value=False),
             patch(
-                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                "acuqms.publish._remove_file_item_frontend_leftovers",
                 return_value=False,
             ),
             patch(
-                "lab5_qms.publish._webpack_tenant_screens_missing",
+                "acuqms.publish._webpack_tenant_screens_missing",
                 return_value=False,
             ),
-            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
-            patch("lab5_qms.progress.sys.stderr", io.StringIO()),
+            patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
         self.assertEqual(status, "published")
@@ -533,22 +540,22 @@ class TestCliProgressICmdV10(unittest.TestCase):
             200, {"message": "Endpoint [QMS/22.200.001] not found"}
         )
         with (
-            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
-            patch("lab5_qms.publish.drain_publish"),
-            patch("lab5_qms.publish.publish_begin"),
-            patch("lab5_qms.publish.wait_published") as wait,
-            patch("lab5_qms.publish.published_description", return_value=desc),
-            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.drain_publish"),
+            patch("acuqms.publish.publish_begin"),
+            patch("acuqms.publish.wait_published") as wait,
+            patch("acuqms.publish.published_description", return_value=desc),
+            patch("acuqms.publish._ensure_webpack_no_color", return_value=False),
             patch(
-                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                "acuqms.publish._remove_file_item_frontend_leftovers",
                 return_value=False,
             ),
             patch(
-                "lab5_qms.publish._webpack_tenant_screens_missing",
+                "acuqms.publish._webpack_tenant_screens_missing",
                 return_value=False,
             ),
-            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
-            patch("lab5_qms.progress.sys.stderr", io.StringIO()),
+            patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
         self.assertEqual(status, "published")
@@ -615,10 +622,10 @@ class TestCliProgressICmdV10(unittest.TestCase):
         """V18: GET /entity listing QMS is leftover; wait needs InspectionPlan 200."""
         session = _session_with_plan(plan_status=404)
         with (
-            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
-            patch("lab5_qms.publish.time.sleep"),
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.time.sleep"),
             patch(
-                "lab5_qms.publish.time.monotonic",
+                "acuqms.publish.time.monotonic",
                 side_effect=[0.0, 0.0, 10.0],
             ),
         ):
@@ -632,7 +639,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
     def test_wait_published_returns_when_inspection_plan_200(self) -> None:
         session = _session_with_plan(plan_status=200)
         session.list_endpoints.return_value = []
-        with patch("lab5_qms.publish.client", return_value=_session_ctx(session)):
+        with patch("acuqms.publish.client", return_value=_session_ctx(session)):
             wait_published(timeout=5.0, poll=1.0)
         session._http.get.assert_called_with(INSPECTION_PLAN_PATH)
 
@@ -641,17 +648,17 @@ class TestCliProgressICmdV10(unittest.TestCase):
         err = io.StringIO()
         with (
             patch(
-                "lab5_qms.publish.bootstrap_endpoint",
+                "acuqms.publish.bootstrap_endpoint",
                 return_value="Bootstrap/1.4.0",
             ),
-            patch("lab5_qms.publish._ensure_quality_manager_role_row"),
-            patch("lab5_qms.publish._ensure_qm_roles_in_graph"),
-            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
-            patch("lab5_qms.publish._ensure_qms_setup_rows"),
-            patch("lab5_qms.publish._ensure_quality_queue_gi"),
-            patch("lab5_qms.publish._ensure_qm_aspx_pages"),
-            patch("lab5_qms.publish._ensure_qm_selected_ui"),
-            patch("lab5_qms.progress.sys.stderr", err),
+            patch("acuqms.publish._ensure_quality_manager_role_row"),
+            patch("acuqms.publish._ensure_qm_roles_in_graph"),
+            patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("acuqms.publish._ensure_qms_setup_rows"),
+            patch("acuqms.publish._ensure_quality_queue_gi"),
+            patch("acuqms.publish._ensure_qm_aspx_pages"),
+            patch("acuqms.publish._ensure_qm_selected_ui"),
+            patch("acuqms.progress.sys.stderr", err),
         ):
             seed_qm_rights(session)
         rows = parse_progress(err.getvalue())
@@ -675,35 +682,35 @@ class TestCliProgressICmdV10(unittest.TestCase):
             dest.write_bytes(zip_bytes)
             session = _session_with_plan(published=False, plan_status=404)
             with (
-                patch("lab5_qms.cli.pack.write_package", return_value=dest),
+                patch("acuqms.cli.pack.write_package", return_value=dest),
                 patch(
-                    "lab5_qms.publish.client",
+                    "acuqms.publish.client",
                     return_value=_session_ctx(session),
                 ),
-                patch("lab5_qms.publish.drain_publish"),
-                patch("lab5_qms.publish.publish_begin"),
-                patch("lab5_qms.publish.wait_published"),
-                patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+                patch("acuqms.publish.drain_publish"),
+                patch("acuqms.publish.publish_begin"),
+                patch("acuqms.publish.wait_published"),
+                patch("acuqms.publish._ensure_webpack_no_color", return_value=False),
                 patch(
-                    "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                    "acuqms.publish._remove_file_item_frontend_leftovers",
                     return_value=False,
                 ),
                 patch(
-                    "lab5_qms.publish._webpack_tenant_screens_missing",
+                    "acuqms.publish._webpack_tenant_screens_missing",
                     return_value=False,
                 ),
                 patch(
-                    "lab5_qms.publish.bootstrap_endpoint",
+                    "acuqms.publish.bootstrap_endpoint",
                     return_value="Bootstrap/1.4.0",
                 ),
-                patch("lab5_qms.publish._ensure_quality_manager_role_row"),
-                patch("lab5_qms.publish._ensure_qm_roles_in_graph"),
-                patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
-                patch("lab5_qms.publish._ensure_qms_setup_rows"),
-                patch("lab5_qms.publish._ensure_quality_queue_gi"),
-                patch("lab5_qms.publish._ensure_qm_aspx_pages"),
-                patch("lab5_qms.publish._ensure_qm_selected_ui"),
-                patch("lab5_qms.publish.qms_endpoint_live", return_value=True),
+                patch("acuqms.publish._ensure_quality_manager_role_row"),
+                patch("acuqms.publish._ensure_qm_roles_in_graph"),
+                patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
+                patch("acuqms.publish._ensure_qms_setup_rows"),
+                patch("acuqms.publish._ensure_quality_queue_gi"),
+                patch("acuqms.publish._ensure_qm_aspx_pages"),
+                patch("acuqms.publish._ensure_qm_selected_ui"),
+                patch("acuqms.publish.qms_endpoint_live", return_value=True),
             ):
                 r = CliRunner().invoke(cli, ["deploy", "-o", str(dest)])
         self.assertEqual(r.exit_code, 0, r.output)
@@ -721,7 +728,7 @@ class TestV19_WaitPublished600s(unittest.TestCase):
     def test_wait_published_default_is_600_not_120(self) -> None:
         params = inspect.signature(wait_published).parameters
         self.assertEqual(params["timeout"].default, 600.0)
-        src = (ROOT / "lab5_qms" / "publish.py").read_text(encoding="utf-8")
+        src = (ROOT / "acuqms" / "publish.py").read_text(encoding="utf-8")
         self.assertNotIn("wait_published(timeout=120", src)
         self.assertIn("wait_published()", src)
 
@@ -729,21 +736,21 @@ class TestV19_WaitPublished600s(unittest.TestCase):
         zip_bytes = _tiny_zip()
         session = _session_with_plan(published=False, plan_status=404)
         with (
-            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
-            patch("lab5_qms.publish.drain_publish"),
-            patch("lab5_qms.publish.publish_begin"),
-            patch("lab5_qms.publish.wait_published") as wait,
-            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.drain_publish"),
+            patch("acuqms.publish.publish_begin"),
+            patch("acuqms.publish.wait_published") as wait,
+            patch("acuqms.publish._ensure_webpack_no_color", return_value=False),
             patch(
-                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                "acuqms.publish._remove_file_item_frontend_leftovers",
                 return_value=False,
             ),
             patch(
-                "lab5_qms.publish._webpack_tenant_screens_missing",
+                "acuqms.publish._webpack_tenant_screens_missing",
                 return_value=False,
             ),
-            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
-            patch("lab5_qms.progress.sys.stderr", io.StringIO()),
+            patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes, timeout=90.0)
         self.assertEqual(status, "published")
@@ -753,19 +760,19 @@ class TestV19_WaitPublished600s(unittest.TestCase):
         inst = MagicMock()
         inst.ssh = "Administrator@host"
         with (
-            patch("lab5_qms.publish.instance", return_value=inst),
-            patch("lab5_qms.publish.ssh_run"),
-            patch("lab5_qms.publish.wait_published") as wait,
+            patch("acuqms.publish.instance", return_value=inst),
+            patch("acuqms.publish.ssh_run"),
+            patch("acuqms.publish.wait_published") as wait,
         ):
             _recycle_app_pool()
         wait.assert_called_once_with()
 
     def _timeout_after_one_poll(self, session: MagicMock) -> str:
         with (
-            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
-            patch("lab5_qms.publish.time.sleep"),
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.time.sleep"),
             patch(
-                "lab5_qms.publish.time.monotonic",
+                "acuqms.publish.time.monotonic",
                 side_effect=[0.0, 0.0, 10.0],
             ),
         ):
@@ -819,22 +826,22 @@ class TestV20_EntityMappingBeforeWait(unittest.TestCase):
             order.append("wait")
 
         with (
-            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
-            patch("lab5_qms.publish.drain_publish"),
-            patch("lab5_qms.publish.publish_begin"),
-            patch("lab5_qms.publish.wait_published", side_effect=wait),
-            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.drain_publish"),
+            patch("acuqms.publish.publish_begin"),
+            patch("acuqms.publish.wait_published", side_effect=wait),
+            patch("acuqms.publish._ensure_webpack_no_color", return_value=False),
             patch(
-                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                "acuqms.publish._remove_file_item_frontend_leftovers",
                 return_value=False,
             ),
             patch(
-                "lab5_qms.publish._webpack_tenant_screens_missing",
+                "acuqms.publish._webpack_tenant_screens_missing",
                 return_value=False,
             ),
-            patch("lab5_qms.publish._ensure_qms_detail_mappings", side_effect=maps),
-            patch("lab5_qms.publish._recycle_app_pool", side_effect=recycle),
-            patch("lab5_qms.progress.sys.stderr", io.StringIO()),
+            patch("acuqms.publish._ensure_qms_detail_mappings", side_effect=maps),
+            patch("acuqms.publish._recycle_app_pool", side_effect=recycle),
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             try:
                 status: str | BaseException = publish_package(zip_bytes)
@@ -867,21 +874,21 @@ class TestV20_EntityMappingBeforeWait(unittest.TestCase):
         desc = package_description(zip_bytes)
         session = _session_with_plan(plan_status=200)
         with (
-            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
-            patch("lab5_qms.publish.drain_publish"),
-            patch("lab5_qms.publish.published_description", return_value=desc),
-            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.drain_publish"),
+            patch("acuqms.publish.published_description", return_value=desc),
+            patch("acuqms.publish._ensure_webpack_no_color", return_value=False),
             patch(
-                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                "acuqms.publish._remove_file_item_frontend_leftovers",
                 return_value=False,
             ),
             patch(
-                "lab5_qms.publish._webpack_tenant_screens_missing",
+                "acuqms.publish._webpack_tenant_screens_missing",
                 return_value=False,
             ),
-            patch("lab5_qms.publish._ensure_qms_detail_mappings") as maps,
-            patch("lab5_qms.publish.wait_published") as wait,
-            patch("lab5_qms.progress.sys.stderr", io.StringIO()),
+            patch("acuqms.publish._ensure_qms_detail_mappings") as maps,
+            patch("acuqms.publish.wait_published") as wait,
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
         self.assertEqual(status, "already published")
@@ -889,7 +896,7 @@ class TestV20_EntityMappingBeforeWait(unittest.TestCase):
         wait.assert_not_called()
 
     def test_publish_package_source_maps_before_wait(self) -> None:
-        src = (ROOT / "lab5_qms" / "publish.py").read_text(encoding="utf-8")
+        src = (ROOT / "acuqms" / "publish.py").read_text(encoding="utf-8")
         body = src[
             src.index("def publish_package") : src.index("\ndef roles_in_graph_rows")
         ]
@@ -920,21 +927,21 @@ class TestV20_EntityMappingBeforeWait(unittest.TestCase):
 
         wait_session._http.get.side_effect = tracking_get
         with (
-            patch("lab5_qms.publish.client", side_effect=make_client),
-            patch("lab5_qms.publish.drain_publish"),
-            patch("lab5_qms.publish.publish_begin"),
-            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+            patch("acuqms.publish.client", side_effect=make_client),
+            patch("acuqms.publish.drain_publish"),
+            patch("acuqms.publish.publish_begin"),
+            patch("acuqms.publish._ensure_webpack_no_color", return_value=False),
             patch(
-                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                "acuqms.publish._remove_file_item_frontend_leftovers",
                 return_value=False,
             ),
             patch(
-                "lab5_qms.publish._webpack_tenant_screens_missing",
+                "acuqms.publish._webpack_tenant_screens_missing",
                 return_value=False,
             ),
-            patch("lab5_qms.publish._ensure_qms_detail_mappings", side_effect=maps),
-            patch("lab5_qms.publish._recycle_app_pool"),
-            patch("lab5_qms.progress.sys.stderr", io.StringIO()),
+            patch("acuqms.publish._ensure_qms_detail_mappings", side_effect=maps),
+            patch("acuqms.publish._recycle_app_pool"),
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
         self.assertEqual(status, "published")
@@ -944,7 +951,7 @@ class TestV20_EntityMappingBeforeWait(unittest.TestCase):
 
 class TestPackModuleZipBytesV8(unittest.TestCase):
     def test_package_zip_name_constant(self) -> None:
-        from lab5_qms import pack
+        from acuqms import pack
 
         self.assertEqual(pack.PACKAGE_ZIP, "Lab5_QMS_Customization.zip")
         self.assertEqual(pack.ASSEMBLY_DLL, "Lab5.QMS.dll")

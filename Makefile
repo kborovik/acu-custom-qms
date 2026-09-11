@@ -61,13 +61,13 @@ check: .venv ## Format check, lint, local unit tests (no live tenant)
 
 build: .venv ## Build Lab5_QMS_Customization.zip
 	$(call header,Building Lab5_QMS_Customization.zip)
-	$(UV) run lab5-qms pack
+	$(UV) run acuqms build
 
-deploy: .venv ## Pack, publish Lab5.QMS, seed Role + QM rights
+deploy: .venv ## Build zip, publish Lab5.QMS, seed Role + QM rights
 	$(call need-env)
 	$(call need-acu)
 	$(call header,Deploying Lab5.QMS)
-	$(UV) run lab5-qms deploy
+	$(UV) run acuqms deploy
 
 clean: ## Remove compiled DLL, pack zip, and temp artifacts
 	$(call header,Cleaning)
@@ -88,7 +88,7 @@ endif
 
 e2e: check preflight ## Live e2e vs .env tenant (acu CLI + REST; publishes Lab5.QMS)
 	$(call header,Live e2e)
-	$(UV) run python dll.py
+	$(UV) run python -m acuqms.dll
 	$(if $(filter %.py,$(e2e_target)),\
 		$(UV) run python -u -m unittest discover -s e2e -p '$(notdir $(e2e_target))' -t . -v,\
 		$(UV) run python -u -m unittest discover -s e2e -t . -v)
@@ -118,7 +118,7 @@ _release-pre: check
 	$(call header,Checking CHANGELOG Unreleased has shippable bullets)
 	./changelog check
 	$(call need-env)
-	$(UV) run python dll.py
+	$(UV) run python -m acuqms.dll
 
 _release-bump: _release-pre
 	$(call header,Bumping $(part) version)
@@ -133,7 +133,7 @@ _release-tag: _release-bump
 
 _release-pack: _release-tag
 	$(call header,Packing Lab5_QMS_Customization.zip)
-	$(UV) run lab5-qms pack
+	$(UV) run acuqms build
 
 _release-gh: _release-pack
 	$(call header,Pushing v$(VERSION))

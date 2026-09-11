@@ -29,8 +29,8 @@ from e2e.helper import (  # noqa: E402
     roles_in_graph_merge_sql,
     roles_in_graph_rows,
 )
-from lab5_qms import publish as publish_mod  # noqa: E402
-from lab5_qms.publish import (  # noqa: E402
+from acuqms import publish as publish_mod  # noqa: E402
+from acuqms.publish import (  # noqa: E402
     QMS_DETAIL_MAPPINGS,
     _ensure_qm_aspx_pages,
     _parse_mapping_seed_counts,
@@ -43,7 +43,7 @@ from lab5_qms.publish import (  # noqa: E402
 )
 
 HELPER = ROOT / "e2e" / "helper.py"
-PUBLISH = ROOT / "lab5_qms" / "publish.py"
+PUBLISH = ROOT / "acuqms" / "publish.py"
 PACKAGE_E2E = ROOT / "e2e" / "test_package.py"
 FUNCTIONAL_E2E = ROOT / "e2e" / "test_functional.py"
 
@@ -140,7 +140,7 @@ class TestRolesInGraphSeedV10(unittest.TestCase):
         self.assertIn("wait_rest", publish)
         self.assertNotIn("SetEnvironmentVariable", publish)
         self.assertNotIn("Start-Sleep", publish)
-        self.assertIn("PerTenantFile", (ROOT / "lab5_qms" / "pack.py").read_text())
+        self.assertIn("PerTenantFile", (ROOT / "acuqms" / "pack.py").read_text())
 
     def test_sitemap_selected_ui_sql_clears_classic_lock(self) -> None:
         sql = sitemap_selected_ui_sql()
@@ -172,17 +172,17 @@ class TestQmsDetailMappingSeedV12(unittest.TestCase):
         session = MagicMock()
         with (
             patch(
-                "lab5_qms.publish.bootstrap_endpoint",
+                "acuqms.publish.bootstrap_endpoint",
                 return_value="Bootstrap/1.4.0",
             ),
-            patch("lab5_qms.publish._ensure_quality_manager_role_row"),
-            patch("lab5_qms.publish._ensure_qm_roles_in_graph"),
-            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=1),
-            patch("lab5_qms.publish._ensure_qms_setup_rows"),
-            patch("lab5_qms.publish._ensure_quality_queue_gi"),
-            patch("lab5_qms.publish._ensure_qm_aspx_pages"),
-            patch("lab5_qms.publish._ensure_qm_selected_ui"),
-            patch("lab5_qms.publish._recycle_app_pool") as recycle,
+            patch("acuqms.publish._ensure_quality_manager_role_row"),
+            patch("acuqms.publish._ensure_qm_roles_in_graph"),
+            patch("acuqms.publish._ensure_qms_detail_mappings", return_value=1),
+            patch("acuqms.publish._ensure_qms_setup_rows"),
+            patch("acuqms.publish._ensure_quality_queue_gi"),
+            patch("acuqms.publish._ensure_qm_aspx_pages"),
+            patch("acuqms.publish._ensure_qm_selected_ui"),
+            patch("acuqms.publish._recycle_app_pool") as recycle,
         ):
             seed_qm_rights(session)
         recycle.assert_called_once()
@@ -191,17 +191,17 @@ class TestQmsDetailMappingSeedV12(unittest.TestCase):
         session = MagicMock()
         with (
             patch(
-                "lab5_qms.publish.bootstrap_endpoint",
+                "acuqms.publish.bootstrap_endpoint",
                 return_value="Bootstrap/1.4.0",
             ),
-            patch("lab5_qms.publish._ensure_quality_manager_role_row"),
-            patch("lab5_qms.publish._ensure_qm_roles_in_graph"),
-            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
-            patch("lab5_qms.publish._ensure_qms_setup_rows"),
-            patch("lab5_qms.publish._ensure_quality_queue_gi"),
-            patch("lab5_qms.publish._ensure_qm_aspx_pages"),
-            patch("lab5_qms.publish._ensure_qm_selected_ui"),
-            patch("lab5_qms.publish._recycle_app_pool") as recycle,
+            patch("acuqms.publish._ensure_quality_manager_role_row"),
+            patch("acuqms.publish._ensure_qm_roles_in_graph"),
+            patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("acuqms.publish._ensure_qms_setup_rows"),
+            patch("acuqms.publish._ensure_quality_queue_gi"),
+            patch("acuqms.publish._ensure_qm_aspx_pages"),
+            patch("acuqms.publish._ensure_qm_selected_ui"),
+            patch("acuqms.publish._recycle_app_pool") as recycle,
         ):
             seed_qm_rights(session)
         recycle.assert_not_called()
@@ -233,9 +233,9 @@ class TestAspxPagesSeed(unittest.TestCase):
         inst = MagicMock()
         inst.ssh = "Administrator@host"
         with (
-            patch("lab5_qms.publish.instance", return_value=inst),
-            patch("lab5_qms.publish.ssh_run", return_value="\n".join(lines)) as ssh,
-            patch("lab5_qms.publish.subprocess.run") as scp,
+            patch("acuqms.publish.instance", return_value=inst),
+            patch("acuqms.publish.ssh_run", return_value="\n".join(lines)) as ssh,
+            patch("acuqms.publish.subprocess.run") as scp,
         ):
             _ensure_qm_aspx_pages()
             _ensure_qm_aspx_pages()
@@ -252,9 +252,9 @@ class TestAspxPagesSeed(unittest.TestCase):
         scp_ok.stdout = ""
         scp_ok.stderr = ""
         with (
-            patch("lab5_qms.publish.instance", return_value=inst),
-            patch("lab5_qms.publish.ssh_run", return_value=lines),
-            patch("lab5_qms.publish.subprocess.run", return_value=scp_ok) as scp,
+            patch("acuqms.publish.instance", return_value=inst),
+            patch("acuqms.publish.ssh_run", return_value=lines),
+            patch("acuqms.publish.subprocess.run", return_value=scp_ok) as scp,
         ):
             _ensure_qm_aspx_pages()
         self.assertEqual(scp.call_count, 8)

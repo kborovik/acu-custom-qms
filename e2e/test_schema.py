@@ -23,7 +23,7 @@ from e2e.helper import (
     roles_in_graph_rows,
     sql_lines,
 )
-from lab5_qms.publish import QM401000_DESIGN_ID
+from acuqms.publish import QM401000_DESIGN_ID
 
 QM_FORM_SCREENS = ("QM101000", "QM201000", "QM301000", "QM302000")
 

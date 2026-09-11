@@ -22,7 +22,7 @@ from typing import Any
 
 import httpx
 
-from lab5_qms.acu import (
+from acuqms.acu import (
     ACU_INSTANCE_PATH,
     DB_NAME,
     SSH_TIMEOUT,
@@ -33,7 +33,7 @@ from lab5_qms.acu import (
     load_instance,
     ssh_run,
 )
-from lab5_qms.progress import progress
+from acuqms.progress import progress
 
 PACKAGE_NAME = "Lab5.QMS"
 QMS_ENDPOINT = "QMS/22.200.001"

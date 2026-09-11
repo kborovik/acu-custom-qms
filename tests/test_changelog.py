@@ -3,7 +3,7 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""Scripts/changelog — Keep-a-Changelog promote / notes / empty hard-fail.
+"""Repo-root changelog — Keep-a-Changelog promote / notes / empty hard-fail.
 
 Offline only: fixture CHANGELOG via CHANGELOG_PATH. Makefile wiring is
 asserted as a source contract (no live tag push).
@@ -18,7 +18,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "Scripts" / "changelog"
+SCRIPT = ROOT / "changelog"
 MAKEFILE = ROOT / "Makefile"
 
 SAMPLE = """\
@@ -138,9 +138,10 @@ class TestChangelogScript(unittest.TestCase):
 class TestMakefileRelease(unittest.TestCase):
     def test_makefile_release_uses_changelog_and_gh(self) -> None:
         text = MAKEFILE.read_text(encoding="utf-8")
-        self.assertIn("Scripts/changelog check", text)
-        self.assertIn("Scripts/changelog promote", text)
-        self.assertIn("Scripts/changelog notes", text)
+        self.assertIn("./changelog check", text)
+        self.assertIn("./changelog promote", text)
+        self.assertIn("./changelog notes", text)
+        self.assertNotIn("Scripts/changelog", text)
         self.assertIn("version --bump", text)
         self.assertIn("gh release create", text)
         self.assertIn("--verify-tag", text)

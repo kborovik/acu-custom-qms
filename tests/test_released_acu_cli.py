@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from lab5_qms.acu import (  # noqa: E402
+from acuqms.acu import (  # noqa: E402
     load_instance,
     parse_env_lines,
     parse_tenant_list,
@@ -29,8 +29,7 @@ from lab5_qms.acu import (  # noqa: E402
 
 
 def _py_sources() -> list[Path]:
-    files = list((ROOT / "lab5_qms").rglob("*.py"))
-    files.append(ROOT / "dll.py")
+    files = list((ROOT / "acuqms").rglob("*.py"))
     files.extend(p for p in (ROOT / "e2e").glob("*.py"))
     return files
 
@@ -53,7 +52,7 @@ class TestProjectOmitsAcumaticaCliV11(unittest.TestCase):
 
 
 class TestPathAcuNotImportV11(unittest.TestCase):
-    def test_lab5_qms_dll_e2e_do_not_import_acumatica_cli(self) -> None:
+    def test_acuqms_dll_e2e_do_not_import_acumatica_cli(self) -> None:
         for path in _py_sources():
             text = path.read_text(encoding="utf-8")
             self.assertNotRegex(text, r"(?m)^\s*import acumatica_cli\b", path.name)
@@ -62,7 +61,7 @@ class TestPathAcuNotImportV11(unittest.TestCase):
             self.assertNotIn("uv run -- acu", text, path.name)
 
     def test_acu_module_invokes_path_acu(self) -> None:
-        src = (ROOT / "lab5_qms" / "acu.py").read_text(encoding="utf-8")
+        src = (ROOT / "acuqms" / "acu.py").read_text(encoding="utf-8")
         self.assertIn('["acu", *args]', src)
         self.assertIn('run_acu("config", "show")', src)
         self.assertIn('run_acu("tenant", "list")', src)
@@ -72,8 +71,8 @@ class TestPathAcuNotImportV11(unittest.TestCase):
         self.assertNotIn("print(password", src)
 
     def test_dll_uses_path_acu_not_tenant_manager(self) -> None:
-        src = (ROOT / "dll.py").read_text(encoding="utf-8")
-        self.assertIn("from lab5_qms.acu import", src)
+        src = (ROOT / "acuqms" / "dll.py").read_text(encoding="utf-8")
+        self.assertIn("from acuqms.acu import", src)
         self.assertIn("load_instance", src)
         self.assertIn("ssh_run", src)
         self.assertNotIn("TenantManager", src)
@@ -128,7 +127,7 @@ class TestPathAcuNotImportV11(unittest.TestCase):
         )
         fake = CompletedProcess(["acu", "config", "show"], 0, show, "")
         with (
-            patch("lab5_qms.acu.run_acu", return_value=fake) as run,
+            patch("acuqms.acu.run_acu", return_value=fake) as run,
             patch.dict(os.environ, {"ACU_PASSWORD": "secret"}, clear=False),
         ):
             inst = load_instance()
@@ -145,7 +144,7 @@ class TestPreflightPathAcuV11(unittest.TestCase):
         makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
         self.assertIn("acu config check", makefile)
         self.assertIn("uv tool install acumatica-cli", makefile)
-        self.assertNotIn("$(UV) run acu", makefile)
+        self.assertNotRegex(makefile, r"\$\(UV\) run acu(?:\s|$)")
         self.assertNotIn("uv run acu config", makefile)
 
     def test_agents_and_readme_use_path_acu(self) -> None:
@@ -154,7 +153,7 @@ class TestPreflightPathAcuV11(unittest.TestCase):
             self.assertIn("acu config check", text, name)
             self.assertIn("uv tool install acumatica-cli", text, name)
             self.assertNotIn("uv run acu config", text, name)
-            self.assertNotIn("$(UV) run acu", text, name)
+            self.assertNotRegex(text, r"\$\(UV\) run acu(?:\s|$)", name)
 
 
 if __name__ == "__main__":

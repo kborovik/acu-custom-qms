@@ -6,10 +6,15 @@
 
 - **Python git executable bits (V21):** tracked `*.py` files are git
   mode `100755` only when the first line starts with `#!`; otherwise
-  `100644`. `lab5_qms/*`, `e2e/helper.py`, and `e2e/__init__.py` stay
+  `100644`. `acuqms/*`, `e2e/helper.py`, and `e2e/__init__.py` stay
   without a shebang.
 
 ### Changed
+
+- **CLI `acuqms`:** Python package and console script renamed from
+  `lab5-qms` / `lab5_qms` to `acuqms`. Click subcommand `pack` is now
+  `build`. DLL compiler is `acuqms/dll.py` (no shebang; invoke with
+  `python -m acuqms.dll`). Root `dll.py` is gone.
 
 - **`changelog` at repo root:** Keep-a-Changelog helper is `./changelog`;
   repo `Scripts/` is gone. Zip member `Scripts/CreateQMSTables.sql` is

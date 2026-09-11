@@ -1,4 +1,4 @@
-"""lab5-qms Click console script (T14 / T15 / T16 / T25 / T41 / I.cmd / V8 / V10 / V14 / V18).
+"""acuqms Click console script (T14 / T15 / T16 / T25 / T41 / T47 / I.cmd / V8 / V10 / V14 / V18).
 
 Packs Lab5_QMS_Customization.zip, publishes via CustomizationApi, and
 seeds post-publish Role Quality Manager + RolesInGraph Delete on QM*
@@ -14,8 +14,8 @@ from pathlib import Path
 
 import click
 
-from lab5_qms import pack, publish
-from lab5_qms.progress import progress
+from acuqms import pack, publish
+from acuqms.progress import progress
 
 
 @click.group(
@@ -24,7 +24,7 @@ from lab5_qms.progress import progress
 )
 @click.pass_context
 def cli(ctx: click.Context) -> None:
-    """Pack Lab5_QMS_Customization.zip, publish via CustomizationApi, seed Role Quality Manager."""
+    """Build Lab5_QMS_Customization.zip, publish via CustomizationApi, seed Role Quality Manager."""
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
         ctx.exit(0)
@@ -37,7 +37,7 @@ def _write_zip(output: Path | None) -> Path:
         return path
 
 
-@cli.command("pack")
+@cli.command("build")
 @click.option(
     "-o",
     "--output",
@@ -45,7 +45,7 @@ def _write_zip(output: Path | None) -> Path:
     default=None,
     help="output zip path (default: ./Lab5_QMS_Customization.zip)",
 )
-def pack_cmd(output: Path | None) -> None:
+def build_cmd(output: Path | None) -> None:
     """Write Lab5_QMS_Customization.zip (no Role / UsersInRoles / RolesInGraph)."""
     click.echo(str(_write_zip(output)))
 
@@ -76,7 +76,7 @@ def seed_cmd() -> None:
 )
 @click.option("--timeout", type=float, default=900.0, show_default=True)
 def deploy(output: Path | None, timeout: float) -> None:
-    """Pack, CustomizationApi publish, and post-publish Role + EntityMapping + UsrQMSSetup seed."""
+    """Build zip, CustomizationApi publish, and post-publish Role + EntityMapping + UsrQMSSetup seed."""
     path = _write_zip(output)
     click.echo(str(path))
     zip_bytes = path.read_bytes()

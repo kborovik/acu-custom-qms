@@ -14,8 +14,8 @@ import time
 from pathlib import Path
 from typing import Any
 
-from lab5_qms import pack
-from lab5_qms.acu import (  # noqa: F401
+from acuqms import pack
+from acuqms.acu import (  # noqa: F401
     AcumaticaClient,
     DB_NAME,
     HTTP_TIMEOUT,
@@ -23,7 +23,7 @@ from lab5_qms.acu import (  # noqa: F401
     unwrap,
     wrap,
 )
-from lab5_qms.publish import (  # noqa: F401
+from acuqms.publish import (  # noqa: F401
     ACCESSRIGHTS_DELETE,
     PACKAGE_NAME,
     QM_RIGHTS_ROLES,
@@ -87,7 +87,7 @@ MIN_PDF = (
 _published: bool | None = None
 _publish_error: BaseException | None = None
 
-# Per-request HTTP bound lives in lab5_qms.acu (HTTP_TIMEOUT = 30.0).
+# Per-request HTTP bound lives in acuqms.acu (HTTP_TIMEOUT = 30.0).
 # Publish polling uses that plus a loop deadline (ensure_published
 # timeout=600); do not raise the default back to 300s — a stuck GET then
 # looks like a hung `gmake e2e`.
@@ -213,7 +213,7 @@ def ensure_qm_rights(session: AcumaticaClient) -> None:
     _ensure_acu_user_quality_manager()
     global _qm_roles_recycled
     if not _qm_roles_recycled:
-        from lab5_qms.publish import _recycle_app_pool
+        from acuqms.publish import _recycle_app_pool
 
         _recycle_app_pool()
         _qm_roles_recycled = True

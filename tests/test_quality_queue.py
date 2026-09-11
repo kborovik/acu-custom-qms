@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from lab5_qms import pack  # noqa: E402
+from acuqms import pack  # noqa: E402
 
 GI_XML = ROOT / "QMS" / "_project" / "GenericInquiryScreen_QM401000.xml"
 FORBIDDEN_ACTIONS = (
@@ -140,7 +140,7 @@ class TestQualityQueueGI(unittest.TestCase):
         )
 
     def test_seed_sql_covers_work_filter_and_drills(self) -> None:
-        from lab5_qms.publish import QM401000_DESIGN_ID, quality_queue_seed_sql
+        from acuqms.publish import QM401000_DESIGN_ID, quality_queue_seed_sql
 
         sql = quality_queue_seed_sql(14)
         self.assertIn(QM401000_DESIGN_ID, sql)

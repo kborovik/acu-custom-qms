@@ -19,8 +19,8 @@ if str(ROOT) not in sys.path:
 class TestE2eTimeouts(unittest.TestCase):
     def test_helper_bounds_http_acu_and_invoke(self) -> None:
         src = (ROOT / "e2e" / "helper.py").read_text(encoding="utf-8")
-        publish = (ROOT / "lab5_qms" / "publish.py").read_text(encoding="utf-8")
-        acu = (ROOT / "lab5_qms" / "acu.py").read_text(encoding="utf-8")
+        publish = (ROOT / "acuqms" / "publish.py").read_text(encoding="utf-8")
+        acu = (ROOT / "acuqms" / "acu.py").read_text(encoding="utf-8")
         self.assertIn("HTTP_TIMEOUT = 30.0", acu)
         self.assertIn("ACU_TIMEOUT = 60.0", src)
         self.assertIn("INVOKE_TIMEOUT = 60.0", src)

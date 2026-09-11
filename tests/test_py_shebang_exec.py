@@ -51,7 +51,7 @@ class TestPyShebangExecV21(unittest.TestCase):
 
     def test_library_py_have_no_shebang(self) -> None:
         for path, _mode in _tracked_py():
-            if path.startswith("lab5_qms/") or path in NO_SHEBANG:
+            if path.startswith("acuqms/") or path in NO_SHEBANG:
                 self.assertFalse(_has_shebang(path), path)
 
 

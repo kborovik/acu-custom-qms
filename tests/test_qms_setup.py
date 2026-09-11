@@ -183,7 +183,7 @@ class TestAutoNumberWiring(unittest.TestCase):
 
 class TestQmsSetupSeedV14(unittest.TestCase):
     def test_insert_sql_qord_qncr_per_company_when_missing(self) -> None:
-        from lab5_qms.publish import QNCR, QORD, qms_setup_insert_sql
+        from acuqms.publish import QNCR, QORD, qms_setup_insert_sql
 
         sql = qms_setup_insert_sql()
         self.assertIn("INSERT INTO", sql)
@@ -198,7 +198,7 @@ class TestQmsSetupSeedV14(unittest.TestCase):
         self.assertIn("t.CompanyID = c.CompanyID", sql)
 
     def test_seed_qm_rights_calls_setup_insert(self) -> None:
-        src = (ROOT / "lab5_qms" / "publish.py").read_text(encoding="utf-8")
+        src = (ROOT / "acuqms" / "publish.py").read_text(encoding="utf-8")
         start = src.index("def seed_qm_rights")
         body = src[start:]
         self.assertIn("_ensure_qms_setup_rows", body)

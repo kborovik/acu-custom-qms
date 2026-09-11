@@ -1,7 +1,7 @@
 [project]
-name = "lab5-qms"
+name = "acuqms"
 version = "0.5.3"
-description = "Acumatica Cloud xRP customization package Lab5.QMS (pack + tests)"
+description = "Acumatica Cloud xRP customization package Lab5.QMS (build + tests)"
 authors = [{ name = "Konstantin Borovik", email = "kb@lab5.ca" }]
 license = "Apache-2.0"
 requires-python = ">=3.14"
@@ -11,16 +11,16 @@ dependencies = [
 ]
 
 [project.scripts]
-lab5-qms = "lab5_qms.cli:main"
+acuqms = "acuqms.cli:main"
 
 # Required for uv to install this project (editable) and wire [project.scripts].
-# Without a build system, `uv run lab5-qms` cannot resolve the console entry point.
+# Without a build system, `uv run acuqms` cannot resolve the console entry point.
 [build-system]
 requires = ["setuptools>=75"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["lab5_qms*"]
+include = ["acuqms*"]
 
 [tool.ruff]
 target-version = "py314"

@@ -305,7 +305,7 @@ Lab5_QMS_Customization.zip
 └── Scripts/           CreateQMSTables.sql
 ```
 
-Click CLI on the installable `lab5-qms` package: pack that zip, publish
+Click CLI on the installable `acuqms` package: build that zip, publish
 via `/CustomizationApi`, and seed post-publish Role **Quality Manager**
 plus `RolesInGraph` Delete on the QM screens. The zip itself does not
 contain Role / UsersInRoles / RolesInGraph. No subcommand prints Click
@@ -314,11 +314,11 @@ help and exits 0.
 ```sh
 gmake check               # ruff format --check, ruff check, unit tests
 gmake build               # compile Lab5.QMS.dll if C# changed; write zip
-gmake deploy              # pack + publish + seed (no e2e)
+gmake deploy              # build zip + publish + seed (no e2e)
 gmake e2e                 # check + preflight + live e2e (publishes)
-uv run lab5-qms pack      # same as gmake build
-uv run lab5-qms deploy    # same as gmake deploy
-uv run lab5-qms           # Click help (exit 0)
+uv run acuqms build       # same as gmake build
+uv run acuqms deploy      # same as gmake deploy
+uv run acuqms             # Click help (exit 0)
 ```
 
 Released PATH `acu` is required for publish, SSH compile, and live e2e.

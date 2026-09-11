@@ -20,8 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import dll  # noqa: E402
-from lab5_qms import pack  # noqa: E402
+from acuqms import dll, pack  # noqa: E402
 
 PX = ("PX.Data", "PX.Objects", "PX.Common", "PX.Common.Std", "PX.DbServices")
 
@@ -74,7 +73,8 @@ class TestDllScript(unittest.TestCase):
         self.assertGreaterEqual(len(dll.source_files(ROOT)), 20)
 
     def test_hosted_path_message(self) -> None:
-        src = (ROOT / "dll.py").read_text(encoding="utf-8")
+        src = (ROOT / "acuqms" / "dll.py").read_text(encoding="utf-8")
+        self.assertFalse(src.startswith("#!"))
         self.assertIn("ACU_SSH empty — hosted path cannot compile Lab5.QMS.dll", src)
         self.assertNotIn("print(inst.password", src)
         self.assertNotIn("ACU_PASSWORD=", src)
@@ -90,9 +90,11 @@ class TestDllScript(unittest.TestCase):
         self.assertNotIn("\npack:", makefile)
         self.assertIn("e2e: check preflight ##", makefile)
         self.assertIn("release: check _release-gh", makefile)
-        self.assertIn("python dll.py", makefile)
-        self.assertIn("lab5-qms pack", makefile)
-        self.assertIn("lab5-qms deploy", makefile)
+        self.assertIn("python -m acuqms.dll", makefile)
+        self.assertNotIn("python dll.py", makefile)
+        self.assertIn("acuqms build", makefile)
+        self.assertIn("acuqms deploy", makefile)
+        self.assertNotIn("lab5-qms", makefile)
         self.assertIn("ruff format --check", makefile)
         self.assertIn("ruff check", makefile)
         self.assertIn("python -u -m unittest discover -s tests", makefile)
@@ -117,14 +119,18 @@ class TestDllScript(unittest.TestCase):
         )
 
     def test_pack_publish_deploy_and_e2e_ensure_dll(self) -> None:
-        cli_src = (ROOT / "lab5_qms" / "cli.py").read_text(encoding="utf-8")
-        pack_src = (ROOT / "lab5_qms" / "pack.py").read_text(encoding="utf-8")
+        cli_src = (ROOT / "acuqms" / "cli.py").read_text(encoding="utf-8")
+        pack_src = (ROOT / "acuqms" / "pack.py").read_text(encoding="utf-8")
         helper = (ROOT / "e2e" / "helper.py").read_text(encoding="utf-8")
         self.assertIn("ensure_dll=True", cli_src)
         self.assertIn("ensure_dll=True", pack_src)
         self.assertIn("ensure_dll=True", helper)
         self.assertIn("def ensure_assembly", pack_src)
-        self.assertIn("ensure_compiled", (ROOT / "dll.py").read_text(encoding="utf-8"))
+        self.assertIn(
+            "ensure_compiled", (ROOT / "acuqms" / "dll.py").read_text(encoding="utf-8")
+        )
+        self.assertFalse((ROOT / "dll.py").exists())
+        self.assertFalse((ROOT / "lab5_qms").exists())
 
 
 class TestEnsureCompiled(unittest.TestCase):
@@ -133,7 +139,7 @@ class TestEnsureCompiled(unittest.TestCase):
         self.assertIn("QMS/Lab5.QMS/QMS.cs\t", text)
         self.assertIn("QMS/Lab5.QMS/Graph/QMSInspectionPlanMaint.cs\t", text)
         self.assertIn("QMS/Lab5.QMS/Lab5.QMS.csproj\t", text)
-        self.assertIn("dll.py\t", text)
+        self.assertIn("acuqms/dll.py\t", text)
         self.assertNotIn("Pages/QM/", text)
         self.assertNotIn("Pages_QM/", text)
         self.assertNotIn("/bin/", text)

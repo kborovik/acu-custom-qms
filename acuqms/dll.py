@@ -1,4 +1,3 @@
-#!/usr/bin/env -S uv run
 """Compile Lab5.QMS.dll on the ERP VM (SSH) and copy it back (V8 / I.pkg).
 
 The live 26.101.0225 box has no Visual Studio MSBuild and no dotnet SDK.
@@ -22,13 +21,13 @@ import subprocess
 import zipfile
 from pathlib import Path
 
-from lab5_qms import pack
-from lab5_qms.acu import ACU_INSTANCE_PATH, load_instance, ssh_run
-from lab5_qms.paths import cs_root
+from acuqms import pack
+from acuqms.acu import ACU_INSTANCE_PATH, load_instance, ssh_run
+from acuqms.paths import cs_root
 
-ROOT = Path(__file__).resolve().parent
-REMOTE_ZIP = "lab5-qms-src.zip"
-REMOTE_DIR = "lab5-qms-build"
+ROOT = Path(__file__).resolve().parents[1]
+REMOTE_ZIP = "acuqms-src.zip"
+REMOTE_DIR = "acuqms-build"
 PX_ASSEMBLIES = (
     "PX.Data",
     "PX.Objects",
@@ -123,7 +122,7 @@ def compile_inputs(root: Path | None = None) -> list[Path]:
     base = ROOT if root is None else Path(root)
     files = list(source_files(root))
     files.append(cs_root(base) / "Lab5.QMS.csproj")
-    files.append(base / "dll.py")
+    files.append(base / "acuqms" / "dll.py")
     files.sort()
     return files
 

@@ -20,9 +20,9 @@ from e2e.helper import (
     qms_put,
     sql_lines,
 )
-from lab5_qms import pack
-from lab5_qms.acu import ACU_INSTANCE_PATH, ssh_run
-from lab5_qms.publish import ACCESSRIGHTS_DELETE, QM_RIGHTS_ROLES
+from acuqms import pack
+from acuqms.acu import ACU_INSTANCE_PATH, ssh_run
+from acuqms.publish import ACCESSRIGHTS_DELETE, QM_RIGHTS_ROLES
 
 GI_DESIGN_ID = "9f9483b9-6427-40c6-9c91-96b22c67c28e"
 PATTERN_B = (
