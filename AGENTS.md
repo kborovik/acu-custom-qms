@@ -8,12 +8,9 @@ Control: [`SPEC.md`](SPEC.md).
 Related work lives in sibling repos.
 File defects and changes there, not here:
 
-- GCP CoA ingestion and reasoning engine:
-  [`kborovik/acu-google-qms`](https://github.com/kborovik/acu-google-qms)
-- CanNordic tenant GitOps seed (`acu` YAML):
-  [`kborovik/acu-gitops-qms`](https://github.com/kborovik/acu-gitops-qms)
-- `acu` CLI:
-  [`kborovik/acumatica-cli`](https://github.com/kborovik/acumatica-cli)
+- GCP CoA ingestion and reasoning engine: [`kborovik/acu-google-qms`](https://github.com/kborovik/acu-google-qms)
+- CanNordic tenant GitOps seed (`acu` YAML): [`kborovik/acu-gitops-qms`](https://github.com/kborovik/acu-gitops-qms)
+- `acu` CLI: [`kborovik/acumatica-cli`](https://github.com/kborovik/acumatica-cli)
 
 This repo has no `config/` seed.
 Do not `acu apply` / `diff` / `run` from here.
@@ -38,7 +35,8 @@ There is no `gmake dll`.
 Install released `acu` with `uv tool install acumatica-cli`.
 This project does not depend on that package; do not launch acu through uv.
 
-Repo-root `.env` (gitignored) is the live target. `acu` walks up from cwd to find it.
+Repo-root `.env` (gitignored) is the live target.
+`acu` walks up from cwd to find it.
 
 ```
 ACU_BASE_URL=http://<host>/AcumaticaERP

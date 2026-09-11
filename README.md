@@ -1,15 +1,10 @@
 # Acumatica QMS Customization (`acu-custom-qms`)
 
 Acumatica Cloud xRP customization package **`Lab5.QMS`**.
-It adds a **Quality
-Management** workspace to Acumatica so a receiving dock cannot put inspected
-goods into production until laboratory results pass the item’s inspection
-plan.
+It adds a **Quality Management** workspace to Acumatica so a receiving dock cannot put inspected goods into production until laboratory results pass the item’s inspection plan.
 
-Standard Acumatica Distribution and Manufacturing editions do not ship a
-Quality Management module.
-This package is the ERP-side system of record
-for:
+Standard Acumatica Distribution and Manufacturing editions do not ship a Quality Management module.
+This package is the ERP-side system of record for:
 
 - Inspection plans (what must be tested, and the pass bounds)
 - Dock-receipt quarantine (lot held on PO Receipt release)
@@ -17,56 +12,37 @@ for:
 - Automated lot disposition (Released or Quarantine)
 - Non-conformance reports (NCR) when a lot fails
 
-It is built for **Health Canada GMP (GUI-0001 / GUI-0158)** and **21 CFR
-Part 11** raw-material release: the inspection order plus the attached CoA
-PDF and parsed JSON is the audit record for the lot.
+It is built for **Health Canada GMP (GUI-0001 / GUI-0158)** and **21 CFR Part 11** raw-material release: the inspection order plus the attached CoA PDF and parsed JSON is the audit record for the lot.
 
 Companion repositories (not implemented here):
 
-- [`acu-google-qms`](https://github.com/kborovik/acu-google-qms) — GCP CoA
-  ingestion and reasoning engine
-- [`acu-gitops-qms`](https://github.com/kborovik/acu-gitops-qms) — CanNordic
-  tenant GitOps seed (inventory, IN/PO preferences, users)
+- [`acu-google-qms`](https://github.com/kborovik/acu-google-qms) — GCP CoA ingestion and reasoning engine
+- [`acu-gitops-qms`](https://github.com/kborovik/acu-gitops-qms) — CanNordic tenant GitOps seed (inventory, IN/PO preferences, users)
 
 Shipped artifact: `Lab5_QMS_Customization.zip`.
-REST contract used by the
-ingestion engine: **`QMS/22.200.001`**.
+REST contract used by the ingestion engine: **`QMS/22.200.001`**.
 
 ## Purpose
 
-On dock arrival, inspected stock must not be allocatable to a bill of
-materials until quality has signed it off.
-The package enforces that gate
-inside Acumatica:
+On dock arrival, inspected stock must not be allocatable to a bill of materials until quality has signed it off.
+The package enforces that gate inside Acumatica:
 
-1. A stock item is flagged **Requires Quality Inspection** and linked to an
-   **Inspection Plan** (plus an optional minimum remaining shelf life).
-2. When a **PO Receipt** is released, every lot on those lines is set to
-   **QC Hold** and a draft **Inspection Order** is opened (plan, lot,
-   vendor, receipt).
+1. A stock item is flagged **Requires Quality Inspection** and linked to an **Inspection Plan** (plus an optional minimum remaining shelf life).
+2. When a **PO Receipt** is released, every lot on those lines is set to **QC Hold** and a draft **Inspection Order** is opened (plan, lot, vendor, receipt).
 3. The receiving dock sends CoA PDF documents to the **GCP AI Agent**.
-   The agent reads the plan, writes laboratory results onto the order, and
-   attaches the original CoA PDF and JSON payload.
+   The agent reads the plan, writes laboratory results onto the order, and attaches the original CoA PDF and JSON payload.
 4. **Evaluate** compares each required test to the plan.
-   All pass, then the
-   lot is **Released** and the order **Completed**.
-   Any required fail or
-   missing result, then the lot is **Quarantine**, a **Non-Conformance**
-   ticket is opened, and allocation stays blocked.
+   All pass, then the lot is **Released** and the order **Completed**.
+   Any required fail or missing result, then the lot is **Quarantine**, a **Non-Conformance** ticket is opened, and allocation stays blocked.
 
-QC Hold becomes Released only as role **Quality Manager** or as the
-ingestion service account.
+QC Hold becomes Released only as role **Quality Manager** or as the ingestion service account.
 
 ## Quality inspection workflow
 
-Actors: **Receiving Dock**, **Acumatica ERP**, **Quality Manager**,
-**GCP AI Agent**.
-Same path as graph actions and
-`QMS/22.200.001` REST.
-QC Hold becomes Released only as role **Quality
-Manager** or as the ingestion service account (`qms-ingestion`).
-A Quality Manager can also **Evaluate** and **Release Lot Decision** from
-Inspection Orders (`QM.30.10.00`).
+Actors: **Receiving Dock**, **Acumatica ERP**, **Quality Manager**, **GCP AI Agent**.
+Same path as graph actions and `QMS/22.200.001` REST.
+QC Hold becomes Released only as role **Quality Manager** or as the ingestion service account (`qms-ingestion`).
+A Quality Manager can also **Evaluate** and **Release Lot Decision** from Inspection Orders (`QM.30.10.00`).
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dafbe1', 'primaryTextColor': '#1f2328', 'primaryBorderColor': '#1f883d', 'secondaryColor': '#ddf4ff', 'tertiaryColor': '#fff6d6', 'lineColor': '#0969da', 'actorBkg': '#dafbe1', 'actorBorder': '#1f883d', 'actorTextColor': '#1f2328', 'signalColor': '#0969da', 'signalTextColor': '#1f2328', 'labelBoxBkgColor': '#ddf4ff', 'labelBoxBorderColor': '#0969da', 'labelTextColor': '#0550ae', 'loopTextColor': '#1f2328', 'noteBkgColor': '#f6f8fa', 'noteTextColor': '#1f2328', 'noteBorderColor': '#d1d9e0', 'activationBkgColor': '#ddf4ff', 'activationBorderColor': '#0969da', 'sequenceNumberColor': '#ffffff'}, 'themeCSS': 'g[data-id="ERP"] rect{fill:#ddf4ff!important;stroke:#0969da!important}g[data-id="QMS"] rect{fill:#dafbe1!important;stroke:#1f883d!important}g[data-id="Agent"] rect{fill:#ffebe9!important;stroke:#cf222e!important}'}}%%
@@ -120,12 +96,9 @@ sequenceDiagram
     end
 ```
 
-Lot status on inspected receipts is one of **QC Hold**, **Released**, or
-**Quarantine**.
-The receipt number, lot serial, and inspection order stay
-linked for the life of the lot.
-The attached CoA PDF and parsed JSON stay
-on the order as the audit record.
+Lot status on inspected receipts is one of **QC Hold**, **Released**, or **Quarantine**.
+The receipt number, lot serial, and inspection order stay linked for the life of the lot.
+The attached CoA PDF and parsed JSON stay on the order as the audit record.
 
 ## Entities
 
@@ -218,8 +191,7 @@ Opened automatically on a failed evaluation.
 | Inventory Hold Status | Quarantine or Rejected |
 
 Close requires root-cause documentation.
-Disposition can hand off to
-Acumatica’s Return to Vendor flow.
+Disposition can hand off to Acumatica’s Return to Vendor flow.
 
 ## Evaluation and lot decision
 
@@ -244,12 +216,9 @@ All required tests pass, then overall **Pass**.
 ## REST endpoint `QMS/22.200.001`
 
 Registered under Web Service Endpoints.
-Purchase Receipt and Lot/Serial
-Class stay on `/entity/Default/…`.
-Numbering and Role stay on
-`/entity/Bootstrap/…`.
-Default `StockItem` still ignores `UsrQMS*` —
-PUT and GET those flags on `QMS/22.200.001`.
+Purchase Receipt and Lot/Serial Class stay on `/entity/Default/…`.
+Numbering and Role stay on `/entity/Bootstrap/…`.
+Default `StockItem` still ignores `UsrQMS*` — PUT and GET those flags on `QMS/22.200.001`.
 
 | Entity | Verbs | Use |
 | --- | --- | --- |
@@ -262,10 +231,8 @@ PUT and GET those flags on `QMS/22.200.001`.
 Typical ingestion sequence:
 
 1. `GET /entity/QMS/22.200.001/InspectionPlan?$filter=PlanID eq '…'&$expand=Tests`
-2. `PUT /entity/QMS/22.200.001/InspectionOrder` with result lines, testing
-   lab, and certificate number
-3. Attach original CoA PDF and parsed JSON through Acumatica `/files` on
-   the order’s note id
+2. `PUT /entity/QMS/22.200.001/InspectionOrder` with result lines, testing lab, and certificate number
+3. Attach original CoA PDF and parsed JSON through Acumatica `/files` on the order’s note id
 
 ## Screens
 
@@ -296,21 +263,15 @@ To support computer-assisted raw-material release:
 
 - Plan and order rows carry created/modified user and timestamp.
   Evaluation completion stamps **Evaluated By** and **Evaluation Date-Time**.
-- The original CoA PDF and the parsed JSON payload are attached to the
-  inspection order (paperclip on the order, and on the lot).
+- The original CoA PDF and the parsed JSON payload are attached to the inspection order (paperclip on the order, and on the lot).
   That pair is the system of record for the release decision.
-- Moving a lot from QC Hold to Released requires an authenticated
-  **Quality Manager** or the ingestion service-account token.
+- Moving a lot from QC Hold to Released requires an authenticated **Quality Manager** or the ingestion service-account token.
 
 ## Package and deploy
 
-Customization sources live under `QMS/` (C# class library, REST-host
-ASPX, Modern UI screens under
-`QMS/FrontendSources/screen/src/development/screens/`, `_project` XML,
-DDL).
+Customization sources live under `QMS/` (C# class library, REST-host ASPX, Modern UI screens under `QMS/FrontendSources/screen/src/development/screens/`, `_project` XML, DDL).
 Python packer, tests, and release tooling stay at the repo root.
-Zip member names match the site (`Pages/QM/`, `screens/…`, `_project/`,
-`Scripts/CreateQMSTables.sql`) not the repo prefix.
+Zip member names match the site (`Pages/QM/`, `screens/…`, `_project/`, `Scripts/CreateQMSTables.sql`) not the repo prefix.
 
 The customization project packs to:
 
@@ -323,13 +284,9 @@ Lab5_QMS_Customization.zip
 └── Scripts/           CreateQMSTables.sql
 ```
 
-Click CLI on the installable `acuqms` package: build that zip, publish
-via `/CustomizationApi`, and seed post-publish Role **Quality Manager**
-plus `RolesInGraph` Delete on the QM screens.
-The zip itself does not
-contain Role / UsersInRoles / RolesInGraph.
-No subcommand prints Click
-help and exits 0.
+Click CLI on the installable `acuqms` package: build that zip, publish via `/CustomizationApi`, and seed post-publish Role **Quality Manager** plus `RolesInGraph` Delete on the QM screens.
+The zip itself does not contain Role / UsersInRoles / RolesInGraph.
+No subcommand prints Click help and exits 0.
 
 ```sh
 gmake check               # ruff format --check, ruff check, unit tests
@@ -350,10 +307,8 @@ acu config check          # PATH acu; never through uv
 ```
 
 This repo has no `config/` seed.
-Tenant inventory and IN/PO setup come
-from `acu-gitops-qms` on the same `ACU_TENANT`.
-Do not `acu apply` /
-`diff` / `run` from here.
+Tenant inventory and IN/PO setup come from `acu-gitops-qms` on the same `ACU_TENANT`.
+Do not `acu apply` / `diff` / `run` from here.
 Never `acu check` (destructive tenant rebuild).
 
 Control invariants for this package live in [`SPEC.md`](SPEC.md).
@@ -369,22 +324,16 @@ Control invariants for this package live in [`SPEC.md`](SPEC.md).
 ## Release
 
 Notes live in [`CHANGELOG.md`](CHANGELOG.md).
-Append user-facing work under
-`## Unreleased` (`### Added` / `### Changed` / `### Fixed`).
-Empty Unreleased
-hard-fails — nothing to ship.
+Append user-facing work under `## Unreleased` (`### Added` / `### Changed` / `### Fixed`).
+Empty Unreleased hard-fails — nothing to ship.
 
 ```sh
 gmake release patch   # or minor | major
 ```
 
-`gmake release` is the sole path: local tests, bump `pyproject.toml`, promote
-CHANGELOG, tag `vX.Y.Z`, pack `Lab5_QMS_Customization.zip`, push, then
-`gh release create` with the zip attached.
-There is no CI publisher — `gh`
-runs locally.
-Requires a clean tree, `gh` authenticated, and bullets under
-`## Unreleased`.
+`gmake release` is the sole path: local tests, bump `pyproject.toml`, promote CHANGELOG, tag `vX.Y.Z`, pack `Lab5_QMS_Customization.zip`, push, then `gh release create` with the zip attached.
+There is no CI publisher — `gh` runs locally.
+Requires a clean tree, `gh` authenticated, and bullets under `## Unreleased`.
 
 ## License
 

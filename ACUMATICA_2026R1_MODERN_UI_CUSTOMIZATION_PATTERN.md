@@ -4,8 +4,10 @@
 
 Acumatica's transition from the legacy ASP.NET Web Forms interface (**Classic UI**) to the TypeScript- and Aurelia-powered single-page application framework (**Modern UI**) reaches a critical turning point in **2026 R1**:
 
-- **Mandatory Transition Ahead (2026 R2 Deprecation)**: Acumatica officially announced that the Classic UI is deprecated and will be removed in **2026 R2**. Starting in 2026 R2, users and administrators will no longer have the option to toggle back to Classic UI (`SM200505`).
-- **Modern UI as Default in 2026 R1**: All new instances and tenant implementations in 2026 R1 run Modern UI by default. All ISV solutions and custom development must conform to Modern UI patterns to maintain forward compatibility.
+- **Mandatory Transition Ahead (2026 R2 Deprecation)**: Acumatica officially announced that the Classic UI is deprecated and will be removed in **2026 R2**.
+  Starting in 2026 R2, users and administrators will no longer have the option to toggle back to Classic UI (`SM200505`).
+- **Modern UI as Default in 2026 R1**: All new instances and tenant implementations in 2026 R1 run Modern UI by default.
+  All ISV solutions and custom development must conform to Modern UI patterns to maintain forward compatibility.
 - **Key 2026 R1 Platform Advances**:
   - **Development Folder Synchronization**: Direct compilation and bi-directional file synchronization between the local file system (`FrontendSources\screen\src\development\`) and the customization project package.
   - **In-Browser Modern UI Editor (`AU201080`)**: Visual editing, code comparison, and automated TypeScript/HTML extension generation directly inside the Customization Project Editor.
@@ -40,10 +42,13 @@ The Modern UI architecture is built around the **Model-View-ViewModel (MVVM)** p
 ```
 
 ### Core Architecture Highlights:
-1. **Shared Business Logic**: The backend C# graph (`PXGraph`), DACs (`IBqlTable`), BQL queries, and workflows remain identical. Both Classic and Modern UI interact with the same underlying graph. Backend developers write standard Acumatica C# business logic.
+1. **Shared Business Logic**: The backend C# graph (`PXGraph`), DACs (`IBqlTable`), BQL queries, and workflows remain identical.
+   Both Classic and Modern UI interact with the same underlying graph.
+   Backend developers write standard Acumatica C# business logic.
 2. **SPA Client**: The frontend is built on **Aurelia**, using Web Components (`qp-*` custom element namespace).
 3. **Data Protocol**: All UI data exchanges, validations, and action invocations communicate with web API controllers using standardized JSON payloads.
-4. **State Machine (`PXFieldState`)**: The backend continues to be the single source of truth for field metadata (enabled, disabled, hidden, required, allowed values, error states). The server pushes these states down into `PXFieldState` objects on the client.
+4. **State Machine (`PXFieldState`)**: The backend continues to be the single source of truth for field metadata (enabled, disabled, hidden, required, allowed values, error states).
+   The server pushes these states down into `PXFieldState` objects on the client.
 
 ---
 
@@ -72,11 +77,13 @@ Used when creating brand-new business functionality (e.g., new ISV modules like 
 
 ## 4. Pattern A: Screen Extensions & Layout Mutation (Detailed)
 
-In Classic UI, modifying an ASPX page often involved overwriting large chunks of markup or fragile node diffing. Modern UI uses **DOM mutation directives** evaluated against the base template using CSS selectors.
+In Classic UI, modifying an ASPX page often involved overwriting large chunks of markup or fragile node diffing.
+Modern UI uses **DOM mutation directives** evaluated against the base template using CSS selectors.
 
 ### HTML Extension Directives
 
-All HTML extension markup must reside in a root `<template>` tag. Elements specify where and how they alter the base DOM using directive attributes:
+All HTML extension markup must reside in a root `<template>` tag.
+Elements specify where and how they alter the base DOM using directive attributes:
 
 | Directive Attribute | Target Value | Description |
 | :--- | :--- | :--- |
@@ -253,7 +260,8 @@ export class QMInspectionTest extends PXView {
 ```
 
 ### Key Elements of Modern UI Controls:
-- `<field name="...">`: Developers do **not** specify individual control types like `qp-checkbox` or `qp-text-box`. The server evaluates the DAC field's attributes (`PXDBString`, `PXDBBool`, `PXSelector`, `PXUIField`) and assigns the appropriate control automatically.
+- `<field name="...">`: Developers do **not** specify individual control types like `qp-checkbox` or `qp-text-box`.
+  The server evaluates the DAC field's attributes (`PXDBString`, `PXDBBool`, `PXSelector`, `PXUIField`) and assigns the appropriate control automatically.
 - `<qp-template name="...">`: Predefined responsive layout templates (e.g., `1-1`, `7-10-7`, `1-1-1`).
 - `slot="A"`, `slot="B"`: Layout slots defined by the parent `qp-template`.
 - `view.bind="..."`: Aurelia binding that connects a container to a property declared via `createSingle` or `createCollection`.
@@ -320,10 +328,11 @@ All Modern UI compilation is driven by Webpack through npm scripts in `FrontendS
    ```powershell
    npm run watch --- --env customFolder=development screenIds=QM201000
    ```
-   *(Always provide `screenIds` or `modules` to avoid performance degradation.)*
+*(Always provide `screenIds` or `modules` to avoid performance degradation.)*
 
 ### 2026 R1 Synchronization Innovation
-In 2025 R2, developers had to manually move files from `development\` into the customization project. In **2026 R1**:
+In 2025 R2, developers had to manually move files from `development\` into the customization project.
+In **2026 R1**:
 - You build directly against `FrontendSources\screen\src\development\`.
 - Files created in the `development` folder automatically synchronize with the Customization Project Editor.
 - When exporting a customization package, the engine includes the synchronized Modern UI files.
@@ -352,7 +361,8 @@ In the customization package archive (`.zip`), Modern UI files are stored and de
 ### Publication Lifecycle:
 1. **Validation**: The customization engine checks C# syntax, graph extensions, and Modern UI TypeScript contracts.
 2. **File Extraction**: Modern UI files are extracted into `FrontendSources`.
-3. **Automated Webpack Build**: The publisher invokes `npm run build` internally. Output JavaScript bundles are placed in `Scripts/Screens/`.
+3. **Automated Webpack Build**: The publisher invokes `npm run build` internally.
+   Output JavaScript bundles are placed in `Scripts/Screens/`.
 4. **Database & Schema Updates**: Bound custom fields, custom tables, and site map entries are executed.
 5. **Logs**: Detailed TypeScript and Webpack build logs are emitted to `App_Data\logs`.
 
@@ -377,7 +387,8 @@ Key parameters in `web.config` control frontend compilation:
 
 ### 1. Classic `Usr*` Fields Do Not Auto-Migrate
 - **Symptom**: After converting a screen to Modern UI in 2026 R1, custom DAC extension fields (`UsrXxx`) that worked fine in Classic UI disappear.
-- **Cause**: The Classic-to-Modern UI converter does not carry over DAC extension fields into the Modern UI layout. Screen Configuration (`Tools > Screen Configuration`) only exposes User-Defined Fields (UDF attributes), not C# DAC extension fields.
+- **Cause**: The Classic-to-Modern UI converter does not carry over DAC extension fields into the Modern UI layout.
+  Screen Configuration (`Tools > Screen Configuration`) only exposes User-Defined Fields (UDF attributes), not C# DAC extension fields.
 - **Remedy**: Each DAC extension field must be explicitly added using the **Modern UI Editor** (`AU201080`):
   1. Open Customization Project Editor $\rightarrow$ `Screens` $\rightarrow$ Select Screen $\rightarrow$ `Modern UI Editor`.
   2. Click **Add Field** $\rightarrow$ select Data View $\rightarrow$ select DAC $\rightarrow$ select `Usr*` fields.
@@ -388,10 +399,12 @@ Key parameters in `web.config` control frontend compilation:
 - Form personalizations (Screen Configuration) and metadata (Access Rights, Generic Inquiries) remain **tenant-specific**.
 
 ### 3. Screen ID Class Naming
-- In TypeScript, the screen class name **must strictly match the 8-character Screen ID** (e.g., `export class QM201000 extends PXScreen`). Failure to match prevents the Aurelia router from resolving the view model.
+- In TypeScript, the screen class name **must strictly match the 8-character Screen ID** (e.g., `export class QM201000 extends PXScreen`).
+  Failure to match prevents the Aurelia router from resolving the view model.
 
 ### 4. Graph Uniqueness
-- In Modern UI, each screen must have its own unique graph type. Sharing the same graph type across multiple screens without subclassing causes router state collision.
+- In Modern UI, each screen must have its own unique graph type.
+  Sharing the same graph type across multiple screens without subclassing causes router state collision.
 
 ---
 
@@ -416,6 +429,7 @@ Key parameters in `web.config` control frontend compilation:
 ## 11. Recommendations for Projects & ISVs in 2026 R1
 
 1. **Stop Building ASPX Pages Immediately**: All new custom forms must be authored with TypeScript (`.ts`) and Modern UI HTML (`.html`).
-2. **Audit Existing `Usr*` Extensions**: Inspect all customizations deployed to 2026 R1. Ensure DAC extension fields on standard forms have corresponding Modern UI TypeScript extensions and HTML mutation templates.
+2. **Audit Existing `Usr*` Extensions**: Inspect all customizations deployed to 2026 R1.
+   Ensure DAC extension fields on standard forms have corresponding Modern UI TypeScript extensions and HTML mutation templates.
 3. **Adopt the `development\` Folder Workflow**: Utilize `FrontendSources\screen\src\development\screens\` for local screen development and take advantage of 2026 R1 direct compilation and automatic package synchronization.
 4. **Validate Against 2026 R2 Deprecation**: Test complete regression suites with Classic UI disabled to ensure that smart panels, side panels, and custom actions operate seamlessly in the pure Modern UI environment.
