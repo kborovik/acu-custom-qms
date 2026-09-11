@@ -184,7 +184,7 @@ def publish_begin(session: AcumaticaClient, names: list[str]) -> None:
 
 
 def qms_endpoint_live(session: AcumaticaClient) -> bool:
-    """True when current-tenant GET InspectionPlan is 200 (empty list OK). V18."""
+    """GET /entity can list leftover QMS; InspectionPlan 200 (empty OK) is the tenant contract."""
     try:
         response = session._http.get(INSPECTION_PLAN_PATH)
     except httpx.TransportError, httpx.HTTPError:
