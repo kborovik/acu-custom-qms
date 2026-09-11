@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [v0.5.2] - 2026-09-10
+
 ### Fixed
 
 - **Publish skip (V18 / B7):** `lab5-qms` publish skips `already published`
