@@ -11,11 +11,11 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-KIT_CS = ROOT / "src" / "Lab5.QMS" / "Graph" / "KitAssemblyEntry_Extension.cs"
-ISSUE_CS = ROOT / "src" / "Lab5.QMS" / "Graph" / "INIssueEntry_Extension.cs"
-GATE_CS = ROOT / "src" / "Lab5.QMS" / "QMSLotIssueGate.cs"
-RULES_CS = ROOT / "src" / "Lab5.QMS" / "QMSLotDecisionRules.cs"
-LOT_CS = ROOT / "src" / "Lab5.QMS" / "QMSLotStatus.cs"
+KIT_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "KitAssemblyEntry_Extension.cs"
+ISSUE_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "INIssueEntry_Extension.cs"
+GATE_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSLotIssueGate.cs"
+RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSLotDecisionRules.cs"
+LOT_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSLotStatus.cs"
 
 QC_HOLD = "QC Hold"
 RELEASED = "Released"

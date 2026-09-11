@@ -26,7 +26,7 @@ USR_QMS_TABLES = (
 
 class TestPublisherV8(unittest.TestCase):
     def test_csproj_assembly_and_namespace(self) -> None:
-        csproj = ROOT / "src" / "Lab5.QMS" / "Lab5.QMS.csproj"
+        csproj = ROOT / "QMS" / "Lab5.QMS" / "Lab5.QMS.csproj"
         tree = ET.parse(csproj)
         root = tree.getroot()
         # SDK-style csproj has no xmlns; legacy has msbuild xmlns.
@@ -54,7 +54,7 @@ class TestPublisherV8(unittest.TestCase):
             )
 
     def test_qms_marker_constants(self) -> None:
-        src = (ROOT / "src" / "Lab5.QMS" / "QMS.cs").read_text(encoding="utf-8")
+        src = (ROOT / "QMS" / "Lab5.QMS" / "QMS.cs").read_text(encoding="utf-8")
         self.assertIn("namespace Lab5.QMS", src)
         self.assertIn('AssemblyFile = "Lab5.QMS.dll"', src)
         self.assertIn('PackageZip = "Lab5_QMS_Customization.zip"', src)
@@ -62,7 +62,7 @@ class TestPublisherV8(unittest.TestCase):
         self.assertIn('EndpointVersion = "22.200.001"', src)
 
     def test_project_metadata(self) -> None:
-        path = ROOT / "_project" / "ProjectMetadata.xml"
+        path = ROOT / "QMS" / "_project" / "ProjectMetadata.xml"
         root = ET.parse(path).getroot()
         self.assertEqual(root.tag, "project")
         self.assertEqual(root.get("name"), "Lab5.QMS")
@@ -74,26 +74,20 @@ class TestPublisherV8(unittest.TestCase):
 
 class TestPkgLayout(unittest.TestCase):
     def test_i_pkg_source_paths(self) -> None:
-        self.assertTrue((ROOT / "_project" / "ProjectMetadata.xml").is_file())
-        self.assertTrue((ROOT / "Scripts" / "CreateQMSTables.sql").is_file())
-        self.assertTrue((ROOT / "src" / "Lab5.QMS" / "Lab5.QMS.csproj").is_file())
+        self.assertTrue((ROOT / "QMS" / "_project" / "ProjectMetadata.xml").is_file())
+        self.assertTrue((ROOT / "QMS" / "SQL" / "CreateQMSTables.sql").is_file())
+        self.assertTrue((ROOT / "QMS" / "Lab5.QMS" / "Lab5.QMS.csproj").is_file())
+        sln = (ROOT / "QMS" / "Lab5.QMS.sln").read_text(encoding="utf-8")
+        self.assertIn(r"Lab5.QMS\Lab5.QMS.csproj", sln)
+        self.assertNotIn(r"src\Lab5.QMS", sln)
         self.assertTrue(
-            (
-                ROOT
-                / "FrontendSources"
-                / "screen"
-                / "src"
-                / "screens"
-                / "QM"
-                / "QM101000"
-                / "QM101000.ts"
-            ).is_file()
+            (ROOT / "QMS" / "screens" / "QM" / "QM101000" / "QM101000.ts").is_file()
         )
 
 
 class TestUsrQmsDdl(unittest.TestCase):
     def test_create_table_for_each_usrqms_entity(self) -> None:
-        sql = (ROOT / "Scripts" / "CreateQMSTables.sql").read_text(encoding="utf-8")
+        sql = (ROOT / "QMS" / "SQL" / "CreateQMSTables.sql").read_text(encoding="utf-8")
         created = set(
             re.findall(
                 r"CREATE TABLE \[dbo\]\.\[(UsrQMS[A-Za-z]+)\]",
@@ -103,7 +97,7 @@ class TestUsrQmsDdl(unittest.TestCase):
         self.assertEqual(set(USR_QMS_TABLES), created)
 
     def test_company_id_on_each_table(self) -> None:
-        sql = (ROOT / "Scripts" / "CreateQMSTables.sql").read_text(encoding="utf-8")
+        sql = (ROOT / "QMS" / "SQL" / "CreateQMSTables.sql").read_text(encoding="utf-8")
         for table in USR_QMS_TABLES:
             block = _table_block(sql, table)
             self.assertIn("[CompanyID] [int] NOT NULL", block, table)

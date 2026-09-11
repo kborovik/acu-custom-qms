@@ -20,7 +20,7 @@ if str(ROOT) not in sys.path:
 
 from lab5_qms import pack  # noqa: E402
 
-GI_XML = ROOT / "_project" / "GenericInquiryScreen_QM401000.xml"
+GI_XML = ROOT / "QMS" / "_project" / "GenericInquiryScreen_QM401000.xml"
 FORBIDDEN_ACTIONS = (
     "EvaluateResults",
     "ReleaseLotDecision",

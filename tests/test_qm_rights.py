@@ -91,7 +91,7 @@ class TestRolesInGraphSeedV10(unittest.TestCase):
         base = {
             "project.xml": b"<Customization/>",
             "Bin/Lab5.QMS.dll": b"MZ",
-            "FrontendSources/screen/src/screens/QM/QM301000/QM301000.html": b"old-page",
+            "screens/QM/QM301000/QM301000.html": b"old-page",
             "Scripts/CreateQMSTables.sql": b"CREATE TABLE",
         }
         same = zip_digest(blob(**base))
@@ -102,7 +102,7 @@ class TestRolesInGraphSeedV10(unittest.TestCase):
                 blob(
                     **{
                         **base,
-                        "FrontendSources/screen/src/screens/QM/QM301000/QM301000.html": b"new-page",
+                        "screens/QM/QM301000/QM301000.html": b"new-page",
                     }
                 )
             ),
@@ -226,7 +226,9 @@ class TestAspxPagesSeed(unittest.TestCase):
         self.assertEqual(len(names), 8)
         lines = []
         for name in names:
-            digest = hashlib.sha256((ROOT / "Pages" / "QM" / name).read_bytes()).hexdigest()
+            digest = hashlib.sha256(
+                (ROOT / "QMS" / "Pages" / "QM" / name).read_bytes()
+            ).hexdigest()
             lines.append(f"{name}|{digest}")
         inst = MagicMock()
         inst.ssh = "Administrator@host"

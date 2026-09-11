@@ -28,7 +28,7 @@ PX = ("PX.Data", "PX.Objects", "PX.Common", "PX.Common.Std", "PX.DbServices")
 
 class TestCsprojPxHintPaths(unittest.TestCase):
     def test_hintpath_px_assemblies(self) -> None:
-        root = ET.parse(ROOT / "src" / "Lab5.QMS" / "Lab5.QMS.csproj").getroot()
+        root = ET.parse(ROOT / "QMS" / "Lab5.QMS" / "Lab5.QMS.csproj").getroot()
         self.assertEqual(
             (root.find("PropertyGroup/AcumaticaDir").text or "").strip(),
             r"C:\Acumatica\AcumaticaERP",
@@ -97,7 +97,7 @@ class TestDllScript(unittest.TestCase):
         self.assertIn("ruff check", makefile)
         self.assertIn("python -u -m unittest discover -s tests", makefile)
         self.assertIn("clean: ##", makefile)
-        self.assertIn("rm -rf src/Lab5.QMS/bin src/Lab5.QMS/obj", makefile)
+        self.assertIn("rm -rf QMS/Lab5.QMS/bin QMS/Lab5.QMS/obj", makefile)
         self.assertIn("rm -f Lab5_QMS_Customization.zip", makefile)
         self.assertIn("__pycache__", makefile)
         phony = makefile.split(".PHONY:", 1)[1].splitlines()[0]
@@ -113,7 +113,7 @@ class TestDllScript(unittest.TestCase):
     def test_local_dll_path_release(self) -> None:
         self.assertEqual(
             dll.local_dll_path(ROOT),
-            ROOT / "src" / "Lab5.QMS" / "bin" / "Release" / pack.ASSEMBLY_DLL,
+            ROOT / "QMS" / "Lab5.QMS" / "bin" / "Release" / pack.ASSEMBLY_DLL,
         )
 
     def test_pack_publish_deploy_and_e2e_ensure_dll(self) -> None:
@@ -130,9 +130,9 @@ class TestDllScript(unittest.TestCase):
 class TestEnsureCompiled(unittest.TestCase):
     def test_fingerprint_covers_cs_csproj_and_compiler(self) -> None:
         text = dll.inputs_fingerprint(ROOT)
-        self.assertIn("src/Lab5.QMS/QMS.cs\t", text)
-        self.assertIn("src/Lab5.QMS/Graph/QMSInspectionPlanMaint.cs\t", text)
-        self.assertIn("src/Lab5.QMS/Lab5.QMS.csproj\t", text)
+        self.assertIn("QMS/Lab5.QMS/QMS.cs\t", text)
+        self.assertIn("QMS/Lab5.QMS/Graph/QMSInspectionPlanMaint.cs\t", text)
+        self.assertIn("QMS/Lab5.QMS/Lab5.QMS.csproj\t", text)
         self.assertIn("dll.py\t", text)
         self.assertNotIn("Pages/QM/", text)
         self.assertNotIn("Pages_QM/", text)

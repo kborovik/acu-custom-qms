@@ -12,8 +12,8 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXT_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "InventoryItemExt.cs"
-SQL = ROOT / "Scripts" / "CreateQMSTables.sql"
+EXT_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "InventoryItemExt.cs"
+SQL = ROOT / "QMS" / "SQL" / "CreateQMSTables.sql"
 
 USR_FIELDS = (
     "UsrQMSInspectionRequired",
@@ -51,16 +51,7 @@ class TestInventoryItemExtV1(unittest.TestCase):
 
 class TestPatternAStockItemScreen(unittest.TestCase):
     def test_modern_ui_shows_usr_fields(self) -> None:
-        base = (
-            ROOT
-            / "FrontendSources"
-            / "screen"
-            / "src"
-            / "screens"
-            / "IN"
-            / "IN202500"
-            / "extensions"
-        )
+        base = ROOT / "QMS" / "screens" / "IN" / "IN202500" / "extensions"
         html = (base / "IN202500_QMS.html").read_text(encoding="utf-8")
         ts = (base / "IN202500_QMS.ts").read_text(encoding="utf-8")
         for field in USR_FIELDS:
@@ -84,9 +75,7 @@ class TestV17_PatternAInventoryItemExtendsView(unittest.TestCase):
     def test_inventory_item_qms_extends_not_redeclares(self) -> None:
         ts = (
             ROOT
-            / "FrontendSources"
-            / "screen"
-            / "src"
+            / "QMS"
             / "screens"
             / "IN"
             / "IN202500"

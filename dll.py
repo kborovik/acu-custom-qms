@@ -3,12 +3,12 @@
 
 The live 26.101.0225 box has no Visual Studio MSBuild and no dotnet SDK.
 It does ship Roslyn csc next to the site Bin (`Bin\\roslyn\\csc.exe`). This
-script zips `src/Lab5.QMS` sources, compiles there against PX.Data /
+script zips `QMS/Lab5.QMS` sources, compiles there against PX.Data /
 PX.Objects / PX.Common / PX.Common.Std, and writes
-`src/Lab5.QMS/bin/Release/Lab5.QMS.dll`.
+`QMS/Lab5.QMS/bin/Release/Lab5.QMS.dll`.
 
 Pack, publish, deploy, live e2e, and release call `ensure_compiled` so a
-C# change under `src/Lab5.QMS` rebuilds the assembly. A matching
+C# change under `QMS/Lab5.QMS` rebuilds the assembly. A matching
 `Lab5.QMS.dll.inputs` fingerprint skips SSH.
 
 Hosted path (blank ACU_SSH) cannot compile — that is a hard error.
@@ -24,9 +24,9 @@ from pathlib import Path
 
 from lab5_qms import pack
 from lab5_qms.acu import ACU_INSTANCE_PATH, load_instance, ssh_run
+from lab5_qms.paths import cs_root
 
 ROOT = Path(__file__).resolve().parent
-SRC = ROOT / "src" / "Lab5.QMS"
 REMOTE_ZIP = "lab5-qms-src.zip"
 REMOTE_DIR = "lab5-qms-build"
 PX_ASSEMBLIES = (
@@ -53,7 +53,7 @@ FRAMEWORK_ASSEMBLIES = (
 
 def source_files(root: Path | None = None) -> list[Path]:
     """Project .cs files, excluding bin/ and obj/."""
-    src = SRC if root is None else Path(root) / "src" / "Lab5.QMS"
+    src = cs_root(root)
     files = [
         path
         for path in src.rglob("*.cs")
@@ -61,7 +61,7 @@ def source_files(root: Path | None = None) -> list[Path]:
     ]
     files.sort()
     if not files:
-        raise FileNotFoundError("src/Lab5.QMS/*.cs")
+        raise FileNotFoundError("QMS/Lab5.QMS/*.cs")
     return files
 
 
@@ -102,7 +102,7 @@ Write-Output $Out
 
 def source_zip(root: Path | None = None) -> bytes:
     """Zip compile inputs: .cs sources, csproj, and build.ps1."""
-    src = SRC if root is None else Path(root) / "src" / "Lab5.QMS"
+    src = cs_root(root)
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for path in source_files(root):
@@ -115,14 +115,14 @@ def source_zip(root: Path | None = None) -> bytes:
 
 def local_dll_path(root: Path | None = None) -> Path:
     base = ROOT if root is None else Path(root)
-    return base / "src" / "Lab5.QMS" / "bin" / "Release" / pack.ASSEMBLY_DLL
+    return cs_root(base) / "bin" / "Release" / pack.ASSEMBLY_DLL
 
 
 def compile_inputs(root: Path | None = None) -> list[Path]:
     """Sources that change the assembly: project .cs, csproj, and this compiler."""
     base = ROOT if root is None else Path(root)
     files = list(source_files(root))
-    files.append(base / "src" / "Lab5.QMS" / "Lab5.QMS.csproj")
+    files.append(cs_root(base) / "Lab5.QMS.csproj")
     files.append(base / "dll.py")
     files.sort()
     return files

@@ -85,7 +85,7 @@ def _project(zf: zipfile.ZipFile) -> ET.Element:
 class TestPackZipV8(unittest.TestCase):
     def test_package_zip_name(self) -> None:
         self.assertEqual(pack.PACKAGE_ZIP, "Lab5_QMS_Customization.zip")
-        src = (ROOT / "src" / "Lab5.QMS" / "QMS.cs").read_text(encoding="utf-8")
+        src = (ROOT / "QMS" / "Lab5.QMS" / "QMS.cs").read_text(encoding="utf-8")
         self.assertIn('PackageZip = "Lab5_QMS_Customization.zip"', src)
         self.assertIn('AssemblyFile = "Lab5.QMS.dll"', src)
         self.assertIn("namespace Lab5.QMS", src)
@@ -115,7 +115,7 @@ class TestPackIPkg(unittest.TestCase):
         for screen in SCREENS:
             self.assertIn(f"Pages/QM/{screen}.aspx", names, screen)
             self.assertIn(f"Pages/QM/{screen}.aspx.cs", names, screen)
-        meta = ET.parse(ROOT / "_project" / "ProjectMetadata.xml").getroot()
+        meta = ET.parse(ROOT / "QMS" / "_project" / "ProjectMetadata.xml").getroot()
         self.assertEqual(meta.get("name"), "Lab5.QMS")
         self.assertIn("22.200.001", meta.get("description") or "")
 
@@ -173,7 +173,7 @@ class TestProjectXmlPackedItems(unittest.TestCase):
         )
 
     def test_code_items_lab5_namespace(self) -> None:
-        src = ROOT / "src" / "Lab5.QMS"
+        src = ROOT / "QMS" / "Lab5.QMS"
         for class_name in CODE_CLASSES:
             hits = list(src.rglob(f"{class_name}.cs"))
             self.assertTrue(hits, class_name)
@@ -257,17 +257,14 @@ GRAPH_TYPES = {
 
 class TestPerTenantFileHelpers(unittest.TestCase):
     def test_arcname_and_screen_id(self) -> None:
-        qm = Path("FrontendSources/screen/src/screens/QM/QM301000/QM301000.ts")
+        qm = Path("QMS/screens/QM/QM301000/QM301000.ts")
         self.assertEqual(pack.per_tenant_arcname(qm), "screens/QM/QM301000/QM301000.ts")
         self.assertEqual(
             pack.per_tenant_app_relative(qm),
             r"screens\QM\QM301000\QM301000.ts",
         )
         self.assertEqual(pack.per_tenant_screen_id(qm), "QM301000")
-        ext = Path(
-            "FrontendSources/screen/src/screens/IN/IN202500/extensions/"
-            "IN202500_QMS.html"
-        )
+        ext = Path("QMS/screens/IN/IN202500/extensions/IN202500_QMS.html")
         self.assertEqual(
             pack.per_tenant_arcname(ext),
             "screens/IN/IN202500/extensions/IN202500_QMS.html",
@@ -278,32 +275,16 @@ class TestPerTenantFileHelpers(unittest.TestCase):
 class TestPatternBModernUi(unittest.TestCase):
     def test_screen_class_and_graph_type(self) -> None:
         for screen, graph_type in GRAPH_TYPES.items():
-            ts = (
-                ROOT
-                / "FrontendSources"
-                / "screen"
-                / "src"
-                / "screens"
-                / "QM"
-                / screen
-                / f"{screen}.ts"
-            ).read_text(encoding="utf-8")
+            ts = (ROOT / "QMS" / "screens" / "QM" / screen / f"{screen}.ts").read_text(
+                encoding="utf-8"
+            )
             self.assertIn(f"export class {screen} extends PXScreen", ts, screen)
             self.assertIn(f'graphType: "{graph_type}"', ts, screen)
 
 
 class TestPatternAStockItem(unittest.TestCase):
     def test_in202500_qms_fields_and_visible_bind(self) -> None:
-        base = (
-            ROOT
-            / "FrontendSources"
-            / "screen"
-            / "src"
-            / "screens"
-            / "IN"
-            / "IN202500"
-            / "extensions"
-        )
+        base = ROOT / "QMS" / "screens" / "IN" / "IN202500" / "extensions"
         html = (base / "IN202500_QMS.html").read_text(encoding="utf-8")
         ts = (base / "IN202500_QMS.ts").read_text(encoding="utf-8")
         self.assertIn("export class IN202500_QMS", ts)
@@ -358,7 +339,7 @@ class TestPatternAStockItem(unittest.TestCase):
 
 class TestPackDllFile(unittest.TestCase):
     def test_zip_includes_bin_dll_when_present(self) -> None:
-        dest = ROOT / "src" / "Lab5.QMS" / "bin" / "Release" / pack.ASSEMBLY_DLL
+        dest = ROOT / "QMS" / "Lab5.QMS" / "bin" / "Release" / pack.ASSEMBLY_DLL
         dest.parent.mkdir(parents=True, exist_ok=True)
         created = not dest.exists()
         previous = dest.read_bytes() if dest.exists() else None

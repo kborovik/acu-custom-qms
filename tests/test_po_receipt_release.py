@@ -11,10 +11,10 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-GRAPH_CS = ROOT / "src" / "Lab5.QMS" / "Graph" / "POReceiptEntry_Extension.cs"
-RULES_CS = ROOT / "src" / "Lab5.QMS" / "QMSReceiptReleaseRules.cs"
-LOT_CS = ROOT / "src" / "Lab5.QMS" / "QMSLotStatus.cs"
-STATUS_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSInspectionOrderStatus.cs"
+GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "POReceiptEntry_Extension.cs"
+RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSReceiptReleaseRules.cs"
+LOT_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSLotStatus.cs"
+STATUS_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionOrderStatus.cs"
 
 QC_HOLD = "QC Hold"
 RELEASED = "Released"
@@ -253,7 +253,7 @@ class TestGraphOverride(unittest.TestCase):
             "QMSLotIssueGate.WriteLotStatus(Base, inventoryID, lotSerialNbr, lotStatus)",
             src,
         )
-        gate = (ROOT / "src" / "Lab5.QMS" / "QMSLotIssueGate.cs").read_text(
+        gate = (ROOT / "QMS" / "Lab5.QMS" / "QMSLotIssueGate.cs").read_text(
             encoding="utf-8"
         )
         self.assertIn("INLotSerialStatus.lotSerialNbr", gate)

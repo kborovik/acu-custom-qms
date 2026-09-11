@@ -24,7 +24,7 @@ Recipes (never `acu check` — destructive tenant rebuild):
 | Recipe | What it does |
 | --- | --- |
 | `gmake check` | `ruff format --check`, `ruff check`, unit tests (no tenant) |
-| `gmake build` | compile `Lab5.QMS.dll` if `src/Lab5.QMS` C# changed; write zip |
+| `gmake build` | compile `Lab5.QMS.dll` if `QMS/Lab5.QMS` C# changed; write zip |
 | `gmake deploy` | pack + CustomizationApi publish + Role / `RolesInGraph` / `UsrQMSSetup` seed |
 | `gmake e2e` | `gmake check` + `acu config check` + live e2e (publishes if the package digest differs) |
 | `gmake release` | unit tests, compile if stale, bump, tag, pack, `gh release` (no e2e) |

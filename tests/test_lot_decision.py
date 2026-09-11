@@ -11,20 +11,11 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-GRAPH_CS = ROOT / "src" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
-RULES_CS = ROOT / "src" / "Lab5.QMS" / "QMSLotDecisionRules.cs"
-LOT_CS = ROOT / "src" / "Lab5.QMS" / "QMSLotStatus.cs"
-NCR_RULES_CS = ROOT / "src" / "Lab5.QMS" / "QMSNonConformanceRules.cs"
-TS = (
-    ROOT
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "screens"
-    / "QM"
-    / "QM301000"
-    / "QM301000.ts"
-)
+GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
+RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSLotDecisionRules.cs"
+LOT_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSLotStatus.cs"
+NCR_RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSNonConformanceRules.cs"
+TS = ROOT / "QMS" / "screens" / "QM" / "QM301000" / "QM301000.ts"
 
 QC_HOLD = "QC Hold"
 RELEASED = "Released"
@@ -313,7 +304,7 @@ class TestLotStatusSetILot(unittest.TestCase):
             "QMSLotIssueGate.WriteLotStatus(this, inventoryID, lotSerialNbr, lotStatus)",
             graph,
         )
-        gate = (ROOT / "src" / "Lab5.QMS" / "QMSLotIssueGate.cs").read_text(
+        gate = (ROOT / "QMS" / "Lab5.QMS" / "QMSLotIssueGate.cs").read_text(
             encoding="utf-8"
         )
         self.assertIn("PXDatabase.Update<INLotSerialStatusByCostCenter>(", gate)
@@ -325,7 +316,7 @@ class TestLotStatusSetILot(unittest.TestCase):
             "graph.Caches[typeof(INLotSerialStatusByCostCenter)].Update(lot)",
             gate,
         )
-        ext = (ROOT / "src" / "Lab5.QMS" / "DAC" / "INLotSerialStatusExt.cs").read_text(
+        ext = (ROOT / "QMS" / "Lab5.QMS" / "DAC" / "INLotSerialStatusExt.cs").read_text(
             encoding="utf-8"
         )
         self.assertIn(
@@ -333,7 +324,7 @@ class TestLotStatusSetILot(unittest.TestCase):
             ext,
         )
         self.assertIn("UsrQMSLotStatus", ext)
-        sql = (ROOT / "Scripts" / "CreateQMSTables.sql").read_text(encoding="utf-8")
+        sql = (ROOT / "QMS" / "SQL" / "CreateQMSTables.sql").read_text(encoding="utf-8")
         self.assertIn(
             "COL_LENGTH(N'dbo.INLotSerialStatus', N'UsrQMSLotStatus')",
             sql,

@@ -13,32 +13,14 @@ from decimal import Decimal
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PLAN_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSInspectionPlan.cs"
-TEST_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSInspectionPlanTest.cs"
-STATUS_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSInspectionPlanStatus.cs"
-GRAPH_CS = ROOT / "src" / "Lab5.QMS" / "Graph" / "QMSInspectionPlanMaint.cs"
-RULES_CS = ROOT / "src" / "Lab5.QMS" / "QMSInspectionPlanRules.cs"
-HTML = (
-    ROOT
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "screens"
-    / "QM"
-    / "QM201000"
-    / "QM201000.html"
-)
-TS = (
-    ROOT
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "screens"
-    / "QM"
-    / "QM201000"
-    / "QM201000.ts"
-)
-SQL = ROOT / "Scripts" / "CreateQMSTables.sql"
+PLAN_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionPlan.cs"
+TEST_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionPlanTest.cs"
+STATUS_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionPlanStatus.cs"
+GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSInspectionPlanMaint.cs"
+RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSInspectionPlanRules.cs"
+HTML = ROOT / "QMS" / "screens" / "QM" / "QM201000" / "QM201000.html"
+TS = ROOT / "QMS" / "screens" / "QM" / "QM201000" / "QM201000.ts"
+SQL = ROOT / "QMS" / "SQL" / "CreateQMSTables.sql"
 
 PLAN_FIELDS = (
     "PlanID",

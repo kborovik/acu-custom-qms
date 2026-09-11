@@ -13,21 +13,12 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
-PLAN_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSInspectionPlan.cs"
-ORDER_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSInspectionOrder.cs"
-GRAPH_CS = ROOT / "src" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
-RULES_CS = ROOT / "src" / "Lab5.QMS" / "QMSAuditRules.cs"
-HTML = (
-    ROOT
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "screens"
-    / "QM"
-    / "QM301000"
-    / "QM301000.html"
-)
-SQL = ROOT / "Scripts" / "CreateQMSTables.sql"
+PLAN_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionPlan.cs"
+ORDER_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionOrder.cs"
+GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
+RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSAuditRules.cs"
+HTML = ROOT / "QMS" / "screens" / "QM" / "QM301000" / "QM301000.html"
+SQL = ROOT / "QMS" / "SQL" / "CreateQMSTables.sql"
 
 QUALITY_MANAGER = "Quality Manager"
 INGESTION_ACCOUNT = "qms-ingestion"
@@ -237,7 +228,7 @@ class TestReleaseGateIRoleV3(unittest.TestCase):
             "QMSAuditRules.IsIngestionServiceAccount(QMSAccess.CurrentUserName())",
             graph,
         )
-        access = (ROOT / "src" / "Lab5.QMS" / "QMSAccess.cs").read_text(
+        access = (ROOT / "QMS" / "Lab5.QMS" / "QMSAccess.cs").read_text(
             encoding="utf-8"
         )
         self.assertIn("PXAccess.GetRoles(PXAccess.GetUserName())", access)

@@ -18,6 +18,8 @@ import zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+from lab5_qms.paths import cs_root, customization_root, sql_file
+
 ROOT = Path(__file__).resolve().parents[1]
 
 PACKAGE_ZIP = "Lab5_QMS_Customization.zip"
@@ -37,7 +39,7 @@ CLASS_RE = re.compile(
 
 
 def ensure_assembly(root: Path | None = None) -> Path:
-    """Compile Lab5.QMS.dll when src/Lab5.QMS C# is newer than the assembly."""
+    """Compile Lab5.QMS.dll when QMS/Lab5.QMS C# is newer than the assembly."""
     root = ROOT if root is None else Path(root)
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
@@ -58,8 +60,8 @@ def package_zip(root: Path | None = None, *, ensure_dll: bool = False) -> bytes:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("project.xml", xml_bytes)
-        for rel in _pkg_members(root):
-            zf.write(root / rel, arcname=rel.as_posix())
+        for rel, arcname in _pkg_members(root):
+            zf.write(root / rel, arcname=arcname)
         for rel in _frontend_files():
             zf.write(root / rel, arcname=per_tenant_arcname(rel))
         for src in _aspx_sources(root):
@@ -84,23 +86,24 @@ def write_package(
 
 
 def _project_xml(root: Path) -> ET.Element:
-    meta = ET.parse(root / "_project" / "ProjectMetadata.xml").getroot()
+    proj = customization_root(root) / "_project"
+    meta = ET.parse(proj / "ProjectMetadata.xml").getroot()
     customization = ET.Element("Customization")
     customization.set("level", meta.get("level") or "0")
     customization.set("description", meta.get("description") or "")
     customization.set("product-version", "22.200.001")
 
-    endpoint_doc = ET.parse(root / "_project" / "QMS.xml")
+    endpoint_doc = ET.parse(proj / "QMS.xml")
     customization.append(endpoint_doc.getroot())
 
-    sitemap_doc = ET.parse(root / "_project" / "SiteMap.xml")
+    sitemap_doc = ET.parse(proj / "SiteMap.xml")
     customization.append(sitemap_doc.getroot())
 
     sql_el = ET.SubElement(customization, "Sql")
     sql_el.set("TableName", "CreateQMSTables")
     sql_el.set(
         "CustomScript",
-        (root / "Scripts" / "CreateQMSTables.sql").read_text(encoding="utf-8"),
+        sql_file(root).read_text(encoding="utf-8"),
     )
 
     # No <Page>: 26.101 NRE without path; path=~/Pages/QM/*.aspx is not OOTB.
@@ -121,15 +124,23 @@ def _project_xml(root: Path) -> ET.Element:
     return customization
 
 
-def _pkg_members(root: Path) -> list[Path]:
+def _pkg_members(root: Path) -> list[tuple[Path, str]]:
+    """(path relative to repo root, zip arcname). Zip names stay I.pkg."""
+    qms = Path("QMS")
     members = [
-        Path("_project") / "ProjectMetadata.xml",
-        Path("_project") / "QMS.xml",
-        Path("_project") / "SiteMap.xml",
-        Path("_project") / "GenericInquiryScreen_QM401000.xml",
-        Path("Scripts") / "CreateQMSTables.sql",
+        (qms / "_project" / "ProjectMetadata.xml", "_project/ProjectMetadata.xml"),
+        (qms / "_project" / "QMS.xml", "_project/QMS.xml"),
+        (qms / "_project" / "SiteMap.xml", "_project/SiteMap.xml"),
+        (
+            qms / "_project" / "GenericInquiryScreen_QM401000.xml",
+            "_project/GenericInquiryScreen_QM401000.xml",
+        ),
+        (qms / "SQL" / "CreateQMSTables.sql", "Scripts/CreateQMSTables.sql"),
     ]
-    for path in [*members, *_frontend_files()]:
+    for rel, _arc in members:
+        if not (root / rel).is_file():
+            raise FileNotFoundError(rel)
+    for path in _frontend_files():
         if not (root / path).is_file():
             raise FileNotFoundError(path)
     return members
@@ -139,28 +150,12 @@ def _frontend_qm_files() -> list[Path]:
     files: list[Path] = []
     for screen in PAGES:
         for suffix in (".html", ".ts"):
-            files.append(
-                Path("FrontendSources")
-                / "screen"
-                / "src"
-                / "screens"
-                / "QM"
-                / screen
-                / f"{screen}{suffix}"
-            )
+            files.append(Path("QMS") / "screens" / "QM" / screen / f"{screen}{suffix}")
     return files
 
 
 def _frontend_in202500_qms() -> list[Path]:
-    base = (
-        Path("FrontendSources")
-        / "screen"
-        / "src"
-        / "screens"
-        / "IN"
-        / "IN202500"
-        / "extensions"
-    )
+    base = Path("QMS") / "screens" / "IN" / "IN202500" / "extensions"
     return [base / "IN202500_QMS.html", base / "IN202500_QMS.ts"]
 
 
@@ -192,7 +187,7 @@ def per_tenant_screen_id(rel: Path) -> str:
 
 def _aspx_sources(root: Path) -> list[Path]:
     files = [
-        Path("Pages") / "QM" / f"{screen}{suffix}"
+        Path("QMS") / "Pages" / "QM" / f"{screen}{suffix}"
         for screen in PAGES
         for suffix in (".aspx", ".aspx.cs")
     ]
@@ -203,21 +198,23 @@ def _aspx_sources(root: Path) -> list[Path]:
 
 
 def _aspx_arcname(src: Path) -> str:
-    return src.as_posix()
+    parts = src.parts
+    idx = parts.index("Pages")
+    return "/".join(parts[idx:])
 
 
 def _aspx_app_relative(src: Path) -> str:
-    return "\\".join(src.parts)
+    return "\\".join(_aspx_arcname(src).split("/"))
 
 
 def _cs_files(root: Path) -> list[Path]:
-    src = root / "src" / "Lab5.QMS"
+    src = cs_root(root)
     files = [
         p for p in src.rglob("*.cs") if "bin" not in p.parts and "obj" not in p.parts
     ]
     files.sort()
     if not files:
-        raise FileNotFoundError("src/Lab5.QMS/*.cs")
+        raise FileNotFoundError("QMS/Lab5.QMS/*.cs")
     return files
 
 
@@ -244,9 +241,7 @@ def _classify_cs(source: str, fallback: str) -> tuple[str, str, str]:
 
 def _dll_path(root: Path) -> Path | None:
     hits = sorted(
-        p
-        for p in (root / "src" / "Lab5.QMS").glob("bin/**/" + ASSEMBLY_DLL)
-        if p.is_file()
+        p for p in cs_root(root).glob("bin/**/" + ASSEMBLY_DLL) if p.is_file()
     )
     return hits[0] if hits else None
 

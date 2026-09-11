@@ -288,6 +288,12 @@ To support computer-assisted raw-material release:
 
 ## Package and deploy
 
+Customization sources live under `QMS/` (C# class library, REST-host
+ASPX, Modern UI screens, `_project` XML, DDL). Python packer, tests, and
+release tooling stay at the repo root. Zip member names match the site
+(`Pages/QM/`, `screens/…`, `_project/`, `Scripts/CreateQMSTables.sql`)
+not the repo prefix.
+
 The customization project packs to:
 
 ```

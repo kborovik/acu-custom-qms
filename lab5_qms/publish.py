@@ -813,7 +813,9 @@ def _ensure_qm_aspx_pages() -> None:
     root = Path(__file__).resolve().parents[1]
     names = _qm_aspx_names()
     local_hash = {
-        name: hashlib.sha256((root / "Pages" / "QM" / name).read_bytes()).hexdigest()
+        name: hashlib.sha256(
+            (root / "QMS" / "Pages" / "QM" / name).read_bytes()
+        ).hexdigest()
         for name in names
     }
     win_dir = (ACU_INSTANCE_PATH + r"\Pages\QM").replace("'", "''")
@@ -838,7 +840,7 @@ def _ensure_qm_aspx_pages() -> None:
     for name in names:
         if remote_hash.get(name) == local_hash[name]:
             continue
-        local = root / "Pages" / "QM" / name
+        local = root / "QMS" / "Pages" / "QM" / name
         remote = f"{inst.ssh}:{posix_dir}/{name}"
         result = subprocess.run(
             ["scp", "-o", "BatchMode=yes", str(local), remote],

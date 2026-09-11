@@ -11,31 +11,13 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-ORDER_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSInspectionOrder.cs"
-RULES_CS = ROOT / "src" / "Lab5.QMS" / "QMSCoAFileRules.cs"
-HTML = (
-    ROOT
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "screens"
-    / "QM"
-    / "QM301000"
-    / "QM301000.html"
-)
-TS = (
-    ROOT
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "screens"
-    / "QM"
-    / "QM301000"
-    / "QM301000.ts"
-)
-ENDPOINT_XML = ROOT / "_project" / "QMS.xml"
-SQL = ROOT / "Scripts" / "CreateQMSTables.sql"
-QMS_CS = ROOT / "src" / "Lab5.QMS" / "QMS.cs"
+ORDER_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionOrder.cs"
+RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSCoAFileRules.cs"
+HTML = ROOT / "QMS" / "screens" / "QM" / "QM301000" / "QM301000.html"
+TS = ROOT / "QMS" / "screens" / "QM" / "QM301000" / "QM301000.ts"
+ENDPOINT_XML = ROOT / "QMS" / "_project" / "QMS.xml"
+SQL = ROOT / "QMS" / "SQL" / "CreateQMSTables.sql"
+QMS_CS = ROOT / "QMS" / "Lab5.QMS" / "QMS.cs"
 
 PDF = ".pdf"
 JSON = ".json"

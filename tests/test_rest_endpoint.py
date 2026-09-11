@@ -12,8 +12,8 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-ENDPOINT_XML = ROOT / "_project" / "QMS.xml"
-QMS_CS = ROOT / "src" / "Lab5.QMS" / "QMS.cs"
+ENDPOINT_XML = ROOT / "QMS" / "_project" / "QMS.xml"
+QMS_CS = ROOT / "QMS" / "Lab5.QMS" / "QMS.cs"
 NS = "{http://www.acumatica.com/entity/maintenance/5.31}"
 
 ENTITY_VERBS = {

@@ -11,31 +11,13 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DAC_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSNonConformance.cs"
-STATUS_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSNonConformanceStatus.cs"
-GRAPH_CS = ROOT / "src" / "Lab5.QMS" / "Graph" / "QMSNonConformanceEntry.cs"
-RULES_CS = ROOT / "src" / "Lab5.QMS" / "QMSNonConformanceRules.cs"
-HTML = (
-    ROOT
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "screens"
-    / "QM"
-    / "QM302000"
-    / "QM302000.html"
-)
-TS = (
-    ROOT
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "screens"
-    / "QM"
-    / "QM302000"
-    / "QM302000.ts"
-)
-SQL = ROOT / "Scripts" / "CreateQMSTables.sql"
+DAC_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSNonConformance.cs"
+STATUS_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSNonConformanceStatus.cs"
+GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSNonConformanceEntry.cs"
+RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSNonConformanceRules.cs"
+HTML = ROOT / "QMS" / "screens" / "QM" / "QM302000" / "QM302000.html"
+TS = ROOT / "QMS" / "screens" / "QM" / "QM302000" / "QM302000.ts"
+SQL = ROOT / "QMS" / "SQL" / "CreateQMSTables.sql"
 
 STATUS_OPEN = "O"
 STATUS_IN_INVESTIGATION = "I"

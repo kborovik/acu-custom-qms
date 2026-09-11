@@ -71,7 +71,7 @@ deploy: .venv ## Pack, publish Lab5.QMS, seed Role + QM rights
 
 clean: ## Remove compiled DLL, pack zip, and temp artifacts
 	$(call header,Cleaning)
-	rm -rf src/Lab5.QMS/bin src/Lab5.QMS/obj .ruff_cache .pytest_cache findings .vs $(call rwildcard,,__pycache__)
+	rm -rf QMS/Lab5.QMS/bin QMS/Lab5.QMS/obj .ruff_cache .pytest_cache findings .vs $(call rwildcard,,__pycache__)
 	rm -f Lab5_QMS_Customization.zip .release-notes $(call rwildcard,,*.pyc) $(call rwildcard,,.DS_Store) $(call rwildcard,,*.user) $(call rwildcard,,*.suo)
 
 preflight: .venv ## Read-only acu config check against .env

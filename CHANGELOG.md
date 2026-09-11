@@ -4,8 +4,12 @@
 
 ### Changed
 
-- **ASPX source path:** REST host pages live at repo `Pages/QM/` (same
-  as zip and site). Dropped the `Pages_QM/` alias folder.
+- **Customization sources under `QMS/`:** C# (`QMS/Lab5.QMS/`), REST-host
+  pages (`QMS/Pages/QM/`), Modern UI (`QMS/screens/`), package XML
+  (`QMS/_project/`), and DDL (`QMS/SQL/CreateQMSTables.sql`) live in one
+  folder. Zip and site paths are unchanged (`Pages/QM/`, `screens/…`,
+  `_project/`, `Scripts/CreateQMSTables.sql`). Python packer, tests, and
+  `Scripts/changelog` stay at the repo root.
 
 ### Fixed
 

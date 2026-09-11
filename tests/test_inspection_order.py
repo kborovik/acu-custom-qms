@@ -14,32 +14,14 @@ from decimal import Decimal
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-ORDER_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSInspectionOrder.cs"
-RESULT_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSInspectionOrderResult.cs"
-STATUS_CS = ROOT / "src" / "Lab5.QMS" / "DAC" / "QMSInspectionOrderStatus.cs"
-GRAPH_CS = ROOT / "src" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
-RULES_CS = ROOT / "src" / "Lab5.QMS" / "QMSInspectionOrderRules.cs"
-HTML = (
-    ROOT
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "screens"
-    / "QM"
-    / "QM301000"
-    / "QM301000.html"
-)
-TS = (
-    ROOT
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "screens"
-    / "QM"
-    / "QM301000"
-    / "QM301000.ts"
-)
-SQL = ROOT / "Scripts" / "CreateQMSTables.sql"
+ORDER_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionOrder.cs"
+RESULT_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionOrderResult.cs"
+STATUS_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionOrderStatus.cs"
+GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
+RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSInspectionOrderRules.cs"
+HTML = ROOT / "QMS" / "screens" / "QM" / "QM301000" / "QM301000.html"
+TS = ROOT / "QMS" / "screens" / "QM" / "QM301000" / "QM301000.ts"
+SQL = ROOT / "QMS" / "SQL" / "CreateQMSTables.sql"
 
 LINE_PASS = "P"
 LINE_FAIL = "F"
