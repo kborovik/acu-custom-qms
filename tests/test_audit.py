@@ -7,28 +7,23 @@
 
 from __future__ import annotations
 
+import sys
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID, uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from acuqms.paths import FRONTEND_SCREENS_REL  # noqa: E402
+
 PLAN_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionPlan.cs"
 ORDER_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionOrder.cs"
 GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
 RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSAuditRules.cs"
-HTML = (
-    ROOT
-    / "QMS"
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "development"
-    / "screens"
-    / "QM"
-    / "QM301000"
-    / "QM301000.html"
-)
+HTML = ROOT / FRONTEND_SCREENS_REL / "QM" / "QM301000" / "QM301000.html"
 SQL = ROOT / "QMS" / "SQL" / "CreateQMSTables.sql"
 
 QUALITY_MANAGER = "Quality Manager"

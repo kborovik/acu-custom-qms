@@ -7,38 +7,22 @@
 
 from __future__ import annotations
 
+import sys
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from acuqms.paths import FRONTEND_SCREENS_REL  # noqa: E402
+
 DAC_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSNonConformance.cs"
 STATUS_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSNonConformanceStatus.cs"
 GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSNonConformanceEntry.cs"
 RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSNonConformanceRules.cs"
-HTML = (
-    ROOT
-    / "QMS"
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "development"
-    / "screens"
-    / "QM"
-    / "QM302000"
-    / "QM302000.html"
-)
-TS = (
-    ROOT
-    / "QMS"
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "development"
-    / "screens"
-    / "QM"
-    / "QM302000"
-    / "QM302000.ts"
-)
+HTML = ROOT / FRONTEND_SCREENS_REL / "QM" / "QM302000" / "QM302000.html"
+TS = ROOT / FRONTEND_SCREENS_REL / "QM" / "QM302000" / "QM302000.ts"
 SQL = ROOT / "QMS" / "SQL" / "CreateQMSTables.sql"
 
 STATUS_OPEN = "O"

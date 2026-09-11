@@ -8,10 +8,16 @@
 from __future__ import annotations
 
 import re
+import sys
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from acuqms.paths import FRONTEND_SCREENS_REL  # noqa: E402
+
 EXT_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "InventoryItemExt.cs"
 SQL = ROOT / "QMS" / "SQL" / "CreateQMSTables.sql"
 
@@ -51,18 +57,7 @@ class TestInventoryItemExtV1(unittest.TestCase):
 
 class TestPatternAStockItemScreen(unittest.TestCase):
     def test_modern_ui_shows_usr_fields(self) -> None:
-        base = (
-            ROOT
-            / "QMS"
-            / "FrontendSources"
-            / "screen"
-            / "src"
-            / "development"
-            / "screens"
-            / "IN"
-            / "IN202500"
-            / "extensions"
-        )
+        base = ROOT / FRONTEND_SCREENS_REL / "IN" / "IN202500" / "extensions"
         html = (base / "IN202500_QMS.html").read_text(encoding="utf-8")
         ts = (base / "IN202500_QMS.ts").read_text(encoding="utf-8")
         for field in USR_FIELDS:
@@ -86,12 +81,7 @@ class TestV17_PatternAInventoryItemExtendsView(unittest.TestCase):
     def test_inventory_item_qms_extends_not_redeclares(self) -> None:
         ts = (
             ROOT
-            / "QMS"
-            / "FrontendSources"
-            / "screen"
-            / "src"
-            / "development"
-            / "screens"
+            / FRONTEND_SCREENS_REL
             / "IN"
             / "IN202500"
             / "extensions"

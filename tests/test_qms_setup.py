@@ -16,6 +16,9 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+from acuqms.paths import FRONTEND_SCREENS_REL  # noqa: E402
+
 SETUP_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSSetup.cs"
 GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSSetupMaint.cs"
 RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSSetupRules.cs"
@@ -23,30 +26,8 @@ ORDER_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionOrder.cs"
 ORDER_GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
 NCR_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSNonConformance.cs"
 NCR_GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSNonConformanceEntry.cs"
-HTML = (
-    ROOT
-    / "QMS"
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "development"
-    / "screens"
-    / "QM"
-    / "QM101000"
-    / "QM101000.html"
-)
-TS = (
-    ROOT
-    / "QMS"
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "development"
-    / "screens"
-    / "QM"
-    / "QM101000"
-    / "QM101000.ts"
-)
+HTML = ROOT / FRONTEND_SCREENS_REL / "QM" / "QM101000" / "QM101000.html"
+TS = ROOT / FRONTEND_SCREENS_REL / "QM" / "QM101000" / "QM101000.ts"
 SITEMAP = ROOT / "QMS" / "_project" / "SiteMap.xml"
 SQL = ROOT / "QMS" / "SQL" / "CreateQMSTables.sql"
 

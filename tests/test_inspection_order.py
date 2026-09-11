@@ -8,41 +8,25 @@
 from __future__ import annotations
 
 import re
+import sys
 import unittest
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from acuqms.paths import FRONTEND_SCREENS_REL  # noqa: E402
+
 ORDER_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionOrder.cs"
 RESULT_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionOrderResult.cs"
 STATUS_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionOrderStatus.cs"
 GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
 RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSInspectionOrderRules.cs"
-HTML = (
-    ROOT
-    / "QMS"
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "development"
-    / "screens"
-    / "QM"
-    / "QM301000"
-    / "QM301000.html"
-)
-TS = (
-    ROOT
-    / "QMS"
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "development"
-    / "screens"
-    / "QM"
-    / "QM301000"
-    / "QM301000.ts"
-)
+HTML = ROOT / FRONTEND_SCREENS_REL / "QM" / "QM301000" / "QM301000.html"
+TS = ROOT / FRONTEND_SCREENS_REL / "QM" / "QM301000" / "QM301000.ts"
 SQL = ROOT / "QMS" / "SQL" / "CreateQMSTables.sql"
 
 LINE_PASS = "P"

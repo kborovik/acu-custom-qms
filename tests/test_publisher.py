@@ -8,11 +8,16 @@
 from __future__ import annotations
 
 import re
+import sys
 import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from acuqms.paths import FRONTEND_SCREENS_REL  # noqa: E402
 
 USR_QMS_TABLES = (
     "UsrQMSInspectionPlan",
@@ -81,18 +86,7 @@ class TestPkgLayout(unittest.TestCase):
         self.assertIn(r"Lab5.QMS\Lab5.QMS.csproj", sln)
         self.assertNotIn(r"src\Lab5.QMS", sln)
         self.assertTrue(
-            (
-                ROOT
-                / "QMS"
-                / "FrontendSources"
-                / "screen"
-                / "src"
-                / "development"
-                / "screens"
-                / "QM"
-                / "QM101000"
-                / "QM101000.ts"
-            ).is_file()
+            (ROOT / FRONTEND_SCREENS_REL / "QM" / "QM101000" / "QM101000.ts").is_file()
         )
         self.assertFalse((ROOT / "QMS" / "screens").exists())
 

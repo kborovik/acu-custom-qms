@@ -8,40 +8,24 @@
 from __future__ import annotations
 
 import re
+import sys
 import unittest
 from decimal import Decimal
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from acuqms.paths import FRONTEND_SCREENS_REL  # noqa: E402
+
 PLAN_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionPlan.cs"
 TEST_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionPlanTest.cs"
 STATUS_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionPlanStatus.cs"
 GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSInspectionPlanMaint.cs"
 RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSInspectionPlanRules.cs"
-HTML = (
-    ROOT
-    / "QMS"
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "development"
-    / "screens"
-    / "QM"
-    / "QM201000"
-    / "QM201000.html"
-)
-TS = (
-    ROOT
-    / "QMS"
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "development"
-    / "screens"
-    / "QM"
-    / "QM201000"
-    / "QM201000.ts"
-)
+HTML = ROOT / FRONTEND_SCREENS_REL / "QM" / "QM201000" / "QM201000.html"
+TS = ROOT / FRONTEND_SCREENS_REL / "QM" / "QM201000" / "QM201000.ts"
 SQL = ROOT / "QMS" / "SQL" / "CreateQMSTables.sql"
 
 PLAN_FIELDS = (

@@ -7,26 +7,21 @@
 
 from __future__ import annotations
 
+import sys
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from acuqms.paths import FRONTEND_SCREENS_REL  # noqa: E402
+
 GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
 RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSLotDecisionRules.cs"
 LOT_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSLotStatus.cs"
 NCR_RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSNonConformanceRules.cs"
-TS = (
-    ROOT
-    / "QMS"
-    / "FrontendSources"
-    / "screen"
-    / "src"
-    / "development"
-    / "screens"
-    / "QM"
-    / "QM301000"
-    / "QM301000.ts"
-)
+TS = ROOT / FRONTEND_SCREENS_REL / "QM" / "QM301000" / "QM301000.ts"
 
 QC_HOLD = "QC Hold"
 RELEASED = "Released"
