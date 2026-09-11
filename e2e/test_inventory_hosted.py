@@ -261,6 +261,16 @@ class TestStockItemModernUiV17(unittest.TestCase):
         self.assertIn("export interface InventoryItem_QMS extends InventoryItem", ts)
         self.assertIn("export class InventoryItem_QMS", ts)
         self.assertNotIn("export class InventoryItem {", ts)
+        for field in (
+            "UsrQMSInspectionRequired",
+            "UsrQMSInspectionPlanID",
+            "UsrMinShelfLifeDays",
+        ):
+            self.assertRegex(
+                ts,
+                rf"@controlConfig\([^)]*\)\s+{field}: PXFieldState",
+                field,
+            )
 
     def test_pattern_b_actions_notes_files_on_instance(self) -> None:
         def _read_ts(screen: str) -> str:
@@ -323,6 +333,66 @@ class TestStockItemModernUiV17(unittest.TestCase):
             if ui != "D":
                 locked.append(f"{screen} company {company}={ui}")
         self.assertEqual(locked, [], f"QM screens still Classic-locked: {locked}")
+
+
+class TestStockItemWebpackExtendsViewV17(unittest.TestCase):
+    """V17 / B11: webpack @extendsView so New Record binds Item.UsrQMS* FieldState."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        ensure_published()
+
+    def test_in202500_webpack_extends_view_fieldstate(self) -> None:
+        tenant = instance().tenant
+        with client() as session:
+            compiled = session._http.get(f"/Scripts/Screens/{tenant}/IN202500.html")
+            self.assertEqual(
+                compiled.status_code,
+                200,
+                f"IN202500 compiled html -> {compiled.status_code}",
+            )
+            html = compiled.text
+            bundle_name = None
+            for token in html.replace("'", '"').split('"'):
+                if token.startswith("IN202500.") and token.endswith(".bundle.js"):
+                    bundle_name = token
+                    break
+            self.assertIsNotNone(
+                bundle_name, f"IN202500.html missing bundle: {html[:400]}"
+            )
+            bundle = session._http.get(f"/Scripts/Screens/{tenant}/{bundle_name}")
+            screen = session._checked(
+                session._http.get(
+                    "/Main",
+                    params={"ScreenId": "IN202500"},
+                    follow_redirects=True,
+                )
+            )
+        self.assertEqual(
+            bundle.status_code,
+            200,
+            f"{bundle_name} -> {bundle.status_code}",
+        )
+        js = bundle.text
+        self.assertIn("extendsView", js)
+        self.assertIn("InventoryItem_QMS", js)
+        for field in (
+            "UsrQMSInspectionRequired",
+            "UsrQMSInspectionPlanID",
+            "UsrMinShelfLifeDays",
+        ):
+            self.assertIn(field, js, field)
+        self.assertNotIn("cannot be bound to a FieldState", js)
+        url = str(screen.url)
+        self.assertTrue(
+            "ScreenId=IN202500" in url or "ScreenID=IN202500" in url,
+            f"IN202500 dropped from url after redirects: {url}",
+        )
+        self.assertNotRegex(
+            url,
+            r"\.aspx(\?|$)",
+            f"IN202500 opened Classic ASPX: {url}",
+        )
 
 
 if __name__ == "__main__":

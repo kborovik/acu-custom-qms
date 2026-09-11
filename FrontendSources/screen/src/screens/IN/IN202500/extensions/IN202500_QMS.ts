@@ -16,5 +16,6 @@ export class InventoryItem_QMS {
   @controlConfig({ allowEdit: true })
   UsrQMSInspectionPlanID: PXFieldState;
 
+  @controlConfig({})
   UsrMinShelfLifeDays: PXFieldState;
 }

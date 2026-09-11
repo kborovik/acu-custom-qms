@@ -315,6 +315,16 @@ class TestPatternAStockItem(unittest.TestCase):
         )
         self.assertNotIn("export class InventoryItem {", ts)
         self.assertNotIn("InventoryItemExtension", ts)
+        for field in (
+            "UsrQMSInspectionRequired",
+            "UsrQMSInspectionPlanID",
+            "UsrMinShelfLifeDays",
+        ):
+            self.assertRegex(
+                ts,
+                rf"@controlConfig\([^)]*\)\s+{field}: PXFieldState",
+                field,
+            )
         self.assertNotIn("if.bind", html)
         self.assertIn("visible.bind", html)
         for field in (

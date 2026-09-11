@@ -78,6 +78,36 @@ class TestPatternAStockItemScreen(unittest.TestCase):
         self.assertNotIn("InventoryItemExtension", ts)
 
 
+class TestV17_PatternAInventoryItemExtendsView(unittest.TestCase):
+    """V17 / B11: Pattern A extends InventoryItem; webpack keeps Usr* FieldState."""
+
+    def test_inventory_item_qms_extends_not_redeclares(self) -> None:
+        ts = (
+            ROOT
+            / "FrontendSources"
+            / "screen"
+            / "src"
+            / "screens"
+            / "IN"
+            / "IN202500"
+            / "extensions"
+            / "IN202500_QMS.ts"
+        ).read_text(encoding="utf-8")
+        self.assertIn("export interface InventoryItem_QMS extends InventoryItem", ts)
+        self.assertIn("export class InventoryItem_QMS", ts)
+        self.assertNotIn("export class InventoryItem {", ts)
+        self.assertIn(
+            'import { IN202500, InventoryItem } from "src/screens/IN/IN202500/IN202500"',
+            ts,
+        )
+        for name in USR_FIELDS:
+            self.assertRegex(
+                ts,
+                rf"@controlConfig\([^)]*\)\s+{name}: PXFieldState",
+                name,
+            )
+
+
 class TestInventoryItemUsrColumns(unittest.TestCase):
     def test_alter_inventory_item_adds_usr_columns(self) -> None:
         sql = SQL.read_text(encoding="utf-8")

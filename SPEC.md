@@ -94,7 +94,7 @@ T40|x|skip already-published only when current tenant GET `/entity/QMS/22.200.00
 T41|x|tighten `qms_endpoint_live` 200 JSON array; skip then seed then re-check live; unit 200 HTML / error dict / 401 ! live; e2e after deploy GET `/entity` lists QMS + InspectionPlan JSON array on skip path|V18,B8,I.cmd
 T42|x|drop `wait_published(timeout=120.0)` in `publish_package` + `_recycle_app_pool`; use 600s default; unit assert wait timeout 600 not 120; timeout error last GET status/body kind|V19,I.cmd,B9
 T43|x|seed EntityMapping Tests/Results before wait_published in publish_package; recycle if inserted; unit assert call order; GET 200 after maps|V20,I.cmd,B10
-T44|.|fix Pattern A IN202500_QMS.ts `InventoryItem_QMS extends InventoryItem`; unit assert ! `export class InventoryItem {`; e2e published TS extends + webpack `@extendsView`; Stock Items New Record Item.UsrQMS* bind FieldState|V17,I.stock,T33,B11
+T44|x|fix Pattern A IN202500_QMS.ts `InventoryItem_QMS extends InventoryItem`; unit assert ! `export class InventoryItem {`; e2e published TS extends + webpack `@extendsView`; Stock Items New Record Item.UsrQMS* bind FieldState|V17,I.stock,T33,B11
 
 ## §B BUGS
 id|date|cause|fix

@@ -14,7 +14,8 @@
   InventoryItem`) instead of exporting a second `InventoryItem` class.
   Webpack was emitting `@extendsScreen` only, so New Record bound
   `Item.UsrQMSInspectionRequired`, `Item.UsrQMSInspectionPlanID`, and
-  `Item.UsrMinShelfLifeDays` without FieldState.
+  `Item.UsrMinShelfLifeDays` without FieldState. `UsrMinShelfLifeDays`
+  now has `@controlConfig` so TypeScript emit keeps the field.
 
 ## [v0.5.3] - 2026-09-11
 
