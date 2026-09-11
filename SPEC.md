@@ -48,6 +48,7 @@ V17: modern-ui-only — zip ships Pattern B HTML+TS four QM forms as `PerTenantF
 V18: publish-skip-tenant-qms — `lab5-qms` publish skip `already published` only when current tenant GET `/entity/QMS/22.200.001/InspectionPlan` 200 JSON array (empty OK); 200 HTML or 200 error object or 401/404 ! live; CustomizationApi getPublished `Lab5.QMS` + GET `/entity` listing `QMS/22.200.001` ! sufficient (instance-wide leftover after tenant delete+create); skip then seed then re-check live — fail → import+publish+`wait_published`; after deploy GET `/entity` lists `QMS/22.200.001`
 V19: wait-published-600s — `wait_published` default 600s; `publish_package` + `_recycle_app_pool` ! pass 120s; CLI `--timeout` bounds CustomizationApi publishEnd poll only; wait timeout RuntimeError ! last GET status or body kind (HTML / error object / transport) (closes §B.9)
 V20: entitymapping-before-wait — `publish_package` after publishEnd runs `_ensure_qms_detail_mappings` (recycle if inserted) then `wait_published`; 26.101 publish ! nested Tests/Results EntityMapping; InspectionPlan GET 200 JSON array requires those rows (closes §B.10)
+V21: py-shebang-exec — tracked `*.py` git mode 100755 iff first line starts `#!`; else 100644; `lab5_qms/*` `e2e/helper.py` `e2e/__init__.py` ! shebang
 
 ## §T TASKS
 id|status|task|cites
@@ -96,6 +97,7 @@ T42|x|drop `wait_published(timeout=120.0)` in `publish_package` + `_recycle_app_
 T43|x|seed EntityMapping Tests/Results before wait_published in publish_package; recycle if inserted; unit assert call order; GET 200 after maps|V20,I.cmd,B10
 T44|x|fix Pattern A IN202500_QMS.ts `InventoryItem_QMS extends InventoryItem`; unit assert ! `export class InventoryItem {`; e2e published TS extends + webpack `@extendsView`; Stock Items New Record Item.UsrQMS* bind FieldState|V17,I.stock,T33,B11
 T45|x|move customization sources under `QMS/` (C# `QMS/Lab5.QMS/`; Pages `QMS/Pages/QM/`; screens `QMS/screens/`; `_project`; SQL `QMS/SQL/CreateQMSTables.sql`); zip members unchanged; Python packer/tests stay at root|V8,V17,I.pkg
+T46|.|sweep tracked `*.py` git mode 100755 iff shebang else 100644 (scope: `^#!` in `*.py`); unit-test pairing|V21
 
 ## §B BUGS
 id|date|cause|fix
