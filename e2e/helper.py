@@ -40,6 +40,7 @@ from lab5_qms.publish import (  # noqa: F401
     company_id,
     instance,
     publish_package,
+    qms_endpoint_live,
     roles_in_graph_company_ids,
     roles_in_graph_merge_sql,
     roles_in_graph_rows,
@@ -129,9 +130,15 @@ def ensure_published(*, timeout: float = 900.0) -> str:
     zip_bytes = pack.package_zip(ROOT, ensure_dll=True)
     try:
         status = publish_package(zip_bytes, timeout=timeout)
-        _published = True
         with client() as session:
             ensure_qm_rights(session)
+        with client() as session:
+            live = qms_endpoint_live(session)
+        if not live:
+            status = publish_package(zip_bytes, timeout=timeout)
+            with client() as session:
+                ensure_qm_rights(session)
+        _published = True
         return status
     except BaseException as exc:
         _publish_error = exc
