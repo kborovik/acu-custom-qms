@@ -192,7 +192,7 @@ def per_tenant_screen_id(rel: Path) -> str:
 
 def _aspx_sources(root: Path) -> list[Path]:
     files = [
-        Path("Pages_QM") / f"{screen}{suffix}"
+        Path("Pages") / "QM" / f"{screen}{suffix}"
         for screen in PAGES
         for suffix in (".aspx", ".aspx.cs")
     ]
@@ -203,11 +203,11 @@ def _aspx_sources(root: Path) -> list[Path]:
 
 
 def _aspx_arcname(src: Path) -> str:
-    return f"Pages/QM/{src.name}"
+    return src.as_posix()
 
 
 def _aspx_app_relative(src: Path) -> str:
-    return rf"Pages\QM\{src.name}"
+    return "\\".join(src.parts)
 
 
 def _cs_files(root: Path) -> list[Path]:

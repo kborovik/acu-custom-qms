@@ -1,10 +1,11 @@
-"""CustomizationApi publish + post-publish QM Role seed (T14 / T16 / T25 / T40 / T41 / T42 / V10 / V8 / V14 / V18 / V19).
+"""CustomizationApi publish + post-publish QM Role seed (T14 / T16 / T25 / T40 / T41 / T42 / T43 / V10 / V8 / V14 / V18 / V19 / V20).
 
 Zip never carries Role / UsersInRoles / RolesInGraph (V8 / I.pkg).
 `ACU_USER` Quality Manager attach stays e2e-only (V10).
 Post-publish seed inserts UsrQMSSetup (QORD QNCR) per company when missing (V14).
 Skip already-published only when current-tenant InspectionPlan GET is 200 JSON array (V18 / B8).
 wait_published default 600s; publish_package and _recycle_app_pool do not pass 120s (V19 / B9).
+publish_package seeds Tests/Results EntityMapping (recycle if inserted) before wait_published (V20 / B10).
 Never prints ACU_PASSWORD.
 """
 
@@ -253,6 +254,8 @@ def publish_package(zip_bytes: bytes, *, timeout: float = 900.0) -> str:
     Skip already-published only when current-tenant InspectionPlan GET is a
     200 JSON array (V18 / B8); getPublished + GET /entity listing are not a
     live tenant contract.
+    After publishEnd, seed nested Tests/Results EntityMapping (26.101 does
+    not) and recycle if rows were inserted, then wait_published (V20 / B10).
     """
     description = package_description(zip_bytes)
     with progress("webpack NO_COLOR for SaveStatus", "IIS"):
@@ -313,6 +316,9 @@ def publish_package(zip_bytes: bytes, *, timeout: float = 900.0) -> str:
                     )
                 time.sleep(5.0)
 
+    with progress("seed EntityMapping", "Tests,Results"):
+        if _ensure_qms_detail_mappings():
+            _recycle_app_pool()
     with progress("wait QMS/22.200.001", QMS_ENDPOINT):
         wait_published()
     return "published"
@@ -807,7 +813,7 @@ def _ensure_qm_aspx_pages() -> None:
     root = Path(__file__).resolve().parents[1]
     names = _qm_aspx_names()
     local_hash = {
-        name: hashlib.sha256((root / "Pages_QM" / name).read_bytes()).hexdigest()
+        name: hashlib.sha256((root / "Pages" / "QM" / name).read_bytes()).hexdigest()
         for name in names
     }
     win_dir = (ACU_INSTANCE_PATH + r"\Pages\QM").replace("'", "''")
@@ -832,7 +838,7 @@ def _ensure_qm_aspx_pages() -> None:
     for name in names:
         if remote_hash.get(name) == local_hash[name]:
             continue
-        local = root / "Pages_QM" / name
+        local = root / "Pages" / "QM" / name
         remote = f"{inst.ssh}:{posix_dir}/{name}"
         result = subprocess.run(
             ["scp", "-o", "BatchMode=yes", str(local), remote],

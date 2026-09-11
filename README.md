@@ -296,7 +296,6 @@ Lab5_QMS_Customization.zip
 ├── _project/          ProjectMetadata, QMS.xml, SiteMap.xml
 ├── Bin/Lab5.QMS.dll
 ├── Pages/QM/          QM101000 … QM302000 (aspx + aspx.cs)
-├── Pages_QM/          same screens (inspectable copy)
 └── Scripts/           CreateQMSTables.sql
 ```
 

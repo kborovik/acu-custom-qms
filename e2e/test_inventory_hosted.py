@@ -233,24 +233,34 @@ class TestStockItemModernUiV17(unittest.TestCase):
 
     def test_in202500_qms_published_to_instance(self) -> None:
         tenant = instance().tenant
-        path = (
+        base = (
             ACU_INSTANCE_PATH
             + rf"\FrontendSources\screen\src\customizationScreens\{tenant}"
-            r"\screens\IN\IN202500\extensions\IN202500_QMS.html"
+            r"\screens\IN\IN202500\extensions\IN202500_QMS"
         )
-        html = ssh_run(
-            "if (Test-Path -LiteralPath '"
-            + path.replace("'", "''")
-            + "') { Get-Content -LiteralPath '"
-            + path.replace("'", "''")
-            + "' -Raw } else { Write-Output 'MISSING' }"
-        )
-        self.assertNotIn("MISSING", html)
+
+        def _read(suffix: str) -> str:
+            path = base + suffix
+            text = ssh_run(
+                "if (Test-Path -LiteralPath '"
+                + path.replace("'", "''")
+                + "') { Get-Content -LiteralPath '"
+                + path.replace("'", "''")
+                + "' -Raw } else { Write-Output 'MISSING' }"
+            )
+            self.assertNotIn("MISSING", text, path)
+            return text
+
+        html = _read(".html")
+        ts = _read(".ts")
         self.assertIn("UsrQMSInspectionRequired", html)
         self.assertIn("UsrQMSInspectionPlanID", html)
         self.assertIn("UsrMinShelfLifeDays", html)
         self.assertIn("visible.bind", html)
         self.assertNotIn("if.bind", html)
+        self.assertIn("export interface InventoryItem_QMS extends InventoryItem", ts)
+        self.assertIn("export class InventoryItem_QMS", ts)
+        self.assertNotIn("export class InventoryItem {", ts)
 
     def test_pattern_b_actions_notes_files_on_instance(self) -> None:
         def _read_ts(screen: str) -> str:

@@ -3,7 +3,7 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""T14 / T15 / T16 / T40 / T41 / T42 / I.cmd / V8 / V10 / V18 / V19 / B8 / B9: Click console script lab5-qms pack+publish+seed+deploy."""
+"""T14 / T15 / T16 / T40 / T41 / T42 / T43 / I.cmd / V8 / V10 / V18 / V19 / V20 / B8 / B9 / B10: Click console script lab5-qms pack+publish+seed+deploy."""
 
 from __future__ import annotations
 
@@ -47,6 +47,7 @@ PUBLISH_IMPORT_STEPS = (
     "digest skip or import",
     "publishBegin",
     "poll publishEnd",
+    "seed EntityMapping",
     "wait QMS/22.200.001",
 )
 PUBLISH_SKIP_STEPS = PUBLISH_IMPORT_STEPS[:4]
@@ -361,6 +362,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 "lab5_qms.publish._webpack_tenant_screens_missing",
                 return_value=True,
             ),
+            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
             patch("lab5_qms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
@@ -389,6 +391,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 "lab5_qms.publish._webpack_tenant_screens_missing",
                 return_value=False,
             ),
+            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
             patch("lab5_qms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
@@ -413,6 +416,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 "lab5_qms.publish._webpack_tenant_screens_missing",
                 return_value=False,
             ),
+            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
             patch("lab5_qms.progress.sys.stderr", err),
         ):
             status = publish_package(zip_bytes)
@@ -421,8 +425,12 @@ class TestCliProgressICmdV10(unittest.TestCase):
         self.assertEqual([row[0] for row in rows], list(PUBLISH_IMPORT_STEPS))
         self.assertEqual(rows[3][2], "import")
         self.assertEqual(rows[4][1], PACKAGE_NAME)
-        self.assertEqual(rows[6][0], "wait QMS/22.200.001")
-        self.assertEqual(rows[6][1], QMS_ENDPOINT)
+        wait_idx = PUBLISH_IMPORT_STEPS.index("wait QMS/22.200.001")
+        maps_idx = PUBLISH_IMPORT_STEPS.index("seed EntityMapping")
+        self.assertLess(maps_idx, wait_idx)
+        self.assertEqual(rows[maps_idx][1], "Tests,Results")
+        self.assertEqual(rows[wait_idx][0], "wait QMS/22.200.001")
+        self.assertEqual(rows[wait_idx][1], QMS_ENDPOINT)
         session.customization_import.assert_called_once()
         for row in rows:
             self.assertEqual(row[2], "import" if row[0].startswith("digest") else "ok")
@@ -475,6 +483,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 "lab5_qms.publish._webpack_tenant_screens_missing",
                 return_value=False,
             ),
+            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
             patch("lab5_qms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
@@ -506,6 +515,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 "lab5_qms.publish._webpack_tenant_screens_missing",
                 return_value=False,
             ),
+            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
             patch("lab5_qms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
@@ -537,6 +547,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 "lab5_qms.publish._webpack_tenant_screens_missing",
                 return_value=False,
             ),
+            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
             patch("lab5_qms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
@@ -731,6 +742,7 @@ class TestV19_WaitPublished600s(unittest.TestCase):
                 "lab5_qms.publish._webpack_tenant_screens_missing",
                 return_value=False,
             ),
+            patch("lab5_qms.publish._ensure_qms_detail_mappings", return_value=0),
             patch("lab5_qms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes, timeout=90.0)
@@ -781,6 +793,153 @@ class TestV19_WaitPublished600s(unittest.TestCase):
         session._http.get.side_effect = httpx.TransportError("boom")
         msg = self._timeout_after_one_poll(session)
         self.assertIn("last GET transport", msg)
+
+
+class TestV20_EntityMappingBeforeWait(unittest.TestCase):
+    def _import_order(
+        self,
+        *,
+        maps_return: int = 0,
+        maps_error: Exception | None = None,
+    ) -> tuple[str | BaseException, list[str]]:
+        zip_bytes = _tiny_zip()
+        session = _session_with_plan(published=False, plan_status=404)
+        order: list[str] = []
+
+        def maps() -> int:
+            order.append("maps")
+            if maps_error is not None:
+                raise maps_error
+            return maps_return
+
+        def recycle() -> None:
+            order.append("recycle")
+
+        def wait() -> None:
+            order.append("wait")
+
+        with (
+            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
+            patch("lab5_qms.publish.drain_publish"),
+            patch("lab5_qms.publish.publish_begin"),
+            patch("lab5_qms.publish.wait_published", side_effect=wait),
+            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+            patch(
+                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                return_value=False,
+            ),
+            patch(
+                "lab5_qms.publish._webpack_tenant_screens_missing",
+                return_value=False,
+            ),
+            patch("lab5_qms.publish._ensure_qms_detail_mappings", side_effect=maps),
+            patch("lab5_qms.publish._recycle_app_pool", side_effect=recycle),
+            patch("lab5_qms.progress.sys.stderr", io.StringIO()),
+        ):
+            try:
+                status: str | BaseException = publish_package(zip_bytes)
+            except Exception as exc:
+                status = exc
+        return status, order
+
+    def test_maps_then_wait_when_maps_present(self) -> None:
+        status, order = self._import_order(maps_return=0)
+        self.assertEqual(status, "published")
+        self.assertEqual(order, ["maps", "wait"])
+
+    def test_maps_recycle_then_wait_when_inserted(self) -> None:
+        status, order = self._import_order(maps_return=1)
+        self.assertEqual(status, "published")
+        self.assertEqual(order, ["maps", "recycle", "wait"])
+
+    def test_wait_not_called_when_maps_fail(self) -> None:
+        status, order = self._import_order(
+            maps_error=RuntimeError(
+                "EntityMapping seed: 0/17 Tests/Results maps present"
+            )
+        )
+        self.assertIsInstance(status, RuntimeError)
+        self.assertIn("EntityMapping seed", str(status))
+        self.assertEqual(order, ["maps"])
+
+    def test_skip_does_not_seed_maps_in_publish_package(self) -> None:
+        zip_bytes = _tiny_zip()
+        desc = package_description(zip_bytes)
+        session = _session_with_plan(plan_status=200)
+        with (
+            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
+            patch("lab5_qms.publish.drain_publish"),
+            patch("lab5_qms.publish.published_description", return_value=desc),
+            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+            patch(
+                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                return_value=False,
+            ),
+            patch(
+                "lab5_qms.publish._webpack_tenant_screens_missing",
+                return_value=False,
+            ),
+            patch("lab5_qms.publish._ensure_qms_detail_mappings") as maps,
+            patch("lab5_qms.publish.wait_published") as wait,
+            patch("lab5_qms.progress.sys.stderr", io.StringIO()),
+        ):
+            status = publish_package(zip_bytes)
+        self.assertEqual(status, "already published")
+        maps.assert_not_called()
+        wait.assert_not_called()
+
+    def test_publish_package_source_maps_before_wait(self) -> None:
+        src = (ROOT / "lab5_qms" / "publish.py").read_text(encoding="utf-8")
+        body = src[
+            src.index("def publish_package") : src.index("\ndef roles_in_graph_rows")
+        ]
+        self.assertLess(
+            body.index("_ensure_qms_detail_mappings"),
+            body.index("wait_published()"),
+        )
+        self.assertLess(body.index("_recycle_app_pool"), body.index("wait_published()"))
+
+    def test_wait_get_200_json_array_after_maps(self) -> None:
+        """V20 / B10: wait_published InspectionPlan GET 200 JSON array runs after maps."""
+        zip_bytes = _tiny_zip()
+        publish_session = _session_with_plan(published=False, plan_status=404)
+        wait_session = _session_with_plan(plan_status=200)
+        order: list[str] = []
+        clients = [_session_ctx(publish_session), _session_ctx(wait_session)]
+
+        def make_client() -> MagicMock:
+            return clients.pop(0)
+
+        def maps() -> int:
+            order.append("maps")
+            return 0
+
+        def tracking_get(*_args: object, **_kwargs: object) -> MagicMock:
+            order.append("get")
+            return _plan_get(200, [])
+
+        wait_session._http.get.side_effect = tracking_get
+        with (
+            patch("lab5_qms.publish.client", side_effect=make_client),
+            patch("lab5_qms.publish.drain_publish"),
+            patch("lab5_qms.publish.publish_begin"),
+            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+            patch(
+                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                return_value=False,
+            ),
+            patch(
+                "lab5_qms.publish._webpack_tenant_screens_missing",
+                return_value=False,
+            ),
+            patch("lab5_qms.publish._ensure_qms_detail_mappings", side_effect=maps),
+            patch("lab5_qms.publish._recycle_app_pool"),
+            patch("lab5_qms.progress.sys.stderr", io.StringIO()),
+        ):
+            status = publish_package(zip_bytes)
+        self.assertEqual(status, "published")
+        self.assertEqual(order, ["maps", "get"])
+        self.assertEqual(clients, [])
 
 
 class TestPackModuleZipBytesV8(unittest.TestCase):

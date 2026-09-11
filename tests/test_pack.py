@@ -307,8 +307,13 @@ class TestPatternAStockItem(unittest.TestCase):
         html = (base / "IN202500_QMS.html").read_text(encoding="utf-8")
         ts = (base / "IN202500_QMS.ts").read_text(encoding="utf-8")
         self.assertIn("export class IN202500_QMS", ts)
-        self.assertIn("export class InventoryItem", ts)
-        self.assertIn('from "src/screens/IN/IN202500/IN202500"', ts)
+        self.assertIn("export interface InventoryItem_QMS extends InventoryItem", ts)
+        self.assertIn("export class InventoryItem_QMS", ts)
+        self.assertIn(
+            'import { IN202500, InventoryItem } from "src/screens/IN/IN202500/IN202500"',
+            ts,
+        )
+        self.assertNotIn("export class InventoryItem {", ts)
         self.assertNotIn("InventoryItemExtension", ts)
         self.assertNotIn("if.bind", html)
         self.assertIn("visible.bind", html)

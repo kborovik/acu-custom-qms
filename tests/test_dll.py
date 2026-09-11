@@ -134,6 +134,7 @@ class TestEnsureCompiled(unittest.TestCase):
         self.assertIn("src/Lab5.QMS/Graph/QMSInspectionPlanMaint.cs\t", text)
         self.assertIn("src/Lab5.QMS/Lab5.QMS.csproj\t", text)
         self.assertIn("dll.py\t", text)
+        self.assertNotIn("Pages/QM/", text)
         self.assertNotIn("Pages_QM/", text)
         self.assertNotIn("/bin/", text)
         self.assertNotIn("/obj/", text)

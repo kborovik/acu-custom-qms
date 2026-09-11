@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Changed
+
+- **ASPX source path:** REST host pages live at repo `Pages/QM/` (same
+  as zip and site). Dropped the `Pages_QM/` alias folder.
+
+### Fixed
+
+- **Stock Items Quality tab (IN202500):** Pattern A TypeScript now
+  extends the screen `InventoryItem` view (`InventoryItem_QMS extends
+  InventoryItem`) instead of exporting a second `InventoryItem` class.
+  Webpack was emitting `@extendsScreen` only, so New Record bound
+  `Item.UsrQMSInspectionRequired`, `Item.UsrQMSInspectionPlanID`, and
+  `Item.UsrMinShelfLifeDays` without FieldState.
+
 ## [v0.5.3] - 2026-09-11
 
 ### Fixed

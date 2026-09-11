@@ -226,7 +226,7 @@ class TestAspxPagesSeed(unittest.TestCase):
         self.assertEqual(len(names), 8)
         lines = []
         for name in names:
-            digest = hashlib.sha256((ROOT / "Pages_QM" / name).read_bytes()).hexdigest()
+            digest = hashlib.sha256((ROOT / "Pages" / "QM" / name).read_bytes()).hexdigest()
             lines.append(f"{name}|{digest}")
         inst = MagicMock()
         inst.ssh = "Administrator@host"
