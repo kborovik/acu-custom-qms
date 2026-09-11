@@ -3,7 +3,7 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""T14 / T15 / T16 / T40 / T41 / T42 / T43 / T47 / I.cmd / V8 / V10 / V18 / V19 / V20 / B8 / B9 / B10: Click console script acuqms build+publish+seed+deploy."""
+"""T14 / T15 / T16 / T40 / T41 / T42 / T43 / T47 / T50 / I.cmd / V8 / V10 / V18 / V19 / V20 / B8 / B9 / B10 / B12: Click console script acuqms build+publish+seed+deploy."""
 
 from __future__ import annotations
 
@@ -48,6 +48,7 @@ PUBLISH_IMPORT_STEPS = (
     "publishBegin",
     "poll publishEnd",
     "seed EntityMapping",
+    "seed Pages/QM aspx",
     "wait QMS/22.200.001",
 )
 PUBLISH_SKIP_STEPS = PUBLISH_IMPORT_STEPS[:4]
@@ -55,9 +56,9 @@ SEED_STEPS = (
     "seed Role",
     "seed RolesInGraph",
     "seed EntityMapping",
+    "seed Pages/QM aspx",
     "seed UsrQMSSetup",
     "seed Quality Queue GI",
-    "seed Pages/QM aspx",
     "seed SiteMap SelectedUI=D",
 )
 
@@ -370,6 +371,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 return_value=True,
             ),
             patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("acuqms.publish._ensure_qm_aspx_pages"),
             patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
@@ -399,6 +401,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 return_value=False,
             ),
             patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("acuqms.publish._ensure_qm_aspx_pages"),
             patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
@@ -424,6 +427,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 return_value=False,
             ),
             patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("acuqms.publish._ensure_qm_aspx_pages"),
             patch("acuqms.progress.sys.stderr", err),
         ):
             status = publish_package(zip_bytes)
@@ -434,8 +438,11 @@ class TestCliProgressICmdV10(unittest.TestCase):
         self.assertEqual(rows[4][1], PACKAGE_NAME)
         wait_idx = PUBLISH_IMPORT_STEPS.index("wait QMS/22.200.001")
         maps_idx = PUBLISH_IMPORT_STEPS.index("seed EntityMapping")
-        self.assertLess(maps_idx, wait_idx)
+        aspx_idx = PUBLISH_IMPORT_STEPS.index("seed Pages/QM aspx")
+        self.assertLess(maps_idx, aspx_idx)
+        self.assertLess(aspx_idx, wait_idx)
         self.assertEqual(rows[maps_idx][1], "Tests,Results")
+        self.assertEqual(rows[aspx_idx][1], "REST")
         self.assertEqual(rows[wait_idx][0], "wait QMS/22.200.001")
         self.assertEqual(rows[wait_idx][1], QMS_ENDPOINT)
         session.customization_import.assert_called_once()
@@ -491,6 +498,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 return_value=False,
             ),
             patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("acuqms.publish._ensure_qm_aspx_pages"),
             patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
@@ -523,6 +531,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 return_value=False,
             ),
             patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("acuqms.publish._ensure_qm_aspx_pages"),
             patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
@@ -555,6 +564,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 return_value=False,
             ),
             patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("acuqms.publish._ensure_qm_aspx_pages"),
             patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
@@ -628,6 +638,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 "acuqms.publish.time.monotonic",
                 side_effect=[0.0, 0.0, 10.0],
             ),
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             with self.assertRaises(RuntimeError) as ctx:
                 wait_published(timeout=5.0, poll=1.0)
@@ -639,7 +650,10 @@ class TestCliProgressICmdV10(unittest.TestCase):
     def test_wait_published_returns_when_inspection_plan_200(self) -> None:
         session = _session_with_plan(plan_status=200)
         session.list_endpoints.return_value = []
-        with patch("acuqms.publish.client", return_value=_session_ctx(session)):
+        with (
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
+        ):
             wait_published(timeout=5.0, poll=1.0)
         session._http.get.assert_called_with(INSPECTION_PLAN_PATH)
 
@@ -666,9 +680,9 @@ class TestCliProgressICmdV10(unittest.TestCase):
         self.assertEqual(rows[0][1], QUALITY_MANAGER_ROLE)
         self.assertEqual(rows[1][1], ",".join(QM_SCREENS))
         self.assertEqual(rows[2][1], "Tests,Results")
-        self.assertEqual(rows[3][1], "QORD,QNCR")
-        self.assertEqual(rows[4][1], "QM401000")
-        self.assertEqual(rows[5][1], "REST")
+        self.assertEqual(rows[3][1], "REST")
+        self.assertEqual(rows[4][1], "QORD,QNCR")
+        self.assertEqual(rows[5][1], "QM401000")
         self.assertEqual(rows[6][1], ",".join(QM_SCREENS))
         session.put.assert_called_once()
         for row in rows:
@@ -750,22 +764,32 @@ class TestV19_WaitPublished600s(unittest.TestCase):
                 return_value=False,
             ),
             patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("acuqms.publish._ensure_qm_aspx_pages"),
             patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes, timeout=90.0)
         self.assertEqual(status, "published")
         wait.assert_called_once_with()
 
-    def test_recycle_app_pool_wait_uses_default(self) -> None:
+    def test_recycle_app_pool_wait_rest_not_wait_published(self) -> None:
+        """V19 / B12: recycle waits for GET /entity 120s, not wait_published 600s."""
         inst = MagicMock()
         inst.ssh = "Administrator@host"
         with (
             patch("acuqms.publish.instance", return_value=inst),
             patch("acuqms.publish.ssh_run"),
+            patch("acuqms.publish.wait_rest") as rest,
             patch("acuqms.publish.wait_published") as wait,
         ):
             _recycle_app_pool()
-        wait.assert_called_once_with()
+        rest.assert_called_once_with()
+        wait.assert_not_called()
+        src = (ROOT / "acuqms" / "publish.py").read_text(encoding="utf-8")
+        body = src[
+            src.index("def _recycle_app_pool") : src.index("\ndef qms_setup_insert_sql")
+        ]
+        self.assertIn("wait_rest()", body)
+        self.assertNotIn("wait_published()", body)
 
     def _timeout_after_one_poll(self, session: MagicMock) -> str:
         with (
@@ -775,6 +799,7 @@ class TestV19_WaitPublished600s(unittest.TestCase):
                 "acuqms.publish.time.monotonic",
                 side_effect=[0.0, 0.0, 10.0],
             ),
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             with self.assertRaises(RuntimeError) as ctx:
                 wait_published(timeout=5.0, poll=1.0)
@@ -801,6 +826,56 @@ class TestV19_WaitPublished600s(unittest.TestCase):
         msg = self._timeout_after_one_poll(session)
         self.assertIn("last GET transport", msg)
 
+    def test_wait_published_emits_start_and_poll_heartbeat(self) -> None:
+        """V19 / B12: start + last-GET heartbeat; heartbeat is not 4-col progress."""
+        session = _session_with_plan(plan_status=200)
+        session._http.get.side_effect = [
+            _plan_get(404),
+            _plan_get(200, []),
+        ]
+        err = io.StringIO()
+        with (
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.time.sleep"),
+            patch("acuqms.progress.sys.stderr", err),
+        ):
+            wait_published(timeout=20.0, poll=1.0)
+        lines = [line for line in err.getvalue().splitlines() if line]
+        self.assertEqual(lines[0], f"wait {QMS_ENDPOINT}\tstart")
+        self.assertIn(f"wait {QMS_ENDPOINT}\tlast GET 404", lines)
+        self.assertIn(f"wait {QMS_ENDPOINT}\tlast GET 200 JSON array", lines)
+        for line in lines:
+            self.assertNotEqual(len(line.split("\t")), 4)
+        self.assertEqual(parse_progress(err.getvalue()), [])
+
+    def test_wait_published_reuses_session_across_polls(self) -> None:
+        """V19 / B12: one client() session covers successive InspectionPlan GETs."""
+        session = _session_with_plan(plan_status=200)
+        session._http.get.side_effect = [
+            _plan_get(404),
+            _plan_get(200, []),
+        ]
+        with (
+            patch(
+                "acuqms.publish.client", return_value=_session_ctx(session)
+            ) as make_client,
+            patch("acuqms.publish.time.sleep"),
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
+        ):
+            wait_published(timeout=20.0, poll=1.0)
+        self.assertEqual(make_client.call_count, 1)
+        self.assertEqual(session._http.get.call_count, 2)
+
+    def test_ssh_run_defaults_to_ssh_timeout(self) -> None:
+        """V19 / B12: ssh_run times out; default is not None."""
+        from acuqms.acu import SSH_TIMEOUT, ssh_run
+
+        params = inspect.signature(ssh_run).parameters
+        self.assertEqual(params["timeout"].default, SSH_TIMEOUT)
+        src = (ROOT / "acuqms" / "acu.py").read_text(encoding="utf-8")
+        self.assertIn("timeout: float = SSH_TIMEOUT", src)
+        self.assertNotIn("timeout: float | None = None", src)
+
 
 class TestV20_EntityMappingBeforeWait(unittest.TestCase):
     def _import_order(
@@ -818,6 +893,9 @@ class TestV20_EntityMappingBeforeWait(unittest.TestCase):
             if maps_error is not None:
                 raise maps_error
             return maps_return
+
+        def aspx() -> None:
+            order.append("aspx")
 
         def recycle() -> None:
             order.append("recycle")
@@ -840,6 +918,7 @@ class TestV20_EntityMappingBeforeWait(unittest.TestCase):
                 return_value=False,
             ),
             patch("acuqms.publish._ensure_qms_detail_mappings", side_effect=maps),
+            patch("acuqms.publish._ensure_qm_aspx_pages", side_effect=aspx),
             patch("acuqms.publish._recycle_app_pool", side_effect=recycle),
             patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
@@ -852,12 +931,12 @@ class TestV20_EntityMappingBeforeWait(unittest.TestCase):
     def test_maps_then_wait_when_maps_present(self) -> None:
         status, order = self._import_order(maps_return=0)
         self.assertEqual(status, "published")
-        self.assertEqual(order, ["maps", "wait"])
+        self.assertEqual(order, ["maps", "aspx", "wait"])
 
     def test_maps_recycle_then_wait_when_inserted(self) -> None:
         status, order = self._import_order(maps_return=1)
         self.assertEqual(status, "published")
-        self.assertEqual(order, ["maps", "recycle", "wait"])
+        self.assertEqual(order, ["maps", "aspx", "recycle", "wait"])
 
     def test_wait_not_called_when_maps_fail(self) -> None:
         status, order = self._import_order(
@@ -902,9 +981,17 @@ class TestV20_EntityMappingBeforeWait(unittest.TestCase):
         ]
         self.assertLess(
             body.index("_ensure_qms_detail_mappings"),
+            body.index("_ensure_qm_aspx_pages"),
+        )
+        self.assertLess(
+            body.index("_ensure_qm_aspx_pages"),
             body.index("wait_published()"),
         )
         self.assertLess(body.index("_recycle_app_pool"), body.index("wait_published()"))
+        self.assertLess(
+            body.index("_ensure_qm_aspx_pages"),
+            body.index("_recycle_app_pool"),
+        )
 
     def test_wait_get_200_json_array_after_maps(self) -> None:
         """V20 / B10: wait_published InspectionPlan GET 200 JSON array runs after maps."""
@@ -940,6 +1027,7 @@ class TestV20_EntityMappingBeforeWait(unittest.TestCase):
                 return_value=False,
             ),
             patch("acuqms.publish._ensure_qms_detail_mappings", side_effect=maps),
+            patch("acuqms.publish._ensure_qm_aspx_pages"),
             patch("acuqms.publish._recycle_app_pool"),
             patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):

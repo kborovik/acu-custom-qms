@@ -33,6 +33,12 @@ def emit(
     print(f"{step}\t{target}\t{result}\t{elapsed:.2f}s", file=out, flush=True)
 
 
+def heartbeat(step: str, detail: str, *, file: TextIO | None = None) -> None:
+    """Poll status on stderr. Two columns — not the completion 4-col schema (V19 / B12)."""
+    out = sys.stderr if file is None else file
+    print(f"{step}\t{detail}", file=out, flush=True)
+
+
 @contextmanager
 def progress(step: str, target: str) -> Iterator[Progress]:
     rec = Progress(step=step, target=target)

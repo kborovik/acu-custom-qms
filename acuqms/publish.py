@@ -4,8 +4,9 @@ Zip never carries Role / UsersInRoles / RolesInGraph (V8 / I.pkg).
 `ACU_USER` Quality Manager attach stays e2e-only (V10).
 Post-publish seed inserts UsrQMSSetup (QORD QNCR) per company when missing (V14).
 Skip already-published only when current-tenant InspectionPlan GET is 200 JSON array (V18 / B8).
-wait_published default 600s; publish_package and _recycle_app_pool do not pass 120s (V19 / B9).
-publish_package seeds Tests/Results EntityMapping (recycle if inserted) before wait_published (V20 / B10).
+wait_published default 600s; emit start + poll last-GET heartbeat; reuse session across polls (V19 / B12).
+_recycle_app_pool uses wait_rest 120s, not wait_published (V19 / B12).
+publish_package after publishEnd: EntityMapping then aspx SHA-256 skip then recycle if maps inserted then wait_published (V20 / B12).
 Never prints ACU_PASSWORD.
 """
 
@@ -33,7 +34,7 @@ from acuqms.acu import (
     load_instance,
     ssh_run,
 )
-from acuqms.progress import progress
+from acuqms.progress import heartbeat, progress
 
 PACKAGE_NAME = "Lab5.QMS"
 QMS_ENDPOINT = "QMS/22.200.001"
@@ -216,15 +217,40 @@ def qms_endpoint_live(session: AcumaticaClient) -> bool:
 def wait_published(timeout: float = 600.0, poll: float = 5.0) -> None:
     deadline = time.monotonic() + timeout
     last = "none"
-    while time.monotonic() < deadline:
-        try:
-            with client() as session:
-                live, last = _inspection_plan_kind(session)
-                if live:
-                    return
-        except RuntimeError, httpx.TransportError, httpx.HTTPError:
-            last = "transport"
-        time.sleep(poll)
+    step = f"wait {QMS_ENDPOINT}"
+    heartbeat(step, "start")
+    session_cm = None
+    session = None
+    try:
+        while time.monotonic() < deadline:
+            live = False
+            try:
+                if session is None:
+                    session_cm = client()
+                    session = session_cm.__enter__()
+                try:
+                    live, last = _inspection_plan_kind(session)
+                except RuntimeError, httpx.TransportError, httpx.HTTPError:
+                    last = "transport"
+            except RuntimeError, httpx.TransportError, httpx.HTTPError:
+                last = "transport"
+                if session_cm is not None:
+                    try:
+                        session_cm.__exit__(None, None, None)
+                    except Exception:
+                        pass
+                    session_cm = None
+                    session = None
+            heartbeat(step, f"last GET {last}")
+            if live:
+                return
+            time.sleep(poll)
+    finally:
+        if session_cm is not None:
+            try:
+                session_cm.__exit__(None, None, None)
+            except Exception:
+                pass
     raise RuntimeError(
         f"{QMS_ENDPOINT} InspectionPlan did not answer 200 JSON array "
         f"within {timeout:.0f}s (last GET {last})"
@@ -254,8 +280,9 @@ def publish_package(zip_bytes: bytes, *, timeout: float = 900.0) -> str:
     Skip already-published only when current-tenant InspectionPlan GET is a
     200 JSON array (V18 / B8); getPublished + GET /entity listing are not a
     live tenant contract.
-    After publishEnd, seed nested Tests/Results EntityMapping (26.101 does
-    not) and recycle if rows were inserted, then wait_published (V20 / B10).
+    After publishEnd: nested Tests/Results EntityMapping, Pages/QM aspx
+    (SHA-256 skip), recycle if maps were inserted, then wait_published
+    (V20 / B12).
     """
     description = package_description(zip_bytes)
     with progress("webpack NO_COLOR for SaveStatus", "IIS"):
@@ -317,8 +344,11 @@ def publish_package(zip_bytes: bytes, *, timeout: float = 900.0) -> str:
                 time.sleep(5.0)
 
     with progress("seed EntityMapping", "Tests,Results"):
-        if _ensure_qms_detail_mappings():
-            _recycle_app_pool()
+        maps_inserted = _ensure_qms_detail_mappings()
+    with progress("seed Pages/QM aspx", "REST"):
+        _ensure_qm_aspx_pages()
+    if maps_inserted:
+        _recycle_app_pool()
     with progress("wait QMS/22.200.001", QMS_ENDPOINT):
         wait_published()
     return "published"
@@ -542,7 +572,7 @@ def _recycle_app_pool() -> None:
     if not inst.ssh:
         return
     ssh_run("Restart-WebAppPool -Name AcumaticaERP")
-    wait_published()
+    wait_rest()
 
 
 def qms_setup_insert_sql() -> str:
@@ -870,13 +900,14 @@ def seed_qm_rights(session: AcumaticaClient) -> None:
     with progress("seed RolesInGraph", ",".join(QM_SCREENS)):
         _ensure_qm_roles_in_graph()
     with progress("seed EntityMapping", "Tests,Results"):
-        if _ensure_qms_detail_mappings():
-            _recycle_app_pool()
+        maps_inserted = _ensure_qms_detail_mappings()
+    with progress("seed Pages/QM aspx", "REST"):
+        _ensure_qm_aspx_pages()
+    if maps_inserted:
+        _recycle_app_pool()
     with progress("seed UsrQMSSetup", f"{QORD},{QNCR}"):
         _ensure_qms_setup_rows()
     with progress("seed Quality Queue GI", "QM401000"):
         _ensure_quality_queue_gi()
-    with progress("seed Pages/QM aspx", "REST"):
-        _ensure_qm_aspx_pages()
     with progress("seed SiteMap SelectedUI=D", ",".join(QM_SCREENS)):
         _ensure_qm_selected_ui()

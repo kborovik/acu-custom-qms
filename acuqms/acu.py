@@ -175,7 +175,7 @@ def list_tenants() -> list[Tenant]:
 
 
 def ssh_run(
-    command: str, *, host: str | None = None, timeout: float | None = None
+    command: str, *, host: str | None = None, timeout: float = SSH_TIMEOUT
 ) -> str:
     """SSH PowerShell on the instance; host from `acu config show` when omitted."""
     target = host if host is not None else load_instance().ssh
@@ -196,9 +196,7 @@ def ssh_run(
             timeout=timeout,
         )
     except subprocess.TimeoutExpired as exc:
-        raise RuntimeError(
-            f"ssh timed out after {timeout:.0f}s" if timeout else "ssh timed out"
-        ) from exc
+        raise RuntimeError(f"ssh timed out after {timeout:.0f}s") from exc
     if result.returncode != 0:
         raise RuntimeError(
             f"remote command failed ({result.returncode}):\n"

@@ -25,6 +25,8 @@ class TestE2eTimeouts(unittest.TestCase):
         self.assertIn("ACU_TIMEOUT = 60.0", src)
         self.assertIn("INVOKE_TIMEOUT = 60.0", src)
         self.assertIn("SSH_TIMEOUT = 30.0", acu)
+        self.assertIn("timeout: float = SSH_TIMEOUT", acu)
+        self.assertNotIn("timeout: float | None = None", acu)
         self.assertIn("sqlcmd via ssh timed out", publish)
         self.assertIn("timeout: float = HTTP_TIMEOUT", acu)
         self.assertIn("timeout: float = ACU_TIMEOUT", src)

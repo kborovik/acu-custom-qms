@@ -101,7 +101,7 @@ T46|x|sweep tracked `*.py` git mode 100755 iff shebang else 100644 (scope: `^#!`
 T47|x|swap pkg+console `lab5-qms`/`lab5_qms` → `acuqms`; Click `pack` → `build`; move `dll.py` → `acuqms/dll.py` (drop shebang); Makefile AGENTS README tests follow|I.cmd,V18,V21
 T48|x|move Pattern B/A sources `QMS/screens/` → `QMS/FrontendSources/screen/src/development/screens/`; packer reads that tree; zip members `screens/QM|IN/...` unchanged|V17,I.pkg,T45
 T49|x|sweep tests Path-literal `QMS/FrontendSources/screen/src/development/screens` → import `FRONTEND_SCREENS_REL` from `acuqms.paths` (scope: `tests/**/*.py`)|V17,I.pkg,T48
-T50|.|wait_published emit start + poll last-GET heartbeat; recycle wait_rest 120s; aspx SHA-256 skip before wait; ssh_run SSH_TIMEOUT; reuse wait session|V19,V20,I.cmd,B12
+T50|x|wait_published emit start + poll last-GET heartbeat; recycle wait_rest 120s; aspx SHA-256 skip before wait; ssh_run SSH_TIMEOUT; reuse wait session|V19,V20,I.cmd,B12
 
 ## §B BUGS
 id|date|cause|fix
