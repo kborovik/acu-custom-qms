@@ -23,8 +23,30 @@ ORDER_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionOrder.cs"
 ORDER_GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
 NCR_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSNonConformance.cs"
 NCR_GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSNonConformanceEntry.cs"
-HTML = ROOT / "QMS" / "screens" / "QM" / "QM101000" / "QM101000.html"
-TS = ROOT / "QMS" / "screens" / "QM" / "QM101000" / "QM101000.ts"
+HTML = (
+    ROOT
+    / "QMS"
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "development"
+    / "screens"
+    / "QM"
+    / "QM101000"
+    / "QM101000.html"
+)
+TS = (
+    ROOT
+    / "QMS"
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "development"
+    / "screens"
+    / "QM"
+    / "QM101000"
+    / "QM101000.ts"
+)
 SITEMAP = ROOT / "QMS" / "_project" / "SiteMap.xml"
 SQL = ROOT / "QMS" / "SQL" / "CreateQMSTables.sql"
 

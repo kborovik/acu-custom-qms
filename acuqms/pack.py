@@ -17,7 +17,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from acuqms.paths import cs_root, customization_root, sql_file
+from acuqms.paths import FRONTEND_SCREENS_REL, cs_root, customization_root, sql_file
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -147,12 +147,12 @@ def _frontend_qm_files() -> list[Path]:
     files: list[Path] = []
     for screen in PAGES:
         for suffix in (".html", ".ts"):
-            files.append(Path("QMS") / "screens" / "QM" / screen / f"{screen}{suffix}")
+            files.append(FRONTEND_SCREENS_REL / "QM" / screen / f"{screen}{suffix}")
     return files
 
 
 def _frontend_in202500_qms() -> list[Path]:
-    base = Path("QMS") / "screens" / "IN" / "IN202500" / "extensions"
+    base = FRONTEND_SCREENS_REL / "IN" / "IN202500" / "extensions"
     return [base / "IN202500_QMS.html", base / "IN202500_QMS.ts"]
 
 

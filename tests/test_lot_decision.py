@@ -15,7 +15,18 @@ GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
 RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSLotDecisionRules.cs"
 LOT_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSLotStatus.cs"
 NCR_RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSNonConformanceRules.cs"
-TS = ROOT / "QMS" / "screens" / "QM" / "QM301000" / "QM301000.ts"
+TS = (
+    ROOT
+    / "QMS"
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "development"
+    / "screens"
+    / "QM"
+    / "QM301000"
+    / "QM301000.ts"
+)
 
 QC_HOLD = "QC Hold"
 RELEASED = "Released"

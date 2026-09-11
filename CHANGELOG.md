@@ -21,11 +21,17 @@
   unchanged.
 
 - **Customization sources under `QMS/`:** C# (`QMS/Lab5.QMS/`), REST-host
-  pages (`QMS/Pages/QM/`), Modern UI (`QMS/screens/`), package XML
+  pages (`QMS/Pages/QM/`), Modern UI
+  (`QMS/FrontendSources/screen/src/development/screens/`), package XML
   (`QMS/_project/`), and DDL (`QMS/SQL/CreateQMSTables.sql`) live in one
   folder. Zip and site paths are unchanged (`Pages/QM/`, `screens/…`,
   `_project/`, `Scripts/CreateQMSTables.sql`). Python packer, tests, and
   `changelog` stay at the repo root.
+
+- **Modern UI source tree (T48):** Pattern B/A HTML+TS moved from
+  `QMS/screens/` to `QMS/FrontendSources/screen/src/development/screens/`.
+  The packer reads that tree. Zip `PerTenantFile` members stay
+  `screens/QM/<ScreenID>/` and `screens/IN/IN202500/extensions/`.
 
 ### Fixed
 

@@ -19,8 +19,30 @@ RESULT_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionOrderResult.cs"
 STATUS_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionOrderStatus.cs"
 GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
 RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSInspectionOrderRules.cs"
-HTML = ROOT / "QMS" / "screens" / "QM" / "QM301000" / "QM301000.html"
-TS = ROOT / "QMS" / "screens" / "QM" / "QM301000" / "QM301000.ts"
+HTML = (
+    ROOT
+    / "QMS"
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "development"
+    / "screens"
+    / "QM"
+    / "QM301000"
+    / "QM301000.html"
+)
+TS = (
+    ROOT
+    / "QMS"
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "development"
+    / "screens"
+    / "QM"
+    / "QM301000"
+    / "QM301000.ts"
+)
 SQL = ROOT / "QMS" / "SQL" / "CreateQMSTables.sql"
 
 LINE_PASS = "P"

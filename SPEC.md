@@ -99,7 +99,7 @@ T44|x|fix Pattern A IN202500_QMS.ts `InventoryItem_QMS extends InventoryItem`; u
 T45|x|move customization sources under `QMS/` (C# `QMS/Lab5.QMS/`; Pages `QMS/Pages/QM/`; screens `QMS/screens/`; `_project`; SQL `QMS/SQL/CreateQMSTables.sql`); zip members unchanged; Python packer/tests stay at root|V8,V17,I.pkg
 T46|x|sweep tracked `*.py` git mode 100755 iff shebang else 100644 (scope: `^#!` in `*.py`); unit-test pairing|V21
 T47|x|swap pkg+console `lab5-qms`/`lab5_qms` → `acuqms`; Click `pack` → `build`; move `dll.py` → `acuqms/dll.py` (drop shebang); Makefile AGENTS README tests follow|I.cmd,V18,V21
-T48|.|move Pattern B/A sources `QMS/screens/` → `QMS/FrontendSources/screen/src/development/screens/`; packer reads that tree; zip members `screens/QM|IN/...` unchanged|V17,I.pkg,T45
+T48|x|move Pattern B/A sources `QMS/screens/` → `QMS/FrontendSources/screen/src/development/screens/`; packer reads that tree; zip members `screens/QM|IN/...` unchanged|V17,I.pkg,T45
 
 ## §B BUGS
 id|date|cause|fix

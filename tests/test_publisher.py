@@ -81,8 +81,20 @@ class TestPkgLayout(unittest.TestCase):
         self.assertIn(r"Lab5.QMS\Lab5.QMS.csproj", sln)
         self.assertNotIn(r"src\Lab5.QMS", sln)
         self.assertTrue(
-            (ROOT / "QMS" / "screens" / "QM" / "QM101000" / "QM101000.ts").is_file()
+            (
+                ROOT
+                / "QMS"
+                / "FrontendSources"
+                / "screen"
+                / "src"
+                / "development"
+                / "screens"
+                / "QM"
+                / "QM101000"
+                / "QM101000.ts"
+            ).is_file()
         )
+        self.assertFalse((ROOT / "QMS" / "screens").exists())
 
 
 class TestUsrQmsDdl(unittest.TestCase):

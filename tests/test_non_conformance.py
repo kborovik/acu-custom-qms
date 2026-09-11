@@ -15,8 +15,30 @@ DAC_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSNonConformance.cs"
 STATUS_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSNonConformanceStatus.cs"
 GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSNonConformanceEntry.cs"
 RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSNonConformanceRules.cs"
-HTML = ROOT / "QMS" / "screens" / "QM" / "QM302000" / "QM302000.html"
-TS = ROOT / "QMS" / "screens" / "QM" / "QM302000" / "QM302000.ts"
+HTML = (
+    ROOT
+    / "QMS"
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "development"
+    / "screens"
+    / "QM"
+    / "QM302000"
+    / "QM302000.html"
+)
+TS = (
+    ROOT
+    / "QMS"
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "development"
+    / "screens"
+    / "QM"
+    / "QM302000"
+    / "QM302000.ts"
+)
 SQL = ROOT / "QMS" / "SQL" / "CreateQMSTables.sql"
 
 STATUS_OPEN = "O"

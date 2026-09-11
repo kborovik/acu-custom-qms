@@ -51,7 +51,18 @@ class TestInventoryItemExtV1(unittest.TestCase):
 
 class TestPatternAStockItemScreen(unittest.TestCase):
     def test_modern_ui_shows_usr_fields(self) -> None:
-        base = ROOT / "QMS" / "screens" / "IN" / "IN202500" / "extensions"
+        base = (
+            ROOT
+            / "QMS"
+            / "FrontendSources"
+            / "screen"
+            / "src"
+            / "development"
+            / "screens"
+            / "IN"
+            / "IN202500"
+            / "extensions"
+        )
         html = (base / "IN202500_QMS.html").read_text(encoding="utf-8")
         ts = (base / "IN202500_QMS.ts").read_text(encoding="utf-8")
         for field in USR_FIELDS:
@@ -76,6 +87,10 @@ class TestV17_PatternAInventoryItemExtendsView(unittest.TestCase):
         ts = (
             ROOT
             / "QMS"
+            / "FrontendSources"
+            / "screen"
+            / "src"
+            / "development"
             / "screens"
             / "IN"
             / "IN202500"

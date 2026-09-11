@@ -17,7 +17,18 @@ PLAN_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionPlan.cs"
 ORDER_CS = ROOT / "QMS" / "Lab5.QMS" / "DAC" / "QMSInspectionOrder.cs"
 GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
 RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSAuditRules.cs"
-HTML = ROOT / "QMS" / "screens" / "QM" / "QM301000" / "QM301000.html"
+HTML = (
+    ROOT
+    / "QMS"
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "development"
+    / "screens"
+    / "QM"
+    / "QM301000"
+    / "QM301000.html"
+)
 SQL = ROOT / "QMS" / "SQL" / "CreateQMSTables.sql"
 
 QUALITY_MANAGER = "Quality Manager"

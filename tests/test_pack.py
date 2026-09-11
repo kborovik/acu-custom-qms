@@ -19,6 +19,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from acuqms import pack  # noqa: E402
+from acuqms.paths import FRONTEND_SCREENS_REL  # noqa: E402
 
 ENDPOINT_NS = "{http://www.acumatica.com/entity/maintenance/5.31}"
 
@@ -257,14 +258,20 @@ GRAPH_TYPES = {
 
 class TestPerTenantFileHelpers(unittest.TestCase):
     def test_arcname_and_screen_id(self) -> None:
-        qm = Path("QMS/screens/QM/QM301000/QM301000.ts")
+        qm = FRONTEND_SCREENS_REL / "QM" / "QM301000" / "QM301000.ts"
         self.assertEqual(pack.per_tenant_arcname(qm), "screens/QM/QM301000/QM301000.ts")
         self.assertEqual(
             pack.per_tenant_app_relative(qm),
             r"screens\QM\QM301000\QM301000.ts",
         )
         self.assertEqual(pack.per_tenant_screen_id(qm), "QM301000")
-        ext = Path("QMS/screens/IN/IN202500/extensions/IN202500_QMS.html")
+        ext = (
+            FRONTEND_SCREENS_REL
+            / "IN"
+            / "IN202500"
+            / "extensions"
+            / "IN202500_QMS.html"
+        )
         self.assertEqual(
             pack.per_tenant_arcname(ext),
             "screens/IN/IN202500/extensions/IN202500_QMS.html",
@@ -272,19 +279,57 @@ class TestPerTenantFileHelpers(unittest.TestCase):
         self.assertEqual(pack.per_tenant_screen_id(ext), "IN202500")
 
 
+class TestT48FrontendSourcesLayout(unittest.TestCase):
+    """T48 / V17 / I.pkg: Pattern B/A live under development/screens."""
+
+    def test_packer_reads_development_screens_zip_members_unchanged(self) -> None:
+        self.assertEqual(
+            FRONTEND_SCREENS_REL.as_posix(),
+            "QMS/FrontendSources/screen/src/development/screens",
+        )
+        self.assertFalse((ROOT / "QMS" / "screens").exists())
+        rels = pack._frontend_files()
+        self.assertGreaterEqual(len(rels), 10)
+        for rel in rels:
+            self.assertTrue(
+                rel.as_posix().startswith(FRONTEND_SCREENS_REL.as_posix() + "/"),
+                rel,
+            )
+            self.assertTrue((ROOT / rel).is_file(), rel)
+            arc = pack.per_tenant_arcname(rel)
+            self.assertTrue(arc.startswith("screens/"), arc)
+            self.assertNotIn("FrontendSources", arc)
+            self.assertNotIn("development", arc)
+            self.assertFalse(arc.startswith("QMS/"), arc)
+        with _zip() as zf:
+            names = set(zf.namelist())
+        for screen in SCREENS:
+            for suffix in (".html", ".ts"):
+                self.assertIn(f"screens/QM/{screen}/{screen}{suffix}", names, screen)
+        for suffix in (".html", ".ts"):
+            self.assertIn(
+                f"screens/IN/IN202500/extensions/IN202500_QMS{suffix}",
+                names,
+            )
+        self.assertFalse(any(name.startswith("QMS/screens/") for name in names))
+        self.assertFalse(
+            any("FrontendSources/screen/src/development" in name for name in names)
+        )
+
+
 class TestPatternBModernUi(unittest.TestCase):
     def test_screen_class_and_graph_type(self) -> None:
         for screen, graph_type in GRAPH_TYPES.items():
-            ts = (ROOT / "QMS" / "screens" / "QM" / screen / f"{screen}.ts").read_text(
-                encoding="utf-8"
-            )
+            ts = (
+                ROOT / FRONTEND_SCREENS_REL / "QM" / screen / f"{screen}.ts"
+            ).read_text(encoding="utf-8")
             self.assertIn(f"export class {screen} extends PXScreen", ts, screen)
             self.assertIn(f'graphType: "{graph_type}"', ts, screen)
 
 
 class TestPatternAStockItem(unittest.TestCase):
     def test_in202500_qms_fields_and_visible_bind(self) -> None:
-        base = ROOT / "QMS" / "screens" / "IN" / "IN202500" / "extensions"
+        base = ROOT / FRONTEND_SCREENS_REL / "IN" / "IN202500" / "extensions"
         html = (base / "IN202500_QMS.html").read_text(encoding="utf-8")
         ts = (base / "IN202500_QMS.ts").read_text(encoding="utf-8")
         self.assertIn("export class IN202500_QMS", ts)

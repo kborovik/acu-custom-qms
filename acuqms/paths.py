@@ -6,6 +6,14 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CUSTOMIZATION_DIR = "QMS"
+FRONTEND_SCREENS_REL = (
+    Path(CUSTOMIZATION_DIR)
+    / "FrontendSources"
+    / "screen"
+    / "src"
+    / "development"
+    / "screens"
+)
 
 
 def customization_root(root: Path | None = None) -> Path:
@@ -21,7 +29,7 @@ def pages_qm(root: Path | None = None) -> Path:
 
 
 def screens_root(root: Path | None = None) -> Path:
-    return customization_root(root) / "screens"
+    return (REPO_ROOT if root is None else Path(root)) / FRONTEND_SCREENS_REL
 
 
 def project_dir(root: Path | None = None) -> Path:
