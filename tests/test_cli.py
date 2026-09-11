@@ -3,10 +3,11 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""T14 / T15 / T16 / T40 / T41 / I.cmd / V8 / V10 / V18 / B8: Click console script lab5-qms pack+publish+seed+deploy."""
+"""T14 / T15 / T16 / T40 / T41 / T42 / I.cmd / V8 / V10 / V18 / V19 / B8 / B9: Click console script lab5-qms pack+publish+seed+deploy."""
 
 from __future__ import annotations
 
+import inspect
 import io
 import sys
 import tempfile
@@ -15,6 +16,7 @@ import zipfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import httpx
 from click.testing import CliRunner
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,6 +31,7 @@ from lab5_qms.publish import (  # noqa: E402
     QMS_ENDPOINT,
     QMS_VERSION,
     QUALITY_MANAGER_ROLE,
+    _recycle_app_pool,
     package_description,
     publish_package,
     qms_endpoint_live,
@@ -477,7 +480,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
             status = publish_package(zip_bytes)
         self.assertEqual(status, "published")
         session.customization_import.assert_called_once()
-        wait.assert_called_once()
+        wait.assert_called_once_with()
         session._http.get.assert_called_with(INSPECTION_PLAN_PATH)
 
     def test_publish_import_when_inspection_plan_200_html_despite_digest_match(
@@ -508,7 +511,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
             status = publish_package(zip_bytes)
         self.assertEqual(status, "published")
         session.customization_import.assert_called_once()
-        wait.assert_called_once()
+        wait.assert_called_once_with()
         session._http.get.assert_called_with(INSPECTION_PLAN_PATH)
 
     def test_publish_skip_requires_json_array_not_mere_200(self) -> None:
@@ -539,7 +542,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
             status = publish_package(zip_bytes)
         self.assertEqual(status, "published")
         session.customization_import.assert_called_once()
-        wait.assert_called_once()
+        wait.assert_called_once_with()
 
     def test_qms_endpoint_live_200_empty_ok(self) -> None:
         session = MagicMock()
@@ -610,7 +613,9 @@ class TestCliProgressICmdV10(unittest.TestCase):
         ):
             with self.assertRaises(RuntimeError) as ctx:
                 wait_published(timeout=5.0, poll=1.0)
-        self.assertIn("InspectionPlan", str(ctx.exception))
+        msg = str(ctx.exception)
+        self.assertIn("InspectionPlan", msg)
+        self.assertIn("last GET 404", msg)
         session._http.get.assert_called_with(INSPECTION_PLAN_PATH)
 
     def test_wait_published_returns_when_inspection_plan_200(self) -> None:
@@ -699,6 +704,83 @@ class TestCliProgressICmdV10(unittest.TestCase):
             steps,
             ["pack zip", *PUBLISH_IMPORT_STEPS, *SEED_STEPS],
         )
+
+
+class TestV19_WaitPublished600s(unittest.TestCase):
+    def test_wait_published_default_is_600_not_120(self) -> None:
+        params = inspect.signature(wait_published).parameters
+        self.assertEqual(params["timeout"].default, 600.0)
+        src = (ROOT / "lab5_qms" / "publish.py").read_text(encoding="utf-8")
+        self.assertNotIn("wait_published(timeout=120", src)
+        self.assertIn("wait_published()", src)
+
+    def test_publish_package_wait_ignores_cli_timeout(self) -> None:
+        zip_bytes = _tiny_zip()
+        session = _session_with_plan(published=False, plan_status=404)
+        with (
+            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
+            patch("lab5_qms.publish.drain_publish"),
+            patch("lab5_qms.publish.publish_begin"),
+            patch("lab5_qms.publish.wait_published") as wait,
+            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+            patch(
+                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                return_value=False,
+            ),
+            patch(
+                "lab5_qms.publish._webpack_tenant_screens_missing",
+                return_value=False,
+            ),
+            patch("lab5_qms.progress.sys.stderr", io.StringIO()),
+        ):
+            status = publish_package(zip_bytes, timeout=90.0)
+        self.assertEqual(status, "published")
+        wait.assert_called_once_with()
+
+    def test_recycle_app_pool_wait_uses_default(self) -> None:
+        inst = MagicMock()
+        inst.ssh = "Administrator@host"
+        with (
+            patch("lab5_qms.publish.instance", return_value=inst),
+            patch("lab5_qms.publish.ssh_run"),
+            patch("lab5_qms.publish.wait_published") as wait,
+        ):
+            _recycle_app_pool()
+        wait.assert_called_once_with()
+
+    def _timeout_after_one_poll(self, session: MagicMock) -> str:
+        with (
+            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
+            patch("lab5_qms.publish.time.sleep"),
+            patch(
+                "lab5_qms.publish.time.monotonic",
+                side_effect=[0.0, 0.0, 10.0],
+            ),
+        ):
+            with self.assertRaises(RuntimeError) as ctx:
+                wait_published(timeout=5.0, poll=1.0)
+        return str(ctx.exception)
+
+    def test_wait_timeout_reports_last_get_html(self) -> None:
+        session = _session_with_plan(plan_status=200)
+        session._http.get.return_value = _plan_get(200, html=True)
+        msg = self._timeout_after_one_poll(session)
+        self.assertIn("last GET 200 HTML", msg)
+        self.assertIn("5s", msg)
+
+    def test_wait_timeout_reports_last_get_error_object(self) -> None:
+        session = _session_with_plan(plan_status=200)
+        session._http.get.return_value = _plan_get(
+            200, {"message": "Endpoint [QMS/22.200.001] not found"}
+        )
+        msg = self._timeout_after_one_poll(session)
+        self.assertIn("last GET 200 error object", msg)
+
+    def test_wait_timeout_reports_last_get_transport(self) -> None:
+        session = _session_with_plan(plan_status=200)
+        session._http.get.side_effect = httpx.TransportError("boom")
+        msg = self._timeout_after_one_poll(session)
+        self.assertIn("last GET transport", msg)
 
 
 class TestPackModuleZipBytesV8(unittest.TestCase):

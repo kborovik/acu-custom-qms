@@ -91,7 +91,7 @@ T38|x|drop e2e/test_kit_assembly_lot_gate.py; live e2e inventory-only|V16,T28,T3
 T39|x|pack Pattern B/A as `PerTenantFile` `screens/QM|IN/...` (not File → src/screens); SiteMap SelectedUI=D; drop leftover src/screens File copies before publish; seed SelectedUI D; e2e `Scripts/Screens/<tenant>/QM*.html` + SelectedUI ! E|V17,I.pkg,I.screen
 T40|x|skip already-published only when current tenant GET `/entity/QMS/22.200.001/InspectionPlan` 200 (empty OK); leftover getPublished or GET /entity listing ! skip; tenant 404 → import+publish+wait_published|V18,I.cmd
 T41|x|tighten `qms_endpoint_live` 200 JSON array; skip then seed then re-check live; unit 200 HTML / error dict / 401 ! live; e2e after deploy GET `/entity` lists QMS + InspectionPlan JSON array on skip path|V18,B8,I.cmd
-T42|.|drop `wait_published(timeout=120.0)` in `publish_package` + `_recycle_app_pool`; use 600s default; unit assert wait timeout 600 not 120; timeout error last GET status/body kind|V19,I.cmd,B9
+T42|x|drop `wait_published(timeout=120.0)` in `publish_package` + `_recycle_app_pool`; use 600s default; unit assert wait timeout 600 not 120; timeout error last GET status/body kind|V19,I.cmd,B9
 
 ## §B BUGS
 id|date|cause|fix

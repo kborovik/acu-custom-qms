@@ -1,9 +1,10 @@
-"""CustomizationApi publish + post-publish QM Role seed (T14 / T16 / T25 / T40 / T41 / V10 / V8 / V14 / V18).
+"""CustomizationApi publish + post-publish QM Role seed (T14 / T16 / T25 / T40 / T41 / T42 / V10 / V8 / V14 / V18 / V19).
 
 Zip never carries Role / UsersInRoles / RolesInGraph (V8 / I.pkg).
 `ACU_USER` Quality Manager attach stays e2e-only (V10).
 Post-publish seed inserts UsrQMSSetup (QORD QNCR) per company when missing (V14).
 Skip already-published only when current-tenant InspectionPlan GET is 200 JSON array (V18 / B8).
+wait_published default 600s; publish_package and _recycle_app_pool do not pass 120s (V19 / B9).
 Never prints ACU_PASSWORD.
 """
 
@@ -183,37 +184,49 @@ def publish_begin(session: AcumaticaClient, names: list[str]) -> None:
         )
 
 
+def _inspection_plan_kind(session: AcumaticaClient) -> tuple[bool, str]:
+    """(live, last GET status or body kind). Timeout diagnostic for V19 / B9."""
+    try:
+        response = session._http.get(INSPECTION_PLAN_PATH)
+    except httpx.TransportError, httpx.HTTPError:
+        return False, "transport"
+    status = response.status_code
+    if status != 200:
+        return False, str(status)
+    try:
+        body = response.json()
+    except ValueError:
+        return False, f"{status} HTML"
+    if isinstance(body, list):
+        return True, f"{status} JSON array"
+    return False, f"{status} error object"
+
+
 def qms_endpoint_live(session: AcumaticaClient) -> bool:
     """InspectionPlan 200 JSON array (empty OK) is the tenant contract (V18 / B8).
 
     GET /entity listing QMS and CustomizationApi getPublished are leftover after
     tenant delete+create. 200 HTML, 200 error object, 401, and 404 are not live.
     """
-    try:
-        response = session._http.get(INSPECTION_PLAN_PATH)
-    except httpx.TransportError, httpx.HTTPError:
-        return False
-    if response.status_code != 200:
-        return False
-    try:
-        body = response.json()
-    except ValueError:
-        return False
-    return isinstance(body, list)
+    live, _kind = _inspection_plan_kind(session)
+    return live
 
 
 def wait_published(timeout: float = 600.0, poll: float = 5.0) -> None:
     deadline = time.monotonic() + timeout
+    last = "none"
     while time.monotonic() < deadline:
         try:
             with client() as session:
-                if qms_endpoint_live(session):
+                live, last = _inspection_plan_kind(session)
+                if live:
                     return
         except RuntimeError, httpx.TransportError, httpx.HTTPError:
-            pass
+            last = "transport"
         time.sleep(poll)
     raise RuntimeError(
-        f"{QMS_ENDPOINT} InspectionPlan did not answer 200 JSON array within {timeout:.0f}s"
+        f"{QMS_ENDPOINT} InspectionPlan did not answer 200 JSON array "
+        f"within {timeout:.0f}s (last GET {last})"
     )
 
 
@@ -301,7 +314,7 @@ def publish_package(zip_bytes: bytes, *, timeout: float = 900.0) -> str:
                 time.sleep(5.0)
 
     with progress("wait QMS/22.200.001", QMS_ENDPOINT):
-        wait_published(timeout=120.0)
+        wait_published()
     return "published"
 
 
@@ -523,7 +536,7 @@ def _recycle_app_pool() -> None:
     if not inst.ssh:
         return
     ssh_run("Restart-WebAppPool -Name AcumaticaERP")
-    wait_published(timeout=120.0)
+    wait_published()
 
 
 def qms_setup_insert_sql() -> str:
