@@ -82,13 +82,13 @@ def section_bounds(text: str, heading_prefix: str) -> tuple[int, int, int]:
             break
     if start is None:
         die(f"no {heading_prefix!r} section in CHANGELOG.md")
-    body_start = start + 1
+    body_start = start + 1  # pyright: ignore[reportOptionalOperand]
     body_end = len(lines)
     for j in range(body_start, len(lines)):
         if H2.match(lines[j]):
             body_end = j
             break
-    return start, body_start, body_end
+    return start, body_start, body_end  # pyright: ignore[reportReturnType]
 
 
 def unreleased_body_lines(text: str) -> list[str]:
