@@ -116,7 +116,7 @@ _release-pre: check
 	$(call need-gh)
 	$(call need-gh-auth)
 	$(call header,Checking CHANGELOG Unreleased has shippable bullets)
-	./Scripts/changelog check
+	./changelog check
 	$(call need-env)
 	$(UV) run python dll.py
 
@@ -126,7 +126,7 @@ _release-bump: _release-pre
 
 _release-tag: _release-bump
 	$(call header,Promoting CHANGELOG Unreleased → v$(VERSION))
-	./Scripts/changelog promote "$(VERSION)"
+	./changelog promote "$(VERSION)"
 	git add pyproject.toml uv.lock CHANGELOG.md
 	git commit -m "chore: release v$(VERSION)"
 	git tag "v$(VERSION)"
@@ -140,7 +140,7 @@ _release-gh: _release-pack
 	git push
 	git push --tags
 	$(call header,Creating GitHub release v$(VERSION))
-	./Scripts/changelog notes "$(VERSION)" > .release-notes
+	./changelog notes "$(VERSION)" > .release-notes
 	gh release create "v$(VERSION)" \
 		--title "v$(VERSION)" \
 		--notes-file .release-notes \

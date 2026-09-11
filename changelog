@@ -6,9 +6,9 @@
 """Keep-a-Changelog helper for the release pipeline.
 
 usage:
-  Scripts/changelog check                 # exit 1 if ## Unreleased has no bullets
-  Scripts/changelog promote <ver> [date]  # Unreleased body -> ## [vX.Y.Z] - YYYY-MM-DD
-  Scripts/changelog notes <ver|tag>       # print body of ## [vX.Y.Z] for GH release
+  ./changelog check                 # exit 1 if ## Unreleased has no bullets
+  ./changelog promote <ver> [date]  # Unreleased body -> ## [vX.Y.Z] - YYYY-MM-DD
+  ./changelog notes <ver|tag>       # print body of ## [vX.Y.Z] for GH release
 
 Version may be ``0.1.0`` or ``v0.1.0``; headings always use the ``v`` form.
 Empty Unreleased (no ``- `` bullets) hard-fails — nothing to ship.
@@ -23,7 +23,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parent
 UNRELEASED = "## Unreleased"
 # Keep-a-Changelog H2: ## Unreleased or ## [vX.Y.Z] - YYYY-MM-DD
 H2 = re.compile(r"^##\s+")
