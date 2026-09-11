@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Fixed
+
+- **Publish skip JSON array (V18 / B8):** `lab5-qms` treats the tenant
+  contract as live only when `GET /entity/QMS/22.200.001/InspectionPlan`
+  returns 200 with a JSON array (empty OK). HTTP 200 HTML, a 200 error
+  object, 401, and 404 are not live, so digest skip no longer returns
+  `already published` on leftover 200. After skip, seed then re-check;
+  a failed re-check imports, publishes, and waits. After deploy,
+  `GET /entity` lists `QMS/22.200.001`.
+
 ## [v0.5.2] - 2026-09-10
 
 ### Fixed
