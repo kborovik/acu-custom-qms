@@ -5,7 +5,8 @@ It holds DACs, graphs, `QM*` screens, and the `QMS/22.200.001` REST endpoint.
 Spec: [`README.md`](README.md).
 Control: [`SPEC.md`](SPEC.md).
 
-Related work lives in sibling repos. File defects and changes there, not here:
+Related work lives in sibling repos.
+File defects and changes there, not here:
 
 - GCP CoA ingestion and reasoning engine:
   [`kborovik/acu-google-qms`](https://github.com/kborovik/acu-google-qms)
@@ -14,7 +15,8 @@ Related work lives in sibling repos. File defects and changes there, not here:
 - `acu` CLI:
   [`kborovik/acumatica-cli`](https://github.com/kborovik/acumatica-cli)
 
-This repo has no `config/` seed. Do not `acu apply` / `diff` / `run` from here.
+This repo has no `config/` seed.
+Do not `acu apply` / `diff` / `run` from here.
 Never print `.env` secrets.
 
 ## Live e2e (`acu` + `.env`)
@@ -29,9 +31,12 @@ Recipes (never `acu check` — destructive tenant rebuild):
 | `gmake e2e` | `gmake check` + `acu config check` + live e2e (publishes if the package digest differs) |
 | `gmake release` | unit tests, compile if stale, bump, tag, pack, `gh release` (no e2e) |
 
-`gmake deploy` is the inner loop after a C# / screen / SQL change. `gmake e2e` is the proof. There is no `gmake dll`.
+`gmake deploy` is the inner loop after a C# / screen / SQL change.
+`gmake e2e` is the proof.
+There is no `gmake dll`.
 
-Install released `acu` with `uv tool install acumatica-cli`. This project does not depend on that package; do not launch acu through uv.
+Install released `acu` with `uv tool install acumatica-cli`.
+This project does not depend on that package; do not launch acu through uv.
 
 Repo-root `.env` (gitignored) is the live target. `acu` walks up from cwd to find it.
 
@@ -42,7 +47,8 @@ ACU_USER=admin
 ACU_PASSWORD=<secret>
 ```
 
-`ACU_SSH` omitted becomes `Administrator@<base_url host>` (SSH boxes). Present blank `ACU_SSH=` means hosted, no tenant CRUD.
+`ACU_SSH` omitted becomes `Administrator@<base_url host>` (SSH boxes).
+Present blank `ACU_SSH=` means hosted, no tenant CRUD.
 
 Verified combo (sibling CLI): Acumatica **26.101.0225**, Default contract **25.200.001**.
 
@@ -54,15 +60,23 @@ acu config show    # resolved .env; password redacted
 acu tenant list    # SSH; confirm ACU_TENANT exists
 ```
 
-`ok rest` + `ok endpoints` = session is good. Missing `matrix.yaml` is a warn here, not a fail.
+`ok rest` + `ok endpoints` = session is good.
+Missing `matrix.yaml` is a warn here, not a fail.
 
 **Never** `acu check` from this repo — that is a destructive cold tenant rebuild (`delete` then create then apply then run).
 
-Python probes: `uv run python` (project env has click + httpx; ruff is a dev dependency used by `gmake check`). REST and SSH go through PATH `acu` plus `acuqms.acu`. System `python3` will not see the package.
+Python probes: `uv run python` (project env has click + httpx; ruff is a dev dependency used by `gmake check`).
+REST and SSH go through PATH `acu` plus `acuqms.acu`.
+System `python3` will not see the package.
 
 ### Package presence
 
-`gmake deploy` / `uv run acuqms deploy` builds `Lab5_QMS_Customization.zip`, publishes via `/CustomizationApi` (same cookie session as `acu`; field is `projectContentBase64`, not `projectContents`), and seeds post-publish Role `Quality Manager` plus QM `RolesInGraph` and `UsrQMSSetup`. Publish skip is a SHA-256 of **every zip member** (pages, SQL, DLL, `project.xml`); an ASPX-only change must republish. Subcommands: `build`, `publish`, `seed`, `deploy`. Naked `acuqms` prints Click help and exits 0 (does not deploy). `gmake build` runs `acuqms build`. Then prove the tenant has the package:
+`gmake deploy` / `uv run acuqms deploy` builds `Lab5_QMS_Customization.zip`, publishes via `/CustomizationApi` (same cookie session as `acu`; field is `projectContentBase64`, not `projectContents`), and seeds post-publish Role `Quality Manager` plus QM `RolesInGraph` and `UsrQMSSetup`.
+Publish skip is a SHA-256 of **every zip member** (pages, SQL, DLL, `project.xml`); an ASPX-only change must republish.
+Subcommands: `build`, `publish`, `seed`, `deploy`.
+Naked `acuqms` prints Click help and exits 0 (does not deploy).
+`gmake build` runs `acuqms build`.
+Then prove the tenant has the package:
 
 | Check | Expect |
 | --- | --- |
@@ -78,19 +92,23 @@ Python probes: `uv run python` (project env has click + httpx; ruff is a dev dep
 | Bootstrap `NumberingSequence` `QORD` / `QNCR` | present |
 | Bootstrap `Role` `Quality Manager` | present |
 
-`GET /entity/QMS/22.200.001/...` returning `Endpoint [QMS/22.200.001] not found` means the zip is not published on this tenant. Do not invent the endpoint.
+`GET /entity/QMS/22.200.001/...` returning `Endpoint [QMS/22.200.001] not found` means the zip is not published on this tenant.
+Do not invent the endpoint.
 
-Default-contract entities (`StockItem`, `PurchaseReceipt`, `LotSerialClass`) live under `/entity/Default/25.200.001/`. Numbering, Role, Company, IN/PO prefs live under `/entity/Bootstrap/1.4.0/` — Default has no `NumberingSequence`.
+Default-contract entities (`StockItem`, `PurchaseReceipt`, `LotSerialClass`) live under `/entity/Default/25.200.001/`.
+Numbering, Role, Company, IN/PO prefs live under `/entity/Bootstrap/1.4.0/` — Default has no `NumberingSequence`.
 
 ### Functional paths (needs GitOps seed on the same tenant)
 
-Dock / lot e2e needs inventory + IN/PO setup from sibling `acu-gitops-qms` applied to **this** `ACU_TENANT`. Probe first:
+Dock / lot e2e needs inventory + IN/PO setup from sibling `acu-gitops-qms` applied to **this** `ACU_TENANT`.
+Probe first:
 
 - Bootstrap `Company` / `INPreferences` / `POPreferences` return rows
 - Default `StockItem` `$top=1` is 200 with a record
 - `PurchaseReceipt` GET does not 500 on missing Purchasing Preferences
 
-If those miss, stop. Seed the tenant from `acu-gitops-qms` (or switch `.env` `ACU_TENANT`); do not apply that YAML from this repo.
+If those miss, stop.
+Seed the tenant from `acu-gitops-qms` (or switch `.env` `ACU_TENANT`); do not apply that YAML from this repo.
 
 Then, against `QMS/22.200.001` + Default:
 
@@ -100,4 +118,5 @@ Then, against `QMS/22.200.001` + Default:
 4. Fail: any required test Fail sets lot `Quarantine` + `NonConformance` inserted; allocation halted.
 5. QC Hold becomes Released only as `Quality Manager` or the ingestion service account.
 
-Read-only probes do not mutate. Publish, receipt release, evaluate, and lot flips do — keep them on the `.env` tenant, never on an unnamed default tenant (CLI tenant guard).
+Read-only probes do not mutate.
+Publish, receipt release, evaluate, and lot flips do — keep them on the `.env` tenant, never on an unnamed default tenant (CLI tenant guard).
