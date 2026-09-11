@@ -66,6 +66,22 @@ class TestPublishAndPresence(unittest.TestCase):
     def test_qms_setup_list(self) -> None:
         self._assert_entity_list("QMSSetup")
 
+    def test_skip_path_entity_and_inspection_plan_json_array(self) -> None:
+        """V18 / B8: after ensure_published, GET /entity lists QMS; InspectionPlan is JSON array.
+
+        Holds on skip (`already published`) and on import+publish.
+        """
+        self.assertIn(self.status, ("already published", "published"))
+        with client() as session:
+            endpoints = session.list_endpoints()
+            response = session._http.get(f"/entity/{QMS_ENDPOINT}/InspectionPlan")
+        self.assertIn(("QMS", QMS_VERSION), endpoints)
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(response.json(), list)
+        if self.status == "already published":
+            self.assertIn(("QMS", QMS_VERSION), endpoints)
+            self.assertIsInstance(response.json(), list)
+
     def _assert_entity_list(self, entity: str) -> None:
         with client() as session:
             rows = qms_get(session, entity, params={"$top": "1"})

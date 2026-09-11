@@ -1,8 +1,9 @@
-"""lab5-qms Click console script (T14 / T15 / T16 / T25 / I.cmd / V8 / V10 / V14).
+"""lab5-qms Click console script (T14 / T15 / T16 / T25 / T41 / I.cmd / V8 / V10 / V14 / V18).
 
 Packs Lab5_QMS_Customization.zip, publishes via CustomizationApi, and
 seeds post-publish Role Quality Manager + RolesInGraph Delete on QM*
 screens + UsrQMSSetup (QORD QNCR) per company when missing.
+Skip then seed then re-check InspectionPlan 200 JSON array (V18 / B8).
 Zip never includes Role, UsersInRoles, or RolesInGraph.
 ACU_USER Quality Manager attach stays e2e-only.
 Never prints ACU_PASSWORD.
@@ -79,10 +80,18 @@ def deploy(output: Path | None, timeout: float) -> None:
     """Pack, CustomizationApi publish, and post-publish Role + EntityMapping + UsrQMSSetup seed."""
     path = _write_zip(output)
     click.echo(str(path))
-    status = publish.publish_package(path.read_bytes(), timeout=timeout)
+    zip_bytes = path.read_bytes()
+    status = publish.publish_package(zip_bytes, timeout=timeout)
     click.echo(status)
     with publish.client() as session:
         publish.seed_qm_rights(session)
+    with publish.client() as session:
+        live = publish.qms_endpoint_live(session)
+    if not live:
+        status = publish.publish_package(zip_bytes, timeout=timeout)
+        click.echo(status)
+        with publish.client() as session:
+            publish.seed_qm_rights(session)
     click.echo("seeded")
 
 

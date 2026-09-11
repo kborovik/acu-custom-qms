@@ -89,7 +89,7 @@ T37|x|e2e prove after publish: Inventory lists Quality Preferences Inspection Pl
 T38|x|drop e2e/test_kit_assembly_lot_gate.py; live e2e inventory-only|V16,T28,T37
 T39|x|pack Pattern B/A as `PerTenantFile` `screens/QM|IN/...` (not File → src/screens); SiteMap SelectedUI=D; drop leftover src/screens File copies before publish; seed SelectedUI D; e2e `Scripts/Screens/<tenant>/QM*.html` + SelectedUI ! E|V17,I.pkg,I.screen
 T40|x|skip already-published only when current tenant GET `/entity/QMS/22.200.001/InspectionPlan` 200 (empty OK); leftover getPublished or GET /entity listing ! skip; tenant 404 → import+publish+wait_published|V18,I.cmd
-T41|.|tighten `qms_endpoint_live` 200 JSON array; skip then seed then re-check live; unit 200 HTML / error dict / 401 ! live; e2e after deploy GET `/entity` lists QMS + InspectionPlan JSON array on skip path|V18,B8,I.cmd
+T41|x|tighten `qms_endpoint_live` 200 JSON array; skip then seed then re-check live; unit 200 HTML / error dict / 401 ! live; e2e after deploy GET `/entity` lists QMS + InspectionPlan JSON array on skip path|V18,B8,I.cmd
 
 ## §B BUGS
 id|date|cause|fix

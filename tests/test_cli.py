@@ -3,7 +3,7 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""T14 / T15 / T16 / T40 / I.cmd / V8 / V10 / V18: Click console script lab5-qms pack+publish+seed+deploy."""
+"""T14 / T15 / T16 / T40 / T41 / I.cmd / V8 / V10 / V18 / B8: Click console script lab5-qms pack+publish+seed+deploy."""
 
 from __future__ import annotations
 
@@ -72,9 +72,20 @@ def _session_ctx(session: object) -> MagicMock:
     return ctx
 
 
-def _plan_get(status: int) -> MagicMock:
+def _plan_get(
+    status: int,
+    body: object | None = None,
+    *,
+    html: bool = False,
+) -> MagicMock:
     response = MagicMock()
     response.status_code = status
+    if html:
+        response.json.side_effect = ValueError("Expecting value")
+        return response
+    if body is None:
+        body = [] if status == 200 else {"message": "error"}
+    response.json.return_value = body
     return response
 
 
@@ -193,6 +204,7 @@ class TestCliDeployPipelineICmd(unittest.TestCase):
                 ) as pp,
                 patch("lab5_qms.cli.publish.seed_qm_rights") as seed,
                 patch("lab5_qms.cli.publish.client", return_value=ctx),
+                patch("lab5_qms.cli.publish.qms_endpoint_live", return_value=True),
             ):
                 r = CliRunner().invoke(cli, ["deploy"])
             self.assertEqual(r.exit_code, 0, r.output)
@@ -201,6 +213,35 @@ class TestCliDeployPipelineICmd(unittest.TestCase):
             seed.assert_called_once_with(session)
             self.assertIn("published", r.output)
             self.assertIn("seeded", r.output)
+
+    def test_deploy_skip_then_seed_then_not_live_imports(self) -> None:
+        """V18 / B8: skip then seed then not-live → import+wait."""
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp) / "Lab5_QMS_Customization.zip"
+            dest.write_bytes(b"PK\x03\x04fake")
+            session = object()
+            ctx = MagicMock()
+            ctx.__enter__.return_value = session
+            ctx.__exit__.return_value = None
+            with (
+                patch("lab5_qms.cli.pack.write_package", return_value=dest),
+                patch(
+                    "lab5_qms.cli.publish.publish_package",
+                    side_effect=["already published", "published"],
+                ) as pp,
+                patch("lab5_qms.cli.publish.seed_qm_rights") as seed,
+                patch("lab5_qms.cli.publish.client", return_value=ctx),
+                patch("lab5_qms.cli.publish.qms_endpoint_live", return_value=False),
+            ):
+                r = CliRunner().invoke(cli, ["deploy"])
+        self.assertEqual(r.exit_code, 0, r.output)
+        self.assertEqual(pp.call_count, 2)
+        self.assertEqual(seed.call_count, 2)
+        stdout_lines = [line for line in r.stdout.splitlines() if line]
+        self.assertEqual(
+            stdout_lines,
+            [str(dest), "already published", "published", "seeded"],
+        )
 
 
 class TestSeedQmRightsV10(unittest.TestCase):
@@ -385,7 +426,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
             self.assertRegex(row[3], ELAPSED_RE)
 
     def test_publish_skip_when_inspection_plan_200(self) -> None:
-        """V18 / I.cmd: InspectionPlan 200 + digest match → already published."""
+        """V18 / I.cmd: InspectionPlan 200 JSON array + digest match → already published."""
         zip_bytes = _tiny_zip()
         desc = package_description(zip_bytes)
         session = _session_with_plan(plan_status=200)
@@ -439,10 +480,89 @@ class TestCliProgressICmdV10(unittest.TestCase):
         wait.assert_called_once()
         session._http.get.assert_called_with(INSPECTION_PLAN_PATH)
 
+    def test_publish_import_when_inspection_plan_200_html_despite_digest_match(
+        self,
+    ) -> None:
+        """V18 / B8: 200 HTML + digest match is not live → import, not skip."""
+        zip_bytes = _tiny_zip()
+        desc = package_description(zip_bytes)
+        session = _session_with_plan(plan_status=200)
+        session._http.get.return_value = _plan_get(200, html=True)
+        with (
+            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
+            patch("lab5_qms.publish.drain_publish"),
+            patch("lab5_qms.publish.publish_begin"),
+            patch("lab5_qms.publish.wait_published") as wait,
+            patch("lab5_qms.publish.published_description", return_value=desc),
+            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+            patch(
+                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                return_value=False,
+            ),
+            patch(
+                "lab5_qms.publish._webpack_tenant_screens_missing",
+                return_value=False,
+            ),
+            patch("lab5_qms.progress.sys.stderr", io.StringIO()),
+        ):
+            status = publish_package(zip_bytes)
+        self.assertEqual(status, "published")
+        session.customization_import.assert_called_once()
+        wait.assert_called_once()
+        session._http.get.assert_called_with(INSPECTION_PLAN_PATH)
+
+    def test_publish_skip_requires_json_array_not_mere_200(self) -> None:
+        """V18 / B8: skip already published requires JSON array, not mere 200."""
+        zip_bytes = _tiny_zip()
+        desc = package_description(zip_bytes)
+        session = _session_with_plan(plan_status=200)
+        session._http.get.return_value = _plan_get(
+            200, {"message": "Endpoint [QMS/22.200.001] not found"}
+        )
+        with (
+            patch("lab5_qms.publish.client", return_value=_session_ctx(session)),
+            patch("lab5_qms.publish.drain_publish"),
+            patch("lab5_qms.publish.publish_begin"),
+            patch("lab5_qms.publish.wait_published") as wait,
+            patch("lab5_qms.publish.published_description", return_value=desc),
+            patch("lab5_qms.publish._ensure_webpack_no_color", return_value=False),
+            patch(
+                "lab5_qms.publish._remove_file_item_frontend_leftovers",
+                return_value=False,
+            ),
+            patch(
+                "lab5_qms.publish._webpack_tenant_screens_missing",
+                return_value=False,
+            ),
+            patch("lab5_qms.progress.sys.stderr", io.StringIO()),
+        ):
+            status = publish_package(zip_bytes)
+        self.assertEqual(status, "published")
+        session.customization_import.assert_called_once()
+        wait.assert_called_once()
+
     def test_qms_endpoint_live_200_empty_ok(self) -> None:
         session = MagicMock()
-        session._http.get.return_value = _plan_get(200)
+        session._http.get.return_value = _plan_get(200, [])
         self.assertTrue(qms_endpoint_live(session))
+        session._http.get.assert_called_once_with(INSPECTION_PLAN_PATH)
+
+    def test_qms_endpoint_live_200_html_not_live(self) -> None:
+        session = MagicMock()
+        session._http.get.return_value = _plan_get(200, html=True)
+        self.assertFalse(qms_endpoint_live(session))
+        session._http.get.assert_called_once_with(INSPECTION_PLAN_PATH)
+
+    def test_qms_endpoint_live_200_error_dict_not_live(self) -> None:
+        session = MagicMock()
+        session._http.get.return_value = _plan_get(200, {"message": "error"})
+        self.assertFalse(qms_endpoint_live(session))
+        session._http.get.assert_called_once_with(INSPECTION_PLAN_PATH)
+
+    def test_qms_endpoint_live_401_not_live(self) -> None:
+        session = MagicMock()
+        session._http.get.return_value = _plan_get(401)
+        self.assertFalse(qms_endpoint_live(session))
         session._http.get.assert_called_once_with(INSPECTION_PLAN_PATH)
 
     def test_qms_endpoint_live_404(self) -> None:
@@ -450,6 +570,32 @@ class TestCliProgressICmdV10(unittest.TestCase):
         session._http.get.return_value = _plan_get(404)
         self.assertFalse(qms_endpoint_live(session))
         session._http.get.assert_called_once_with(INSPECTION_PLAN_PATH)
+
+    def test_ensure_published_skip_then_seed_then_not_live_imports(self) -> None:
+        """V18 / B8: skip then seed then not-live → import+wait."""
+        from e2e import helper
+
+        helper._published = None
+        helper._publish_error = None
+        zip_bytes = _tiny_zip()
+        try:
+            with (
+                patch("e2e.helper.pack.package_zip", return_value=zip_bytes),
+                patch(
+                    "e2e.helper.publish_package",
+                    side_effect=["already published", "published"],
+                ) as pp,
+                patch("e2e.helper.ensure_qm_rights") as seed,
+                patch("e2e.helper.client", return_value=_session_ctx(MagicMock())),
+                patch("e2e.helper.qms_endpoint_live", return_value=False),
+            ):
+                status = helper.ensure_published(timeout=90.0)
+        finally:
+            helper._published = None
+            helper._publish_error = None
+        self.assertEqual(status, "published")
+        self.assertEqual(pp.call_count, 2)
+        self.assertEqual(seed.call_count, 2)
 
     def test_wait_published_ignores_leftover_entity_listing(self) -> None:
         """V18: GET /entity listing QMS is leftover; wait needs InspectionPlan 200."""
@@ -541,6 +687,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 patch("lab5_qms.publish._ensure_quality_queue_gi"),
                 patch("lab5_qms.publish._ensure_qm_aspx_pages"),
                 patch("lab5_qms.publish._ensure_qm_selected_ui"),
+                patch("lab5_qms.publish.qms_endpoint_live", return_value=True),
             ):
                 r = CliRunner().invoke(cli, ["deploy", "-o", str(dest)])
         self.assertEqual(r.exit_code, 0, r.output)
