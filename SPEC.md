@@ -97,7 +97,7 @@ T42|x|drop `wait_published(timeout=120.0)` in `publish_package` + `_recycle_app_
 T43|x|seed EntityMapping Tests/Results before wait_published in publish_package; recycle if inserted; unit assert call order; GET 200 after maps|V20,I.cmd,B10
 T44|x|fix Pattern A IN202500_QMS.ts `InventoryItem_QMS extends InventoryItem`; unit assert ! `export class InventoryItem {`; e2e published TS extends + webpack `@extendsView`; Stock Items New Record Item.UsrQMS* bind FieldState|V17,I.stock,T33,B11
 T45|x|move customization sources under `QMS/` (C# `QMS/Lab5.QMS/`; Pages `QMS/Pages/QM/`; screens `QMS/screens/`; `_project`; SQL `QMS/SQL/CreateQMSTables.sql`); zip members unchanged; Python packer/tests stay at root|V8,V17,I.pkg
-T46|.|sweep tracked `*.py` git mode 100755 iff shebang else 100644 (scope: `^#!` in `*.py`); unit-test pairing|V21
+T46|x|sweep tracked `*.py` git mode 100755 iff shebang else 100644 (scope: `^#!` in `*.py`); unit-test pairing|V21
 
 ## §B BUGS
 id|date|cause|fix

@@ -2,14 +2,25 @@
 
 ## Unreleased
 
+### Fixed
+
+- **Python git executable bits (V21):** tracked `*.py` files are git
+  mode `100755` only when the first line starts with `#!`; otherwise
+  `100644`. `lab5_qms/*`, `e2e/helper.py`, and `e2e/__init__.py` stay
+  without a shebang.
+
 ### Changed
+
+- **`changelog` at repo root:** Keep-a-Changelog helper is `./changelog`;
+  repo `Scripts/` is gone. Zip member `Scripts/CreateQMSTables.sql` is
+  unchanged.
 
 - **Customization sources under `QMS/`:** C# (`QMS/Lab5.QMS/`), REST-host
   pages (`QMS/Pages/QM/`), Modern UI (`QMS/screens/`), package XML
   (`QMS/_project/`), and DDL (`QMS/SQL/CreateQMSTables.sql`) live in one
   folder. Zip and site paths are unchanged (`Pages/QM/`, `screens/…`,
   `_project/`, `Scripts/CreateQMSTables.sql`). Python packer, tests, and
-  `Scripts/changelog` stay at the repo root.
+  `changelog` stay at the repo root.
 
 ### Fixed
 
