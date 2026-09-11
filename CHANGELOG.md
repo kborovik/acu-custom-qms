@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [v0.5.3] - 2026-09-11
+
 ### Fixed
 
 - **Publish skip JSON array (V18 / B8):** `lab5-qms` treats the tenant
