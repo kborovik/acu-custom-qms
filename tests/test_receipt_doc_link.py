@@ -57,7 +57,7 @@ class TestV24_ReceiptDocLink(unittest.TestCase):
         receipt = _region(order, "ReceiptNbr")
         self.assertIn('[PXUIField(DisplayName = "Purchase Receipt")]', receipt)
         self.assertIn("typeof(Search<POReceipt.receiptNbr>)", receipt)
-        self.assertIn("AllowEdit = true", receipt)
+        self.assertNotIn("AllowEdit = true", receipt)
         plan = _region(order, "PlanID")
         self.assertIn('[PXUIField(DisplayName = "Inspection Plan")]', plan)
         self.assertNotIn("AllowEdit = true", plan)
@@ -65,7 +65,7 @@ class TestV24_ReceiptDocLink(unittest.TestCase):
         ncr = _region(NCR_CS.read_text(encoding="utf-8"), "ReceiptNbr")
         self.assertIn('[PXUIField(DisplayName = "Purchase Receipt")]', ncr)
         self.assertIn("typeof(Search<POReceipt.receiptNbr>)", ncr)
-        self.assertIn("AllowEdit = true", ncr)
+        self.assertNotIn("AllowEdit = true", ncr)
 
         plan_master = _region(PLAN_CS.read_text(encoding="utf-8"), "PlanID")
         self.assertIn('[PXUIField(DisplayName = "Plan ID"', plan_master)
