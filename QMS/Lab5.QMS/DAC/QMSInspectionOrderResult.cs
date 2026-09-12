@@ -19,49 +19,49 @@ namespace Lab5.QMS
         [PXDBDefault(typeof(QMSInspectionOrder.inspectionOrderNbr))]
         [PXParent(typeof(Select<QMSInspectionOrder,
             Where<QMSInspectionOrder.inspectionOrderNbr, Equal<Current<QMSInspectionOrderResult.inspectionOrderNbr>>>>))]
-        [PXUIField(DisplayName = "Inspection Order Nbr", Visible = false)]
+        [PXUIField(DisplayName = "InspectionOrderNbr", Visible = false)]
         public virtual string InspectionOrderNbr { get; set; }
         public abstract class inspectionOrderNbr : PX.Data.BQL.BqlString.Field<inspectionOrderNbr> { }
         #endregion
 
         #region LineNbr
         [PXDBInt(IsKey = true)]
-        [PXUIField(DisplayName = "Line Nbr", Visible = false)]
+        [PXUIField(DisplayName = "LineNbr", Visible = false)]
         public virtual int? LineNbr { get; set; }
         public abstract class lineNbr : PX.Data.BQL.BqlInt.Field<lineNbr> { }
         #endregion
 
         #region TestID
         [PXDBString(30, IsUnicode = true)]
-        [PXUIField(DisplayName = "Test ID")]
+        [PXUIField(DisplayName = "TestID")]
         public virtual string TestID { get; set; }
         public abstract class testID : PX.Data.BQL.BqlString.Field<testID> { }
         #endregion
 
         #region TestMethod
         [PXDBString(100, IsUnicode = true)]
-        [PXUIField(DisplayName = "Test Method")]
+        [PXUIField(DisplayName = "TestMethod")]
         public virtual string TestMethod { get; set; }
         public abstract class testMethod : PX.Data.BQL.BqlString.Field<testMethod> { }
         #endregion
 
         #region TargetSpec
         [PXDBString(60, IsUnicode = true)]
-        [PXUIField(DisplayName = "Target Spec")]
+        [PXUIField(DisplayName = "TargetSpec")]
         public virtual string TargetSpec { get; set; }
         public abstract class targetSpec : PX.Data.BQL.BqlString.Field<targetSpec> { }
         #endregion
 
         #region ActualNumericValue
         [PXDBDecimal(4)]
-        [PXUIField(DisplayName = "Actual Numeric")]
+        [PXUIField(DisplayName = "ActualNumericValue")]
         public virtual decimal? ActualNumericValue { get; set; }
         public abstract class actualNumericValue : PX.Data.BQL.BqlDecimal.Field<actualNumericValue> { }
         #endregion
 
         #region ActualTextValue
         [PXDBString(100, IsUnicode = true)]
-        [PXUIField(DisplayName = "Actual Text")]
+        [PXUIField(DisplayName = "ActualTextValue")]
         public virtual string ActualTextValue { get; set; }
         public abstract class actualTextValue : PX.Data.BQL.BqlString.Field<actualTextValue> { }
         #endregion

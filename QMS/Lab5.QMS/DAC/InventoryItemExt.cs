@@ -8,7 +8,7 @@ namespace Lab5.QMS
         #region UsrQMSInspectionRequired
         [PXDBBool]
         [PXDefault(false)]
-        [PXUIField(DisplayName = "Requires Quality Inspection")]
+        [PXUIField(DisplayName = "UsrQMSInspectionRequired")]
         public virtual bool? UsrQMSInspectionRequired { get; set; }
         public abstract class usrQMSInspectionRequired : PX.Data.BQL.BqlBool.Field<usrQMSInspectionRequired> { }
         #endregion
@@ -18,7 +18,7 @@ namespace Lab5.QMS
         [PXSelector(typeof(Search<QMSInspectionPlan.planID,
             Where<QMSInspectionPlan.status, Equal<QMSInspectionPlanStatus.active>>>),
             DescriptionField = typeof(QMSInspectionPlan.description))]
-        [PXUIField(DisplayName = "Inspection Plan")]
+        [PXUIField(DisplayName = "InspectionPlan")]
         public virtual string UsrQMSInspectionPlanID { get; set; }
         public abstract class usrQMSInspectionPlanID : PX.Data.BQL.BqlString.Field<usrQMSInspectionPlanID> { }
         #endregion
@@ -26,7 +26,7 @@ namespace Lab5.QMS
         #region UsrMinShelfLifeDays
         [PXDBInt]
         [PXDefault(0)]
-        [PXUIField(DisplayName = "Min. Receiving Shelf Life (Days)")]
+        [PXUIField(DisplayName = "UsrMinShelfLifeDays")]
         public virtual int? UsrMinShelfLifeDays { get; set; }
         public abstract class usrMinShelfLifeDays : PX.Data.BQL.BqlInt.Field<usrMinShelfLifeDays> { }
         #endregion

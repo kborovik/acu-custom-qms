@@ -111,7 +111,7 @@ T52|x|fix QMSInspectionOrderEntry QMSInspectionPlanMaint QMSNonConformanceEntry 
 T53|x|hide LineNbr on QM201000 Tests + QM301000 Results (TS view ! LineNbr, ASPX ! PXGridColumn LineNbr, DAC Visible=false); REST LineNbr stay; unit GRID_FIELDS drop LineNbr + assert TS+ASPX ! LineNbr; e2e published TS ! LineNbr field|V23,I.screen
 T54|x|after aspx+recycle, InspectionPlan 500 OptimizedExport NRE → recycle again then wait_published; GET /entity 200 ! QMS live; unit assert second recycle on NRE; e2e aspx-hash-mismatch publish → InspectionPlan 200 w/o manual recycle|V20,I.cmd,B15
 T55|x|QM301000 QM302000 ReceiptNbr AllowEdit → PO302000; DisplayName PurchaseReceipt; Order PlanID DisplayName InspectionPlan; Plan ! require AllowEdit; unit DAC DisplayName + ASPX AllowEdit + TS @controlConfig allowEdit ReceiptNbr; REST names stay|V24,I.screen
-T56|.|sweep PXUIField DisplayName → PascalCase no space (scope: `DisplayName = "` in `QMS/Lab5.QMS/**/*.cs` `tests/**/*.py`); default = member name; ReceiptNbr PurchaseReceipt; order PlanID InspectionPlan; unit assert DisplayName ! space; REST names stay|V25,V23,V24,I.screen
+T56|x|sweep PXUIField DisplayName → PascalCase no space (scope: `DisplayName = "` in `QMS/Lab5.QMS/**/*.cs` `tests/**/*.py`); default = member name; ReceiptNbr PurchaseReceipt; order PlanID InspectionPlan; unit assert DisplayName ! space; REST names stay|V25,V23,V24,I.screen
 
 ## §B BUGS
 id|date|cause|fix

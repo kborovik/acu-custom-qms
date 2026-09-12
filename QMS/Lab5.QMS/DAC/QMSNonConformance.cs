@@ -25,7 +25,7 @@ namespace Lab5.QMS
         [PXDefault]
         [AutoNumber(typeof(QMSSetup.nCRNumberingID), typeof(AccessInfo.businessDate))]
         [PXSelector(typeof(Search<QMSNonConformance.nCRNbr>))]
-        [PXUIField(DisplayName = "NCR Nbr", Visibility = PXUIVisibility.SelectorVisible)]
+        [PXUIField(DisplayName = "NCRNbr", Visibility = PXUIVisibility.SelectorVisible)]
         public virtual string NCRNbr { get; set; }
         public abstract class nCRNbr : PX.Data.BQL.BqlString.Field<nCRNbr> { }
         #endregion
@@ -42,7 +42,7 @@ namespace Lab5.QMS
         #region InspectionOrderNbr
         [PXDBString(15, IsUnicode = true)]
         [PXSelector(typeof(Search<QMSInspectionOrder.inspectionOrderNbr>))]
-        [PXUIField(DisplayName = "Inspection Order Nbr")]
+        [PXUIField(DisplayName = "InspectionOrderNbr")]
         public virtual string InspectionOrderNbr { get; set; }
         public abstract class inspectionOrderNbr : PX.Data.BQL.BqlString.Field<inspectionOrderNbr> { }
         #endregion
@@ -53,14 +53,14 @@ namespace Lab5.QMS
             typeof(InventoryItem.inventoryCD),
             typeof(InventoryItem.descr),
             SubstituteKey = typeof(InventoryItem.inventoryCD))]
-        [PXUIField(DisplayName = "Inventory ID")]
+        [PXUIField(DisplayName = "InventoryID")]
         public virtual int? InventoryID { get; set; }
         public abstract class inventoryID : PX.Data.BQL.BqlInt.Field<inventoryID> { }
         #endregion
 
         #region LotSerialNbr
         [PXDBString(50, IsUnicode = true)]
-        [PXUIField(DisplayName = "Lot/Serial Nbr")]
+        [PXUIField(DisplayName = "LotSerialNbr")]
         public virtual string LotSerialNbr { get; set; }
         public abstract class lotSerialNbr : PX.Data.BQL.BqlString.Field<lotSerialNbr> { }
         #endregion
@@ -71,7 +71,7 @@ namespace Lab5.QMS
             typeof(Vendor.acctCD),
             typeof(Vendor.acctName),
             SubstituteKey = typeof(Vendor.acctCD))]
-        [PXUIField(DisplayName = "Vendor")]
+        [PXUIField(DisplayName = "VendorID")]
         public virtual int? VendorID { get; set; }
         public abstract class vendorID : PX.Data.BQL.BqlInt.Field<vendorID> { }
         #endregion
@@ -79,7 +79,7 @@ namespace Lab5.QMS
         #region ReceiptNbr
         [PXDBString(15, IsUnicode = true)]
         [PXSelector(typeof(Search<POReceipt.receiptNbr>))]
-        [PXUIField(DisplayName = "Purchase Receipt")]
+        [PXUIField(DisplayName = "PurchaseReceipt")]
         public virtual string ReceiptNbr { get; set; }
         public abstract class receiptNbr : PX.Data.BQL.BqlString.Field<receiptNbr> { }
         #endregion
@@ -95,14 +95,14 @@ namespace Lab5.QMS
 
         #region NonConformanceType
         [PXDBString(60, IsUnicode = true)]
-        [PXUIField(DisplayName = "Non-Conformance Type")]
+        [PXUIField(DisplayName = "NonConformanceType")]
         public virtual string NonConformanceType { get; set; }
         public abstract class nonConformanceType : PX.Data.BQL.BqlString.Field<nonConformanceType> { }
         #endregion
 
         #region RootCauseCategory
         [PXDBString(60, IsUnicode = true)]
-        [PXUIField(DisplayName = "Root Cause Category")]
+        [PXUIField(DisplayName = "RootCauseCategory")]
         public virtual string RootCauseCategory { get; set; }
         public abstract class rootCauseCategory : PX.Data.BQL.BqlString.Field<rootCauseCategory> { }
         #endregion
@@ -110,7 +110,7 @@ namespace Lab5.QMS
         #region AssignedQAOfficer
         [PXDBGuid]
         [PXSelector(typeof(Search<Users.pKID>), SubstituteKey = typeof(Users.username))]
-        [PXUIField(DisplayName = "Assigned QA Officer")]
+        [PXUIField(DisplayName = "AssignedQAOfficer")]
         public virtual Guid? AssignedQAOfficer { get; set; }
         public abstract class assignedQAOfficer : PX.Data.BQL.BqlGuid.Field<assignedQAOfficer> { }
         #endregion
@@ -124,7 +124,7 @@ namespace Lab5.QMS
 
         #region ActionRequired
         [PXDBString(255, IsUnicode = true)]
-        [PXUIField(DisplayName = "Action Required")]
+        [PXUIField(DisplayName = "ActionRequired")]
         public virtual string ActionRequired { get; set; }
         public abstract class actionRequired : PX.Data.BQL.BqlString.Field<actionRequired> { }
         #endregion
@@ -133,7 +133,7 @@ namespace Lab5.QMS
         [PXDBString(10, IsUnicode = false)]
         [PXDefault(QMSInventoryHoldStatus.Quarantine)]
         [QMSInventoryHoldStatus.List]
-        [PXUIField(DisplayName = "Inventory Hold Status")]
+        [PXUIField(DisplayName = "InventoryHoldStatus")]
         public virtual string InventoryHoldStatus { get; set; }
         public abstract class inventoryHoldStatus : PX.Data.BQL.BqlString.Field<inventoryHoldStatus> { }
         #endregion
@@ -158,7 +158,7 @@ namespace Lab5.QMS
 
         #region CreatedDateTime
         [PXDBCreatedDateTime]
-        [PXUIField(DisplayName = "Created On", Enabled = false)]
+        [PXUIField(DisplayName = "CreatedDateTime", Enabled = false)]
         public virtual DateTime? CreatedDateTime { get; set; }
         public abstract class createdDateTime : PX.Data.BQL.BqlDateTime.Field<createdDateTime> { }
         #endregion
@@ -177,7 +177,7 @@ namespace Lab5.QMS
 
         #region LastModifiedDateTime
         [PXDBLastModifiedDateTime]
-        [PXUIField(DisplayName = "Last Modified On", Enabled = false)]
+        [PXUIField(DisplayName = "LastModifiedDateTime", Enabled = false)]
         public virtual DateTime? LastModifiedDateTime { get; set; }
         public abstract class lastModifiedDateTime : PX.Data.BQL.BqlDateTime.Field<lastModifiedDateTime> { }
         #endregion

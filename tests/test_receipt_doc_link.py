@@ -55,24 +55,24 @@ class TestV24_ReceiptDocLink(unittest.TestCase):
     def test_dac_display_names(self) -> None:
         order = ORDER_CS.read_text(encoding="utf-8")
         receipt = _region(order, "ReceiptNbr")
-        self.assertIn('[PXUIField(DisplayName = "Purchase Receipt")]', receipt)
+        self.assertIn('[PXUIField(DisplayName = "PurchaseReceipt")]', receipt)
         self.assertIn("typeof(Search<POReceipt.receiptNbr>)", receipt)
         self.assertNotIn("AllowEdit = true", receipt)
         plan = _region(order, "PlanID")
-        self.assertIn('[PXUIField(DisplayName = "Inspection Plan")]', plan)
+        self.assertIn('[PXUIField(DisplayName = "InspectionPlan")]', plan)
         self.assertNotIn("AllowEdit = true", plan)
 
         ncr = _region(NCR_CS.read_text(encoding="utf-8"), "ReceiptNbr")
-        self.assertIn('[PXUIField(DisplayName = "Purchase Receipt")]', ncr)
+        self.assertIn('[PXUIField(DisplayName = "PurchaseReceipt")]', ncr)
         self.assertIn("typeof(Search<POReceipt.receiptNbr>)", ncr)
         self.assertNotIn("AllowEdit = true", ncr)
 
         plan_master = _region(PLAN_CS.read_text(encoding="utf-8"), "PlanID")
-        self.assertIn('[PXUIField(DisplayName = "Plan ID"', plan_master)
+        self.assertIn('[PXUIField(DisplayName = "PlanID"', plan_master)
         item_plan = _region(
             ITEM_CS.read_text(encoding="utf-8"), "UsrQMSInspectionPlanID"
         )
-        self.assertIn('[PXUIField(DisplayName = "Inspection Plan")]', item_plan)
+        self.assertIn('[PXUIField(DisplayName = "InspectionPlan")]', item_plan)
 
     def test_aspx_allow_edit_receipt_not_plan(self) -> None:
         order_aspx = ORDER_ASPX.read_text(encoding="utf-8")
@@ -93,6 +93,8 @@ class TestV24_ReceiptDocLink(unittest.TestCase):
         xml = ENDPOINT_XML.read_text(encoding="utf-8")
         self.assertIn('<Field name="ReceiptNbr" type="StringValue" />', xml)
         self.assertIn('<Field name="PlanID" type="StringValue" />', xml)
+        self.assertNotIn('<Field name="PurchaseReceipt"', xml)
+        self.assertNotIn('<Field name="InspectionPlan"', xml)
         self.assertNotIn('name="Purchase Receipt"', xml)
         self.assertNotIn('name="Inspection Plan"', xml)
 

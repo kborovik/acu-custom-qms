@@ -13,7 +13,7 @@ namespace Lab5.QMS
 
         #region UsrQMSLotStatus
         [PXDBString(10, IsUnicode = true)]
-        [PXUIField(DisplayName = "QMS Lot Status")]
+        [PXUIField(DisplayName = "UsrQMSLotStatus")]
         public virtual string UsrQMSLotStatus { get; set; }
         public abstract class usrQMSLotStatus : PX.Data.BQL.BqlString.Field<usrQMSLotStatus> { }
         #endregion

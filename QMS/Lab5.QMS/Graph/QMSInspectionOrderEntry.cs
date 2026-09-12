@@ -72,7 +72,7 @@ namespace Lab5.QMS
         public PXAction<QMSInspectionOrder> ReleaseLotDecision;
 
         [PXButton(CommitChanges = true)]
-        [PXUIField(DisplayName = "Evaluate")]
+        [PXUIField(DisplayName = "EvaluateResults")]
         protected virtual IEnumerable evaluateResults(PXAdapter adapter)
         {
             QMSInspectionOrder order = Document.Current;
@@ -127,7 +127,7 @@ namespace Lab5.QMS
         }
 
         [PXButton(CommitChanges = true)]
-        [PXUIField(DisplayName = "Release Lot Decision")]
+        [PXUIField(DisplayName = "ReleaseLotDecision")]
         protected virtual IEnumerable releaseLotDecision(PXAdapter adapter)
         {
             QMSInspectionOrder order = Document.Current;

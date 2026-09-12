@@ -19,21 +19,21 @@ namespace Lab5.QMS
         [PXDBDefault(typeof(QMSInspectionPlan.planID))]
         [PXParent(typeof(Select<QMSInspectionPlan,
             Where<QMSInspectionPlan.planID, Equal<Current<QMSInspectionPlanTest.planID>>>>))]
-        [PXUIField(DisplayName = "Plan ID", Visible = false)]
+        [PXUIField(DisplayName = "PlanID", Visible = false)]
         public virtual string PlanID { get; set; }
         public abstract class planID : PX.Data.BQL.BqlString.Field<planID> { }
         #endregion
 
         #region LineNbr
         [PXDBInt(IsKey = true)]
-        [PXUIField(DisplayName = "Line Nbr", Visible = false)]
+        [PXUIField(DisplayName = "LineNbr", Visible = false)]
         public virtual int? LineNbr { get; set; }
         public abstract class lineNbr : PX.Data.BQL.BqlInt.Field<lineNbr> { }
         #endregion
 
         #region TestID
         [PXDBString(30, IsUnicode = true)]
-        [PXUIField(DisplayName = "Test ID")]
+        [PXUIField(DisplayName = "TestID")]
         public virtual string TestID { get; set; }
         public abstract class testID : PX.Data.BQL.BqlString.Field<testID> { }
         #endregion
@@ -47,28 +47,28 @@ namespace Lab5.QMS
 
         #region TestMethod
         [PXDBString(100, IsUnicode = true)]
-        [PXUIField(DisplayName = "Test Method")]
+        [PXUIField(DisplayName = "TestMethod")]
         public virtual string TestMethod { get; set; }
         public abstract class testMethod : PX.Data.BQL.BqlString.Field<testMethod> { }
         #endregion
 
         #region TargetValue
         [PXDBDecimal(4)]
-        [PXUIField(DisplayName = "Target")]
+        [PXUIField(DisplayName = "TargetValue")]
         public virtual decimal? TargetValue { get; set; }
         public abstract class targetValue : PX.Data.BQL.BqlDecimal.Field<targetValue> { }
         #endregion
 
         #region MinValue
         [PXDBDecimal(4)]
-        [PXUIField(DisplayName = "Min. Value")]
+        [PXUIField(DisplayName = "MinValue")]
         public virtual decimal? MinValue { get; set; }
         public abstract class minValue : PX.Data.BQL.BqlDecimal.Field<minValue> { }
         #endregion
 
         #region MaxValue
         [PXDBDecimal(4)]
-        [PXUIField(DisplayName = "Max. Value")]
+        [PXUIField(DisplayName = "MaxValue")]
         public virtual decimal? MaxValue { get; set; }
         public abstract class maxValue : PX.Data.BQL.BqlDecimal.Field<maxValue> { }
         #endregion
@@ -92,7 +92,7 @@ namespace Lab5.QMS
         #region IsRequired
         [PXDBBool]
         [PXDefault(true)]
-        [PXUIField(DisplayName = "Required")]
+        [PXUIField(DisplayName = "IsRequired")]
         public virtual bool? IsRequired { get; set; }
         public abstract class isRequired : PX.Data.BQL.BqlBool.Field<isRequired> { }
         #endregion

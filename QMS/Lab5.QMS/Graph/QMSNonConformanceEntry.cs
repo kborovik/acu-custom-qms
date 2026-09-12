@@ -13,7 +13,7 @@ namespace Lab5.QMS
         public PXAction<QMSNonConformance> CloseNCR;
 
         [PXButton(CommitChanges = true)]
-        [PXUIField(DisplayName = "Close NCR")]
+        [PXUIField(DisplayName = "CloseNCR")]
         protected virtual IEnumerable closeNCR(PXAdapter adapter)
         {
             QMSNonConformance ncr = Document.Current;
@@ -33,7 +33,7 @@ namespace Lab5.QMS
         public PXAction<QMSNonConformance> DispositionRTV;
 
         [PXButton(CommitChanges = true)]
-        [PXUIField(DisplayName = "Return to Vendor")]
+        [PXUIField(DisplayName = "DispositionRTV")]
         protected virtual IEnumerable dispositionRTV(PXAdapter adapter)
         {
             QMSNonConformance ncr = Document.Current;

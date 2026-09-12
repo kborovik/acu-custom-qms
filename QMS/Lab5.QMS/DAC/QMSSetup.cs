@@ -20,7 +20,7 @@ namespace Lab5.QMS
         [PXDBString(10, IsUnicode = true)]
         [PXDefault(QMSSetupRules.InspectionOrderNumberingID)]
         [PXSelector(typeof(Numbering.numberingID), DescriptionField = typeof(Numbering.descr))]
-        [PXUIField(DisplayName = "Inspection Order Numbering Sequence")]
+        [PXUIField(DisplayName = "InspectionOrderNumberingID")]
         public virtual string InspectionOrderNumberingID { get; set; }
         public abstract class inspectionOrderNumberingID : PX.Data.BQL.BqlString.Field<inspectionOrderNumberingID> { }
         #endregion
@@ -29,7 +29,7 @@ namespace Lab5.QMS
         [PXDBString(10, IsUnicode = true)]
         [PXDefault(QMSSetupRules.NcrNumberingID)]
         [PXSelector(typeof(Numbering.numberingID), DescriptionField = typeof(Numbering.descr))]
-        [PXUIField(DisplayName = "NCR Numbering Sequence")]
+        [PXUIField(DisplayName = "NCRNumberingID")]
         public virtual string NCRNumberingID { get; set; }
         public abstract class nCRNumberingID : PX.Data.BQL.BqlString.Field<nCRNumberingID> { }
         #endregion

@@ -21,7 +21,7 @@ namespace Lab5.QMS
         [PXDBString(30, IsUnicode = true, IsKey = true, InputMask = ">CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")]
         [PXDefault]
         [PXSelector(typeof(Search<QMSInspectionPlan.planID>), ValidateValue = false)]
-        [PXUIField(DisplayName = "Plan ID", Visibility = PXUIVisibility.SelectorVisible)]
+        [PXUIField(DisplayName = "PlanID", Visibility = PXUIVisibility.SelectorVisible)]
         public virtual string PlanID { get; set; }
         public abstract class planID : PX.Data.BQL.BqlString.Field<planID> { }
         #endregion
@@ -39,14 +39,14 @@ namespace Lab5.QMS
             typeof(InventoryItem.inventoryCD),
             typeof(InventoryItem.descr),
             SubstituteKey = typeof(InventoryItem.inventoryCD))]
-        [PXUIField(DisplayName = "Inventory ID")]
+        [PXUIField(DisplayName = "InventoryID")]
         public virtual int? InventoryID { get; set; }
         public abstract class inventoryID : PX.Data.BQL.BqlInt.Field<inventoryID> { }
         #endregion
 
         #region SamplingPlan
         [PXDBString(100, IsUnicode = true)]
-        [PXUIField(DisplayName = "Sampling Plan")]
+        [PXUIField(DisplayName = "SamplingPlan")]
         public virtual string SamplingPlan { get; set; }
         public abstract class samplingPlan : PX.Data.BQL.BqlString.Field<samplingPlan> { }
         #endregion
@@ -63,14 +63,14 @@ namespace Lab5.QMS
         #region RevisionID
         [PXDBInt]
         [PXDefault(1)]
-        [PXUIField(DisplayName = "Revision")]
+        [PXUIField(DisplayName = "RevisionID")]
         public virtual int? RevisionID { get; set; }
         public abstract class revisionID : PX.Data.BQL.BqlInt.Field<revisionID> { }
         #endregion
 
         #region EffectiveDate
         [PXDBDate]
-        [PXUIField(DisplayName = "Effective Date")]
+        [PXUIField(DisplayName = "EffectiveDate")]
         public virtual DateTime? EffectiveDate { get; set; }
         public abstract class effectiveDate : PX.Data.BQL.BqlDateTime.Field<effectiveDate> { }
         #endregion
@@ -95,7 +95,7 @@ namespace Lab5.QMS
 
         #region CreatedDateTime
         [PXDBCreatedDateTime]
-        [PXUIField(DisplayName = "Created On", Enabled = false)]
+        [PXUIField(DisplayName = "CreatedDateTime", Enabled = false)]
         public virtual DateTime? CreatedDateTime { get; set; }
         public abstract class createdDateTime : PX.Data.BQL.BqlDateTime.Field<createdDateTime> { }
         #endregion
@@ -114,7 +114,7 @@ namespace Lab5.QMS
 
         #region LastModifiedDateTime
         [PXDBLastModifiedDateTime]
-        [PXUIField(DisplayName = "Last Modified On", Enabled = false)]
+        [PXUIField(DisplayName = "LastModifiedDateTime", Enabled = false)]
         public virtual DateTime? LastModifiedDateTime { get; set; }
         public abstract class lastModifiedDateTime : PX.Data.BQL.BqlDateTime.Field<lastModifiedDateTime> { }
         #endregion
