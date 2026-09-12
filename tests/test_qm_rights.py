@@ -115,9 +115,10 @@ class TestRolesInGraphSeedV10(unittest.TestCase):
             same,
             zip_digest(blob(**{**base, "Scripts/CreateQMSTables.sql": b"ALTER"})),
         )
-        src = PUBLISH.read_text(encoding="utf-8")
+        src = (ROOT / "acuqms" / "pack.py").read_text(encoding="utf-8")
         self.assertIn("for name in sorted(zf.namelist())", src)
         self.assertNotIn('dll_name = "Bin/" + pack.ASSEMBLY_DLL', src)
+        self.assertIn("zip_digest", PUBLISH.read_text(encoding="utf-8"))
 
     def test_ensure_published_seeds_qm_rights(self) -> None:
         src = HELPER.read_text(encoding="utf-8")

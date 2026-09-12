@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- **Package Description (V27):** packed `project.xml` and CustomizationApi `projectDescription` start `Lab5.QMS {ver}` (`{ver}` is pyproject X.Y.Z on exact tag `vX.Y.Z` and a clean tree, otherwise `{X.Y.Z}-dev`), then `QMS customization 22.200.001; assembly Lab5.QMS.dll; zip Lab5_QMS_Customization.zip [sha256:…]`. SM204505 shows the live stamp. Committed `_project/ProjectMetadata.xml` stays a template. Pack does not call the GitHub API.
+
 ## [v0.9.0] - 2026-09-12
 
 ### Added

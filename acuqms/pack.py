@@ -1,4 +1,4 @@
-"""Pack Lab5_QMS_Customization.zip (T12 / T14 / V8 / I.pkg).
+"""Pack Lab5_QMS_Customization.zip (T12 / T14 / T59 / V8 / V27 / I.pkg).
 
 The zip is an Acumatica CustomizationApi import: project.xml holds
 EntityEndpoint, SiteMapNode, Sql, PerTenantFile (Modern UI), and File
@@ -6,13 +6,20 @@ items. I.pkg members ride as extra zip entries so the package is
 inspectable without unzipping project.xml. Code items use the Source
 attribute (CstCodeFile shape, verified vs 26.101.0225 in acumatica-cli
 bootstrap).
+
+Pack stamps zip project.xml Description `Lab5.QMS {ver}; … [sha256:]`
+(V27). Committed `_project/ProjectMetadata.xml` stays a template.
+Pack does not call the GitHub API.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import re
+import subprocess
+import tomllib
 import zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -35,6 +42,87 @@ PAGES = (
 CLASS_RE = re.compile(
     r"public\s+(?:static\s+)?class\s+(\w+)(?:\s*:\s*([^{\n]+))?",
 )
+PYPROJECT_VERSION_RE = re.compile(r"^\d+\.\d+\.\d+$")
+DESCRIPTION_BODY = (
+    "QMS customization 22.200.001; assembly Lab5.QMS.dll; "
+    "zip Lab5_QMS_Customization.zip"
+)
+GIT_TIMEOUT = 10.0
+
+
+def zip_digest(zip_bytes: bytes) -> str:
+    """SHA-256 of every zip member (name + bytes), sorted.
+
+    Publish skip used to hash only project.xml + Bin/Lab5.QMS.dll, so an
+    ASPX/SQL-only change looked identical and the tenant kept old pages.
+    """
+    with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zf:
+        digest = hashlib.sha256()
+        for name in sorted(zf.namelist()):
+            if name.endswith("/"):
+                continue
+            digest.update(name.encode("utf-8"))
+            digest.update(b"\0")
+            digest.update(zf.read(name))
+        return digest.hexdigest()
+
+
+def pyproject_version(root: Path | None = None) -> str:
+    """X.Y.Z from pyproject.toml (not the live `{ver}` stamp)."""
+    root = ROOT if root is None else Path(root)
+    data = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    version = str(data["project"]["version"])
+    if not PYPROJECT_VERSION_RE.fullmatch(version):
+        raise ValueError(f"pyproject version must be X.Y.Z (got {version!r})")
+    return version
+
+
+def package_version(root: Path | None = None) -> str:
+    """Live `{ver}` for V27: X.Y.Z on exact tag `vX.Y.Z` + clean tree, else `-dev`.
+
+    Missing git, a dirty tree, or HEAD not exactly `v{pyproject}` → `{X.Y.Z}-dev`.
+    Does not call the GitHub API.
+    """
+    root = ROOT if root is None else Path(root)
+    version = pyproject_version(root)
+    if _release_head(root, version):
+        return version
+    return f"{version}-dev"
+
+
+def format_package_description(
+    version: str, digest: str, *, body: str | None = None
+) -> str:
+    """`Lab5.QMS {ver}; QMS customization 22.200.001; … [sha256:{digest}]`."""
+    suffix = body if body else DESCRIPTION_BODY
+    return f"Lab5.QMS {version}; {suffix} [sha256:{digest}]"
+
+
+def _release_head(root: Path, version: str) -> bool:
+    try:
+        describe = subprocess.run(
+            ["git", "describe", "--tags", "--exact-match", "HEAD"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=GIT_TIMEOUT,
+        )
+        status = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=GIT_TIMEOUT,
+        )
+    except OSError, subprocess.TimeoutExpired:
+        return False
+    if describe.returncode != 0 or status.returncode != 0:
+        return False
+    if describe.stdout.strip() != f"v{version}":
+        return False
+    return not status.stdout.strip()
 
 
 def ensure_assembly(root: Path | None = None) -> Path:
@@ -46,26 +134,52 @@ def ensure_assembly(root: Path | None = None) -> Path:
 
 
 def package_zip(root: Path | None = None, *, ensure_dll: bool = False) -> bytes:
-    """Build the customization package bytes."""
+    """Build the customization package bytes.
+
+    Two-pass: hash members with the ProjectMetadata template Description,
+    then stamp zip `project.xml` with `Lab5.QMS {ver}; … [sha256:]` (V27).
+    The digest excludes the live stamp so `{ver}` is not inside its own hash.
+    """
     root = ROOT if root is None else Path(root)
     if ensure_dll:
         ensure_assembly(root)
     customization = _project_xml(root)
-    xml_bytes = b'<?xml version="1.0" encoding="utf-8"?>\n' + ET.tostring(
+    members = _zip_member_bytes(root)
+    template = customization.get("description") or DESCRIPTION_BODY
+    unstamped = _assemble_zip(_project_xml_bytes(customization, template), members)
+    stamped = format_package_description(
+        package_version(root), zip_digest(unstamped), body=template
+    )
+    return _assemble_zip(_project_xml_bytes(customization, stamped), members)
+
+
+def _project_xml_bytes(customization: ET.Element, description: str) -> bytes:
+    customization.set("description", description)
+    return b'<?xml version="1.0" encoding="utf-8"?>\n' + ET.tostring(
         customization, encoding="utf-8"
     )
+
+
+def _zip_member_bytes(root: Path) -> list[tuple[str, bytes]]:
+    members: list[tuple[str, bytes]] = []
+    for rel, arcname in _pkg_members(root):
+        members.append((arcname, (root / rel).read_bytes()))
+    for rel in _frontend_files():
+        members.append((per_tenant_arcname(rel), (root / rel).read_bytes()))
+    for src in _aspx_sources(root):
+        members.append((_aspx_arcname(src), (root / src).read_bytes()))
+    dll = _dll_path(root)
+    if dll is not None:
+        members.append(("Bin/" + ASSEMBLY_DLL, dll.read_bytes()))
+    return members
+
+
+def _assemble_zip(project_xml: bytes, members: list[tuple[str, bytes]]) -> bytes:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("project.xml", xml_bytes)
-        for rel, arcname in _pkg_members(root):
-            zf.write(root / rel, arcname=arcname)
-        for rel in _frontend_files():
-            zf.write(root / rel, arcname=per_tenant_arcname(rel))
-        for src in _aspx_sources(root):
-            zf.write(root / src, arcname=_aspx_arcname(src))
-        dll = _dll_path(root)
-        if dll is not None:
-            zf.write(dll, arcname="Bin/" + ASSEMBLY_DLL)
+        zf.writestr("project.xml", project_xml)
+        for arcname, payload in members:
+            zf.writestr(arcname, payload)
     return buf.getvalue()
 
 

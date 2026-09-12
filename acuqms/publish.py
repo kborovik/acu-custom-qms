@@ -1,4 +1,4 @@
-"""CustomizationApi publish + unpublish + post-publish QM Role seed (T14 / T16 / T25 / T40 / T41 / T42 / T43 / T51 / T54 / T57 / V10 / V8 / V14 / V18 / V19 / V20 / V26).
+"""CustomizationApi publish + unpublish + post-publish QM Role seed (T14 / T16 / T25 / T40 / T41 / T42 / T43 / T51 / T54 / T57 / T59 / V10 / V8 / V14 / V18 / V19 / V20 / V26 / V27).
 
 Zip never carries Role / UsersInRoles / RolesInGraph (V8 / I.pkg).
 `ACU_USER` Quality Manager attach stays e2e-only (V10).
@@ -9,6 +9,7 @@ _recycle_app_pool uses wait_rest 120s, not wait_published (V19 / B12).
 GET /entity 200 is not QMS live; InspectionPlan 500 OptimizedExport NRE after that recycle → one extra recycle (V20 / B15).
 publish_package after publishEnd: EntityMapping then aspx SHA-256 skip then recycle then wait_published (V20 / B13).
 unpublish_package publishes remaining names with merge=False so Lab5.QMS drops and AcuBootstrap stays (V26).
+CustomizationApi projectDescription is the packed project.xml Description (V27).
 Never prints ACU_PASSWORD.
 """
 
@@ -35,6 +36,11 @@ from acuqms.acu import (
     list_tenants,
     load_instance,
     ssh_run,
+)
+from acuqms.pack import (
+    format_package_description,
+    package_version,
+    zip_digest,
 )
 from acuqms.progress import heartbeat, progress
 
@@ -123,28 +129,21 @@ def sql_lines(query: str) -> list[str]:
     return [line.strip() for line in sqlcmd(query).splitlines() if line.strip()]
 
 
-def zip_digest(zip_bytes: bytes) -> str:
-    """SHA-256 of every zip member (name + bytes), sorted.
-
-    Publish skip used to hash only project.xml + Bin/Lab5.QMS.dll, so an
-    ASPX/SQL-only change looked identical and the tenant kept old pages.
-    """
-    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
-        digest = hashlib.sha256()
-        for name in sorted(zf.namelist()):
-            if name.endswith("/"):
-                continue
-            digest.update(name.encode("utf-8"))
-            digest.update(b"\0")
-            digest.update(zf.read(name))
-        return digest.hexdigest()
-
-
 def package_description(zip_bytes: bytes) -> str:
-    return (
-        "QMS customization 22.200.001; assembly Lab5.QMS.dll; "
-        f"zip Lab5_QMS_Customization.zip [sha256:{zip_digest(zip_bytes)}]"
-    )
+    """CustomizationApi projectDescription / SM204505 Description (V27).
+
+    Packed zips carry the live stamp on project.xml. Unstamped test zips
+    fall back to composing `Lab5.QMS {ver}; … [sha256:]` from member digest.
+    """
+    try:
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+            root = ET.fromstring(zf.read("project.xml"))
+        desc = (root.get("description") or "").strip()
+        if desc.startswith("Lab5.QMS "):
+            return desc
+    except zipfile.BadZipFile, KeyError, ET.ParseError, OSError:
+        pass
+    return format_package_description(package_version(), zip_digest(zip_bytes))
 
 
 def published_description(session: AcumaticaClient) -> str | None:

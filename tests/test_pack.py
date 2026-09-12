@@ -3,7 +3,7 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""T12 / V8 / I.pkg: pack Lab5_QMS_Customization.zip."""
+"""T12 / T59 / V8 / V27 / I.pkg: pack Lab5_QMS_Customization.zip."""
 
 from __future__ import annotations
 
@@ -20,6 +20,7 @@ if str(ROOT) not in sys.path:
 
 from acuqms import pack  # noqa: E402
 from acuqms.paths import FRONTEND_SCREENS_REL  # noqa: E402
+from acuqms.publish import package_description  # noqa: E402
 
 ENDPOINT_NS = "{http://www.acumatica.com/entity/maintenance/5.31}"
 
@@ -81,6 +82,29 @@ def _zip() -> zipfile.ZipFile:
 
 def _project(zf: zipfile.ZipFile) -> ET.Element:
     return ET.fromstring(zf.read("project.xml"))
+
+
+class TestPackDescriptionV27(unittest.TestCase):
+    """T59 / V27: pack stamps project.xml; CustomizationApi reads that string."""
+
+    def test_packed_project_xml_matches_package_description(self) -> None:
+        zip_bytes = pack.package_zip(ROOT)
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+            desc = ET.fromstring(zf.read("project.xml")).get("description") or ""
+        ver = pack.package_version(ROOT)
+        self.assertTrue(desc.startswith(f"Lab5.QMS {ver};"), desc)
+        self.assertIn("22.200.001", desc)
+        self.assertIn("Lab5.QMS.dll", desc)
+        self.assertIn("Lab5_QMS_Customization.zip", desc)
+        self.assertIn("[sha256:", desc)
+        self.assertEqual(package_description(zip_bytes), desc)
+        meta = ET.parse(ROOT / "QMS" / "_project" / "ProjectMetadata.xml").getroot()
+        meta_desc = meta.get("description") or ""
+        self.assertFalse(meta_desc.startswith("Lab5.QMS "), meta_desc)
+        self.assertNotIn("[sha256:", meta_desc)
+        src = (ROOT / "acuqms" / "pack.py").read_text(encoding="utf-8")
+        self.assertNotIn("api.github.com", src)
+        self.assertNotIn("github.com/repos", src)
 
 
 class TestPackZipV8(unittest.TestCase):
