@@ -1325,7 +1325,8 @@ class TestUnpublishV26(unittest.TestCase):
         self.assertNotIn('unpublishAll"', src)
         self.assertNotIn("unpublishAll'", src)
         self.assertIn("merge=False", body)
-        self.assertIn("/CustomizationApi/delete", body)
+        self.assertIn("/CustomizationApi/delete", src)
+        self.assertIn("def _delete_unpublished_project", src)
         self.assertIn("Pages/QM", body)
         self.assertIn("customizationScreens", body)
         self.assertIn("IN202500_QMS", body)
@@ -1351,8 +1352,40 @@ class TestUnpublishV26(unittest.TestCase):
         self.assertIn("MUIScreen", sql)
         self.assertIn("InterfaceName = N'QMS'", sql)
         self.assertIn("ScreenID LIKE N'QM%'", sql)
+        self.assertIn("CompanyID IN (1, @cid)", sql)
         self.assertNotIn("InventoryItem", sql)
         self.assertNotIn("UsrQMS", sql)
+
+    def test_unpublish_delete_transport_error_still_drops_leftovers(self) -> None:
+        """V26: publishEnd recycle must not skip leftover drop or delete retry."""
+        session = MagicMock()
+        session.customization_published.return_value = [ACUBOOTSTRAP, PACKAGE_NAME]
+        session.customization_publish_end.return_value = {"isCompleted": True}
+        session._http.post.side_effect = [
+            httpx.TransportError("reset"),
+            MagicMock(),
+        ]
+        inst = MagicMock()
+        inst.ssh = "Administrator@host"
+        inst.tenant = "CNBN"
+        with (
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.drain_publish"),
+            patch("acuqms.publish.publish_begin"),
+            patch("acuqms.publish.instance", return_value=inst),
+            patch("acuqms.publish._drop_unpublish_leftovers") as drop,
+            patch("acuqms.publish._drop_unpublish_db_leftovers") as drop_db,
+            patch("acuqms.publish._rebuild_in202500_webpack") as webpack,
+            patch("acuqms.publish._recycle_app_pool") as recycle,
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
+        ):
+            status = unpublish_package()
+        self.assertEqual(status, "unpublished")
+        session.relogin.assert_called()
+        drop.assert_called_once()
+        drop_db.assert_called_once()
+        webpack.assert_called_once()
+        recycle.assert_called_once()
 
     def test_cli_unpublish_stdout_unpublished(self) -> None:
         with patch(

@@ -187,8 +187,8 @@ def publish_begin(
 
     merge=True keeps already-published packages (Lab5.QMS import).
     merge=False publishes only `names` and unpublishes the rest (V26).
-    replay=True re-applies SQL/items so a post-unpublish import restores
-    SiteMap and EntityDescription after leftover SQL delete (V26).
+    replay=True re-runs package SQL only (CreateQMSTables is OBJECT_ID gated).
+    SiteMap and EntityDescription restore from package items on publish, not replay.
     Never unpublishAll — that would drop AcuBootstrap.
     """
     payload = {
@@ -394,7 +394,7 @@ def publish_package(zip_bytes: bytes, *, timeout: float = 900.0) -> str:
         if skip:
             return "already published"
         with progress("publishBegin", PACKAGE_NAME):
-            publish_begin(session, [PACKAGE_NAME], replay=True)
+            publish_begin(session, [PACKAGE_NAME], replay=PACKAGE_NAME not in names)
         _poll_publish_end(session, timeout, PACKAGE_NAME)
 
     with progress("seed EntityMapping", "Tests,Results"):
@@ -879,6 +879,25 @@ def _remove_file_item_frontend_leftovers() -> bool:
     return _ssh_last_token(out) == "REMOVED"
 
 
+def _delete_unpublished_project(session: AcumaticaClient, name: str) -> bool:
+    """POST /CustomizationApi/delete. Relogin once on recycle artifacts."""
+    payload = {"projectName": name}
+    try:
+        session._checked_log(
+            session._http.post("/CustomizationApi/delete", json=payload)
+        )
+        return True
+    except httpx.TransportError, RuntimeError:
+        try:
+            session.relogin()
+            session._checked_log(
+                session._http.post("/CustomizationApi/delete", json=payload)
+            )
+            return True
+        except httpx.TransportError, RuntimeError:
+            return False
+
+
 def unpublish_package(*, timeout: float = 900.0) -> str:
     """Unpublish Lab5.QMS only. AcuBootstrap stays (V26).
 
@@ -890,6 +909,7 @@ def unpublish_package(*, timeout: float = 900.0) -> str:
     require ACU_SSH.
     """
     inst = instance()
+    deleted = False
     with client() as session:
         with progress("drain in-flight publish", PACKAGE_NAME):
             drain_publish(session)
@@ -909,15 +929,9 @@ def unpublish_package(*, timeout: float = 900.0) -> str:
         if not skipped:
             _poll_publish_end(session, timeout, ",".join(remaining))
         with progress("delete unpublished Lab5.QMS", PACKAGE_NAME) as p:
-            try:
-                session._checked_log(
-                    session._http.post(
-                        "/CustomizationApi/delete",
-                        json={"projectName": PACKAGE_NAME},
-                    )
-                )
-            except RuntimeError:
-                p.result = "skip"
+            deleted = _delete_unpublished_project(session, PACKAGE_NAME)
+            if not deleted:
+                p.result = "retry"
     if inst.ssh:
         with progress("drop leftover classes", "Pages/QM,src/screens,webpack"):
             _drop_unpublish_leftovers()
@@ -930,6 +944,12 @@ def unpublish_package(*, timeout: float = 900.0) -> str:
     else:
         with progress("filesystem delete and pool recycle", "ACU_SSH required") as p:
             p.result = "skip"
+    if not deleted:
+        with client() as session:
+            with progress("delete unpublished Lab5.QMS", PACKAGE_NAME) as p:
+                deleted = _delete_unpublished_project(session, PACKAGE_NAME)
+                if not deleted:
+                    p.result = "skip"
     return "unpublished"
 
 
@@ -966,38 +986,38 @@ def _drop_unpublish_leftovers() -> None:
 
 
 def unpublish_db_leftover_sql(cid: int) -> str:
-    """Drop tenant QMS SiteMap / REST metadata. Does not touch stock items."""
+    """Drop QMS SiteMap / REST metadata for tenant + CompanyID 1. Not stock."""
     db = DB_NAME
     return (
         f"DECLARE @cid int = {cid}; "
         "DECLARE @ids TABLE (EntityId int); "
         "INSERT INTO @ids (EntityId) "
         f"SELECT EntityId FROM {db}.dbo.EntityDescription "
-        "WHERE CompanyID = @cid AND InterfaceName = N'QMS'; "
+        "WHERE CompanyID IN (1, @cid) AND InterfaceName = N'QMS'; "
         f"DELETE m FROM {db}.dbo.EntityMapping m "
         "INNER JOIN @ids i ON m.MappingKey LIKE "
         "N'E/' + CAST(i.EntityId AS varchar(20)) + N'/%' "
-        "WHERE m.CompanyID = @cid; "
+        "WHERE m.CompanyID IN (1, @cid); "
         f"DELETE f FROM {db}.dbo.EntityFieldDescription f "
         "INNER JOIN @ids i ON f.EntityId = i.EntityId "
-        "WHERE f.CompanyID = @cid; "
+        "WHERE f.CompanyID IN (1, @cid); "
         f"DELETE FROM {db}.dbo.EntityDescription "
-        "WHERE CompanyID = @cid AND InterfaceName = N'QMS'; "
+        "WHERE CompanyID IN (1, @cid) AND InterfaceName = N'QMS'; "
         f"DELETE FROM {db}.dbo.EntityEndpoint "
-        "WHERE CompanyID = @cid AND InterfaceName = N'QMS'; "
+        "WHERE CompanyID IN (1, @cid) AND InterfaceName = N'QMS'; "
         f"DELETE ms FROM {db}.dbo.MUIScreen ms "
         f"INNER JOIN {db}.dbo.SiteMap sm "
         "ON sm.NodeID = ms.NodeID AND sm.CompanyID = ms.CompanyID "
-        "WHERE sm.CompanyID = @cid AND sm.ScreenID LIKE N'QM%'; "
+        "WHERE sm.CompanyID IN (1, @cid) AND sm.ScreenID LIKE N'QM%'; "
         f"DELETE FROM {db}.dbo.PortalMap "
-        "WHERE CompanyID = @cid AND ScreenID LIKE N'QM%'; "
+        "WHERE CompanyID IN (1, @cid) AND ScreenID LIKE N'QM%'; "
         f"DELETE FROM {db}.dbo.SiteMap "
-        "WHERE CompanyID = @cid AND ScreenID LIKE N'QM%';"
+        "WHERE CompanyID IN (1, @cid) AND ScreenID LIKE N'QM%';"
     )
 
 
 def _drop_unpublish_db_leftovers() -> None:
-    """Drop tenant SiteMap QM* and QMS EntityDescription after unpublish (V26)."""
+    """Drop SiteMap QM* and QMS EntityDescription for tenant + CompanyID 1 (V26)."""
     inst = instance()
     if not inst.ssh:
         return
