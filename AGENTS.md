@@ -76,8 +76,8 @@ Subcommands: `build`, `publish`, `seed`, `deploy`, `unpublish`.
 Naked `acuqms` prints Click help and exits 0 (does not deploy).
 `gmake build` runs `acuqms build`.
 `gmake unpublish` runs `acuqms unpublish`: CustomizationApi publishes remaining names (AcuBootstrap) with merge off so Lab5.QMS drops; `unpublishAll` is never used.
-`ACU_SSH` set → drop `Pages/QM`, File-item `src/screens/QM` + `IN202500_QMS.*`, tenant `customizationScreens/<tenant>`, tenant `Scripts/Screens/<tenant>/QM*`, restore OOTB IN202500 + GenericInquiry HTML to the site vendor (never `npm run build` production), recycle.
-Blank `ACU_SSH` → CustomizationApi unpublish only (filesystem delete and pool recycle require SSH).
+When `ACU_SSH` is set, drop `Pages/QM`, File-item `src/screens/QM` + `IN202500_QMS.*`, tenant `customizationScreens/<tenant>`, tenant `Scripts/Screens/<tenant>/QM*`, restore OOTB IN202500 + GenericInquiry HTML to the site vendor (never `npm run build` production), recycle.
+Blank `ACU_SSH` runs CustomizationApi unpublish only (filesystem delete and pool recycle require SSH).
 Does not wipe the Windows state cache and does not delete CNBN stock.
 Then prove the tenant has the package:
 
