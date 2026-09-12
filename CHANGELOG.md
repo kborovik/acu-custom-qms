@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- **Publish recycle (V20 / B13):** `publish_package` recycles the IIS app pool after every import+publish, not only when nested EntityMapping rows were inserted.
+  A digest-changing publish left `GET /entity/QMS/22.200.001/InspectionPlan` at HTTP 500 (`OptimizedExportProviderBuilder` NullReferenceException) for the full 600s wait when maps already existed.
+  Recycle after that publish made InspectionPlan, InspectionOrder, NonConformance, and QMSSetup return 200.
+
 - **Python git executable bits (V21):** tracked `*.py` files are git mode `100755` only when the first line starts with `#!`; otherwise `100644`.
   `acuqms/*`, `e2e/helper.py`, and `e2e/__init__.py` stay without a shebang.
 

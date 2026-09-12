@@ -3,7 +3,7 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""T14 / T15 / T16 / T40 / T41 / T42 / T43 / T47 / T50 / I.cmd / V8 / V10 / V18 / V19 / V20 / B8 / B9 / B10 / B12: Click console script acuqms build+publish+seed+deploy."""
+"""T14 / T15 / T16 / T40 / T41 / T42 / T43 / T47 / T50 / T51 / I.cmd / V8 / V10 / V18 / V19 / V20 / B8 / B9 / B10 / B12 / B13: Click console script acuqms build+publish+seed+deploy."""
 
 from __future__ import annotations
 
@@ -49,6 +49,7 @@ PUBLISH_IMPORT_STEPS = (
     "poll publishEnd",
     "seed EntityMapping",
     "seed Pages/QM aspx",
+    "recycle app pool",
     "wait QMS/22.200.001",
 )
 PUBLISH_SKIP_STEPS = PUBLISH_IMPORT_STEPS[:4]
@@ -372,6 +373,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
             ),
             patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
             patch("acuqms.publish._ensure_qm_aspx_pages"),
+            patch("acuqms.publish._recycle_app_pool"),
             patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
@@ -402,6 +404,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
             ),
             patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
             patch("acuqms.publish._ensure_qm_aspx_pages"),
+            patch("acuqms.publish._recycle_app_pool"),
             patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
@@ -428,6 +431,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
             ),
             patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
             patch("acuqms.publish._ensure_qm_aspx_pages"),
+            patch("acuqms.publish._recycle_app_pool"),
             patch("acuqms.progress.sys.stderr", err),
         ):
             status = publish_package(zip_bytes)
@@ -439,10 +443,13 @@ class TestCliProgressICmdV10(unittest.TestCase):
         wait_idx = PUBLISH_IMPORT_STEPS.index("wait QMS/22.200.001")
         maps_idx = PUBLISH_IMPORT_STEPS.index("seed EntityMapping")
         aspx_idx = PUBLISH_IMPORT_STEPS.index("seed Pages/QM aspx")
+        recycle_idx = PUBLISH_IMPORT_STEPS.index("recycle app pool")
         self.assertLess(maps_idx, aspx_idx)
-        self.assertLess(aspx_idx, wait_idx)
+        self.assertLess(aspx_idx, recycle_idx)
+        self.assertLess(recycle_idx, wait_idx)
         self.assertEqual(rows[maps_idx][1], "Tests,Results")
         self.assertEqual(rows[aspx_idx][1], "REST")
+        self.assertEqual(rows[recycle_idx][1], "IIS")
         self.assertEqual(rows[wait_idx][0], "wait QMS/22.200.001")
         self.assertEqual(rows[wait_idx][1], QMS_ENDPOINT)
         session.customization_import.assert_called_once()
@@ -499,6 +506,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
             ),
             patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
             patch("acuqms.publish._ensure_qm_aspx_pages"),
+            patch("acuqms.publish._recycle_app_pool"),
             patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
@@ -532,6 +540,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
             ),
             patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
             patch("acuqms.publish._ensure_qm_aspx_pages"),
+            patch("acuqms.publish._recycle_app_pool"),
             patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
@@ -565,6 +574,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
             ),
             patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
             patch("acuqms.publish._ensure_qm_aspx_pages"),
+            patch("acuqms.publish._recycle_app_pool"),
             patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes)
@@ -723,6 +733,7 @@ class TestCliProgressICmdV10(unittest.TestCase):
                 patch("acuqms.publish._ensure_qms_setup_rows"),
                 patch("acuqms.publish._ensure_quality_queue_gi"),
                 patch("acuqms.publish._ensure_qm_aspx_pages"),
+                patch("acuqms.publish._recycle_app_pool"),
                 patch("acuqms.publish._ensure_qm_selected_ui"),
                 patch("acuqms.publish.qms_endpoint_live", return_value=True),
             ):
@@ -765,6 +776,7 @@ class TestV19_WaitPublished600s(unittest.TestCase):
             ),
             patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
             patch("acuqms.publish._ensure_qm_aspx_pages"),
+            patch("acuqms.publish._recycle_app_pool"),
             patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
             status = publish_package(zip_bytes, timeout=90.0)
@@ -929,9 +941,10 @@ class TestV20_EntityMappingBeforeWait(unittest.TestCase):
         return status, order
 
     def test_maps_then_wait_when_maps_present(self) -> None:
+        """V20 / B13: recycle even when nested maps already exist."""
         status, order = self._import_order(maps_return=0)
         self.assertEqual(status, "published")
-        self.assertEqual(order, ["maps", "aspx", "wait"])
+        self.assertEqual(order, ["maps", "aspx", "recycle", "wait"])
 
     def test_maps_recycle_then_wait_when_inserted(self) -> None:
         status, order = self._import_order(maps_return=1)
@@ -992,6 +1005,7 @@ class TestV20_EntityMappingBeforeWait(unittest.TestCase):
             body.index("_ensure_qm_aspx_pages"),
             body.index("_recycle_app_pool"),
         )
+        self.assertNotIn("if maps_inserted:", body)
 
     def test_wait_get_200_json_array_after_maps(self) -> None:
         """V20 / B10: wait_published InspectionPlan GET 200 JSON array runs after maps."""

@@ -1,4 +1,4 @@
-"""CustomizationApi publish + post-publish QM Role seed (T14 / T16 / T25 / T40 / T41 / T42 / T43 / V10 / V8 / V14 / V18 / V19 / V20).
+"""CustomizationApi publish + post-publish QM Role seed (T14 / T16 / T25 / T40 / T41 / T42 / T43 / T51 / V10 / V8 / V14 / V18 / V19 / V20).
 
 Zip never carries Role / UsersInRoles / RolesInGraph (V8 / I.pkg).
 `ACU_USER` Quality Manager attach stays e2e-only (V10).
@@ -6,7 +6,7 @@ Post-publish seed inserts UsrQMSSetup (QORD QNCR) per company when missing (V14)
 Skip already-published only when current-tenant InspectionPlan GET is 200 JSON array (V18 / B8).
 wait_published default 600s; emit start + poll last-GET heartbeat; reuse session across polls (V19 / B12).
 _recycle_app_pool uses wait_rest 120s, not wait_published (V19 / B12).
-publish_package after publishEnd: EntityMapping then aspx SHA-256 skip then recycle if maps inserted then wait_published (V20 / B12).
+publish_package after publishEnd: EntityMapping then aspx SHA-256 skip then recycle then wait_published (V20 / B13).
 Never prints ACU_PASSWORD.
 """
 
@@ -281,8 +281,9 @@ def publish_package(zip_bytes: bytes, *, timeout: float = 900.0) -> str:
     200 JSON array (V18 / B8); getPublished + GET /entity listing are not a
     live tenant contract.
     After publishEnd: nested Tests/Results EntityMapping, Pages/QM aspx
-    (SHA-256 skip), recycle if maps were inserted, then wait_published
-    (V20 / B12).
+    (SHA-256 skip), recycle, then wait_published (V20 / B13).
+    Recycle runs even when nested maps already exist — 26.101 OptimizedExport
+    NRE on QM GET until the pool reloads endpoint metadata.
     """
     description = package_description(zip_bytes)
     with progress("webpack NO_COLOR for SaveStatus", "IIS"):
@@ -344,10 +345,10 @@ def publish_package(zip_bytes: bytes, *, timeout: float = 900.0) -> str:
                 time.sleep(5.0)
 
     with progress("seed EntityMapping", "Tests,Results"):
-        maps_inserted = _ensure_qms_detail_mappings()
+        _ensure_qms_detail_mappings()
     with progress("seed Pages/QM aspx", "REST"):
         _ensure_qm_aspx_pages()
-    if maps_inserted:
+    with progress("recycle app pool", "IIS"):
         _recycle_app_pool()
     with progress("wait QMS/22.200.001", QMS_ENDPOINT):
         wait_published()
