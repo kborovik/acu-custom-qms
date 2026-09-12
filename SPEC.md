@@ -118,7 +118,7 @@ T57|x|add Click `unpublish` + `gmake unpublish`: CustomizationApi unpublish Lab5
 T58|x|unit unpublish merge list keeps AcuBootstrap + import-after-unpublish ! skip; e2e after unpublish: SM204505 ! Lab5.QMS; GET `/entity` ! QMS; InspectionPlan ! 200 JSON array; leftovers gone; IN202500 ! UsrQMS; GenericInquiry vendor = IN202000; navbar Inspection 0; stock items stay; subsequent deploy imports + InspectionPlan 200 JSON array|V26,V18,I.cmd,T57,B16
 T59|x|stamp pack `project.xml` + CustomizationApi `projectDescription` `Lab5.QMS {ver}; QMS customization 22.200.001; assembly Lab5.QMS.dll; zip Lab5_QMS_Customization.zip [sha256:]`|V27,I.pkg
 T60|x|unit `{ver}` decision table exact-tag+clean / dirty / post-tag / missing-git; packed + `package_description` start `Lab5.QMS {package_version()}`; contain 22.200.001 Lab5.QMS.dll sha256|V27,I.pkg,T59
-T61|.|e2e published Description starts `Lab5.QMS {package_version()}` + 22.200.001 + Lab5.QMS.dll + `[sha256:`|V27,I.pkg,T59
+T61|x|e2e published Description starts `Lab5.QMS {package_version()}` + 22.200.001 + Lab5.QMS.dll + `[sha256:`|V27,I.pkg,T59
 
 ## §B BUGS
 id|date|cause|fix

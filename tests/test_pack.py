@@ -127,6 +127,16 @@ class TestPackDescriptionV27(unittest.TestCase):
         self.assertNotIn("api.github.com", src)
         self.assertNotIn("github.com/repos", src)
 
+    def test_e2e_covers_published_description(self) -> None:
+        src = (ROOT / "e2e" / "test_package.py").read_text(encoding="utf-8")
+        self.assertIn("test_published_description_v27", src)
+        self.assertIn("published_description", src)
+        self.assertIn("package_version", src)
+        self.assertIn('startswith(f"Lab5.QMS {ver}")', src)
+        self.assertIn("22.200.001", src)
+        self.assertIn("Lab5.QMS.dll", src)
+        self.assertIn("[sha256:", src)
+
 
 class TestPackageVersionDecisionTableV27(unittest.TestCase):
     """T60 / V27: `{ver}` exact-tag+clean / dirty / post-tag / missing-git."""

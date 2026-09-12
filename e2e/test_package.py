@@ -7,10 +7,13 @@ import unittest
 
 import acuqms.publish as pub
 from acuqms.acu import ACU_INSTANCE_PATH, ssh_run
+from acuqms import pack
 from acuqms.publish import (
     _ensure_qm_aspx_pages,
     _qm_aspx_names,
     _recycle_app_pool,
+    package_description,
+    published_description,
     qms_endpoint_live,
     wait_published,
 )
@@ -18,6 +21,7 @@ from e2e.helper import (
     PACKAGE_NAME,
     QMS_ENDPOINT,
     QMS_VERSION,
+    ROOT,
     client,
     ensure_published,
     instance,
@@ -75,6 +79,18 @@ class TestPublishAndPresence(unittest.TestCase):
 
     def test_qms_setup_list(self) -> None:
         self._assert_entity_list("QMSSetup")
+
+    def test_published_description_v27(self) -> None:
+        """T61 / V27: published Description starts Lab5.QMS {package_version()}."""
+        ver = pack.package_version(ROOT)
+        zip_bytes = pack.package_zip(ROOT)
+        with client() as session:
+            desc = published_description(session) or ""
+        self.assertTrue(desc.startswith(f"Lab5.QMS {ver}"), desc)
+        self.assertIn("22.200.001", desc)
+        self.assertIn("Lab5.QMS.dll", desc)
+        self.assertIn("[sha256:", desc)
+        self.assertEqual(desc, package_description(zip_bytes))
 
     def test_skip_path_entity_and_inspection_plan_json_array(self) -> None:
         """V18 / B8: after ensure_published, GET /entity lists QMS; InspectionPlan is JSON array.
