@@ -49,6 +49,7 @@ V18: publish-skip-tenant-qms — `acuqms` publish skip `already published` only 
 V19: wait-published-600s — `wait_published` default 600s; `publish_package` ! pass 120s; CLI `--timeout` bounds CustomizationApi publishEnd poll only; `_recycle_app_pool` `wait_rest` 120s not `wait_published`; `wait_published` emit start + poll heartbeat last GET kind; reuse session across polls; `ssh_run` ! `SSH_TIMEOUT`; wait timeout RuntimeError ! last GET status or body kind (HTML / error object / transport) (closes §B.9, §B.12)
 V20: entitymapping-before-wait — `publish_package` after publishEnd: `_ensure_qms_detail_mappings` then `_ensure_qm_aspx_pages` (scp skip SHA-256 match) then recycle then `wait_published`; import+publish always recycle (nested maps already present still recycle); 26.101 publish ! nested Tests/Results EntityMapping; InspectionPlan GET 200 JSON array requires those rows + `Pages/QM/*.aspx` + pool recycle; aspx recopy after wait retriggers ASP.NET compile (closes §B.10, §B.12, §B.13)
 V21: py-shebang-exec — tracked `*.py` git mode 100755 iff first line starts `#!`; else 100644; `acuqms/*` `e2e/helper.py` `e2e/__init__.py` ! shebang
+V22: qm-document-pager — QMSInspectionOrderEntry QMSInspectionPlanMaint QMSNonConformanceEntry Document PXSelect ! Where key Equal Current<key>; Next/Prev/First/Last land persisted sibling; Current-key filter only detail views (Results Tests) (closes §B.14)
 
 ## §T TASKS
 id|status|task|cites
@@ -103,6 +104,7 @@ T48|x|move Pattern B/A sources `QMS/screens/` → `QMS/FrontendSources/screen/sr
 T49|x|sweep tests Path-literal `QMS/FrontendSources/screen/src/development/screens` → import `FRONTEND_SCREENS_REL` from `acuqms.paths` (scope: `tests/**/*.py`)|V17,I.pkg,T48
 T50|x|wait_published emit start + poll last-GET heartbeat; recycle wait_rest 120s; aspx SHA-256 skip before wait; ssh_run SSH_TIMEOUT; reuse wait session|V19,V20,I.cmd,B12
 T51|x|recycle after import+publish before wait_published even when nested maps already present|V20,I.cmd,B13
+T52|.|fix QMSInspectionOrderEntry QMSInspectionPlanMaint QMSNonConformanceEntry Document PXSelect drop Current-key Where; Next/Prev land sibling; unit assert Document ! Equal Current; e2e QM301000 Next from named order lands next nbr|V22,B14,I.graph,I.screen
 
 ## §B BUGS
 id|date|cause|fix
@@ -119,3 +121,4 @@ B10|2026-09-11|wait_published after publishEnd before EntityMapping seed; 26.101
 B11|2026-09-11|Pattern A TS redeclares InventoryItem; webpack ! @extendsView; Item.UsrQMS* FieldState bind fail|V17
 B12|2026-09-11|wait_published silent until finally; recycle nests wait_published; aspx seed after wait; ssh_run timeout None|V19,V20
 B13|2026-09-11|recycle only if maps inserted; import+publish leaves QM GET 500 OptimizedExport NRE until pool recycle|V20
+B14|2026-09-11|QM document Document PXSelect Current-key filter → Next Insert empty not sibling|V22
