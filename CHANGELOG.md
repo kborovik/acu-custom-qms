@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Fixed
+
+- **Inspection Order pager (V22 / B14):** Document views on Inspection Orders, Inspection Plans, and Non-Conformance Reports no longer filter the primary key to the current record.
+  Go to Next Record from a named order now opens the next persisted sibling instead of an empty Insert.
+
 ## [v0.6.0] - 2026-09-11
 
 ### Fixed

@@ -207,10 +207,7 @@ class TestInspectionPlanGraphAndScreen(unittest.TestCase):
         self.assertIn("CopyPendingTestFields", src)
         self.assertIn("QMSInspectionPlanTest.isRequired", src)
         self.assertIn("GetValuePending", src)
-        self.assertIn(
-            "PXSelect<QMSInspectionPlan,\n            Where<QMSInspectionPlan.planID, Equal<Current<QMSInspectionPlan.planID>>>> Document",
-            src,
-        )
+        self.assertIn("PXSelect<QMSInspectionPlan> Document", src)
         self.assertIn(
             "PXSelect<QMSInspectionPlanTest,\n            Where<QMSInspectionPlanTest.planID, Equal<Current<QMSInspectionPlan.planID>>>,\n            OrderBy<Asc<QMSInspectionPlanTest.lineNbr>>> Tests",
             src,

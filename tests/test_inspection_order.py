@@ -408,10 +408,7 @@ class TestInspectionOrderGraphAndScreen(unittest.TestCase):
             "class QMSInspectionOrderEntry : PXGraph<QMSInspectionOrderEntry, QMSInspectionOrder>",
             src,
         )
-        self.assertIn(
-            "PXSelect<QMSInspectionOrder,\n            Where<QMSInspectionOrder.inspectionOrderNbr, Equal<Current<QMSInspectionOrder.inspectionOrderNbr>>>> Document",
-            src,
-        )
+        self.assertIn("PXSelect<QMSInspectionOrder> Document", src)
         self.assertIn(
             "PXSelect<QMSInspectionOrderResult,\n            Where<QMSInspectionOrderResult.inspectionOrderNbr, Equal<Current<QMSInspectionOrder.inspectionOrderNbr>>>> Results",
             src,

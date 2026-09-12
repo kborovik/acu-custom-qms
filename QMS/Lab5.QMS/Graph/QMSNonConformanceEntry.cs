@@ -6,8 +6,7 @@ namespace Lab5.QMS
 {
     public class QMSNonConformanceEntry : PXGraph<QMSNonConformanceEntry, QMSNonConformance>
     {
-        public PXSelect<QMSNonConformance,
-            Where<QMSNonConformance.nCRNbr, Equal<Current<QMSNonConformance.nCRNbr>>>> Document;
+        public PXSelect<QMSNonConformance> Document;
 
         public PXSetup<QMSSetup> QMSSetup;
 

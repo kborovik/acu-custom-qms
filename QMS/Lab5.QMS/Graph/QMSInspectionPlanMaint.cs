@@ -4,8 +4,7 @@ namespace Lab5.QMS
 {
     public class QMSInspectionPlanMaint : PXGraph<QMSInspectionPlanMaint, QMSInspectionPlan>
     {
-        public PXSelect<QMSInspectionPlan,
-            Where<QMSInspectionPlan.planID, Equal<Current<QMSInspectionPlan.planID>>>> Document;
+        public PXSelect<QMSInspectionPlan> Document;
 
         public PXSelect<QMSInspectionPlanTest,
             Where<QMSInspectionPlanTest.planID, Equal<Current<QMSInspectionPlan.planID>>>,

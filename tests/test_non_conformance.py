@@ -226,10 +226,7 @@ class TestNonConformanceGraphAndScreen(unittest.TestCase):
             "class QMSNonConformanceEntry : PXGraph<QMSNonConformanceEntry, QMSNonConformance>",
             src,
         )
-        self.assertIn(
-            "PXSelect<QMSNonConformance,\n            Where<QMSNonConformance.nCRNbr, Equal<Current<QMSNonConformance.nCRNbr>>>> Document",
-            src,
-        )
+        self.assertIn("PXSelect<QMSNonConformance> Document", src)
         self.assertIn("public PXAction<QMSNonConformance> CloseNCR;", src)
         self.assertIn("public PXAction<QMSNonConformance> DispositionRTV;", src)
         self.assertIn("PXGraph.CreateInstance<POReceiptEntry>()", src)

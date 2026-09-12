@@ -8,8 +8,7 @@ namespace Lab5.QMS
 {
     public class QMSInspectionOrderEntry : PXGraph<QMSInspectionOrderEntry, QMSInspectionOrder>
     {
-        public PXSelect<QMSInspectionOrder,
-            Where<QMSInspectionOrder.inspectionOrderNbr, Equal<Current<QMSInspectionOrder.inspectionOrderNbr>>>> Document;
+        public PXSelect<QMSInspectionOrder> Document;
 
         public PXSelect<QMSInspectionOrderResult,
             Where<QMSInspectionOrderResult.inspectionOrderNbr, Equal<Current<QMSInspectionOrder.inspectionOrderNbr>>>> Results;

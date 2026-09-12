@@ -104,7 +104,7 @@ T48|x|move Pattern B/A sources `QMS/screens/` → `QMS/FrontendSources/screen/sr
 T49|x|sweep tests Path-literal `QMS/FrontendSources/screen/src/development/screens` → import `FRONTEND_SCREENS_REL` from `acuqms.paths` (scope: `tests/**/*.py`)|V17,I.pkg,T48
 T50|x|wait_published emit start + poll last-GET heartbeat; recycle wait_rest 120s; aspx SHA-256 skip before wait; ssh_run SSH_TIMEOUT; reuse wait session|V19,V20,I.cmd,B12
 T51|x|recycle after import+publish before wait_published even when nested maps already present|V20,I.cmd,B13
-T52|.|fix QMSInspectionOrderEntry QMSInspectionPlanMaint QMSNonConformanceEntry Document PXSelect drop Current-key Where; Next/Prev land sibling; unit assert Document ! Equal Current; e2e QM301000 Next from named order lands next nbr|V22,B14,I.graph,I.screen
+T52|x|fix QMSInspectionOrderEntry QMSInspectionPlanMaint QMSNonConformanceEntry Document PXSelect drop Current-key Where; Next/Prev land sibling; unit assert Document ! Equal Current; e2e QM301000 Next from named order lands next nbr|V22,B14,I.graph,I.screen
 
 ## §B BUGS
 id|date|cause|fix
