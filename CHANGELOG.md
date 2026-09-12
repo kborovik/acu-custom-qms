@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [v0.7.0] - 2026-09-11
+
 ### Fixed
 
 - **Inspection Order pager (V22 / B14):** Document views on Inspection Orders, Inspection Plans, and Non-Conformance Reports no longer filter the primary key to the current record.
