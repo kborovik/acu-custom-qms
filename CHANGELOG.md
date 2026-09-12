@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [v0.6.0] - 2026-09-11
+
 ### Fixed
 
 - **Publish recycle (V20 / B13):** `publish_package` recycles the IIS app pool after every import+publish, not only when nested EntityMapping rows were inserted.
