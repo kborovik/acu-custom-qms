@@ -43,7 +43,7 @@ rwildcard = $(strip \
 
 default: help
 
-.PHONY: help check e2e build deploy clean preflight release major minor patch
+.PHONY: help check e2e build deploy unpublish clean preflight release major minor patch
 .PHONY: _release-pre _release-bump _release-tag _release-pack _release-gh
 
 ###############################################################################
@@ -68,6 +68,12 @@ deploy: .venv ## Build zip, publish Lab5.QMS, seed Role + QM rights
 	$(call need-acu)
 	$(call header,Deploying Lab5.QMS)
 	$(UV) run acuqms deploy
+
+unpublish: .venv ## Unpublish Lab5.QMS only (AcuBootstrap stays)
+	$(call need-env)
+	$(call need-acu)
+	$(call header,Unpublishing Lab5.QMS)
+	$(UV) run acuqms unpublish
 
 clean: ## Remove compiled DLL, pack zip, and temp artifacts
 	$(call header,Cleaning)
@@ -173,6 +179,7 @@ help-words := $(foreach w,$(subst $(space),$(s),$(help-src)),$(if $(and $(findst
 pad-check := check$(space)$(space)$(space)$(space)$(space)
 pad-clean := clean$(space)$(space)$(space)$(space)$(space)
 pad-deploy := deploy$(space)$(space)$(space)$(space)
+pad-unpublish := unpublish$(space)
 pad-build := build$(space)$(space)$(space)$(space)$(space)
 pad-preflight := preflight$(space)
 pad-release := release$(space)$(space)$(space)

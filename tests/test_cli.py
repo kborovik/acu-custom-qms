@@ -3,7 +3,7 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""T14 / T15 / T16 / T40 / T41 / T42 / T43 / T47 / T50 / T51 / T54 / I.cmd / V8 / V10 / V18 / V19 / V20 / B8 / B9 / B10 / B12 / B13 / B15: Click console script acuqms build+publish+seed+deploy."""
+"""T14 / T15 / T16 / T40 / T41 / T42 / T43 / T47 / T50 / T51 / T54 / T57 / T58 / I.cmd / V8 / V10 / V18 / V19 / V20 / V26 / B8 / B9 / B10 / B12 / B13 / B15 / B16: Click console script acuqms build+publish+seed+deploy+unpublish."""
 
 from __future__ import annotations
 
@@ -25,7 +25,9 @@ if str(ROOT) not in sys.path:
 
 from acuqms.cli import cli  # noqa: E402
 from acuqms.publish import (  # noqa: E402
+    ACUBOOTSTRAP,
     INSPECTION_PLAN_PATH,
+    OOTB_WEBPACK_REFERENCE,
     OPTIMIZED_EXPORT_NRE_EXTRA_RECYCLES,
     OPTIMIZED_EXPORT_NRE_KIND,
     PACKAGE_NAME,
@@ -33,12 +35,17 @@ from acuqms.publish import (  # noqa: E402
     QMS_ENDPOINT,
     QMS_VERSION,
     QUALITY_MANAGER_ROLE,
+    SHARED_WEBPACK_SCREENS,
     _inspection_plan_kind,
     _recycle_app_pool,
     package_description,
     publish_package,
     qms_endpoint_live,
+    remaining_published,
+    restore_ootb_webpack_ps1,
     seed_qm_rights,
+    unpublish_db_leftover_sql,
+    unpublish_package,
     wait_published,
     wait_rest,
 )
@@ -149,6 +156,7 @@ class TestProjectScriptsICmd(unittest.TestCase):
         makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
         self.assertIn("acuqms build", makefile)
         self.assertIn("acuqms deploy", makefile)
+        self.assertIn("acuqms unpublish", makefile)
         self.assertNotIn("lab5-qms", makefile)
         self.assertNotIn("./pack.py", makefile)
 
@@ -163,6 +171,7 @@ class TestCliHelpICmd(unittest.TestCase):
         self.assertIn("publish", r.output)
         self.assertIn("seed", r.output)
         self.assertIn("deploy", r.output)
+        self.assertIn("unpublish", r.output)
         self.assertIn("Lab5_QMS_Customization.zip", r.output)
         self.assertIn("CustomizationApi", r.output)
         self.assertIn("Quality Manager", r.output)
@@ -185,6 +194,7 @@ class TestCliHelpICmd(unittest.TestCase):
         self.assertIn("publish", r.output)
         self.assertIn("seed", r.output)
         self.assertIn("deploy", r.output)
+        self.assertIn("unpublish", r.output)
 
 
 class TestCliPackV8(unittest.TestCase):
@@ -1181,6 +1191,231 @@ class TestV20_SecondRecycleOnOptimizedExportNre(unittest.TestCase):
         self.assertEqual(ssh.call_count, 0)
         self.assertEqual(rest.call_count, 0)
         session._http.get.assert_not_called()
+
+
+class TestUnpublishV26(unittest.TestCase):
+    def test_remaining_published_keeps_acubootstrap(self) -> None:
+        """V26: unpublish merge list keeps AcuBootstrap."""
+        self.assertEqual(
+            remaining_published([ACUBOOTSTRAP, PACKAGE_NAME]),
+            [ACUBOOTSTRAP],
+        )
+        self.assertEqual(
+            remaining_published([PACKAGE_NAME, ACUBOOTSTRAP, "Other"]),
+            [ACUBOOTSTRAP, "Other"],
+        )
+        self.assertEqual(remaining_published([ACUBOOTSTRAP]), [ACUBOOTSTRAP])
+        self.assertEqual(remaining_published([PACKAGE_NAME]), [])
+
+    def test_unpublish_publish_begin_merge_false_keeps_acubootstrap(self) -> None:
+        session = MagicMock()
+        session.customization_published.return_value = [ACUBOOTSTRAP, PACKAGE_NAME]
+        session.customization_publish_end.return_value = {"isCompleted": True}
+        inst = MagicMock()
+        inst.ssh = "Administrator@host"
+        inst.tenant = "CNBN"
+        with (
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.drain_publish"),
+            patch("acuqms.publish.publish_begin") as begin,
+            patch("acuqms.publish.instance", return_value=inst),
+            patch("acuqms.publish._drop_unpublish_leftovers") as drop,
+            patch("acuqms.publish._drop_unpublish_db_leftovers") as drop_db,
+            patch("acuqms.publish._restore_ootb_webpack") as webpack,
+            patch("acuqms.publish._recycle_app_pool") as recycle,
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
+        ):
+            status = unpublish_package()
+        self.assertEqual(status, "unpublished")
+        begin.assert_called_once_with(session, [ACUBOOTSTRAP], merge=False)
+        session._http.post.assert_any_call(
+            "/CustomizationApi/delete",
+            json={"projectName": PACKAGE_NAME},
+        )
+        drop.assert_called_once()
+        drop_db.assert_called_once()
+        webpack.assert_called_once()
+        recycle.assert_called_once()
+
+    def test_unpublish_empty_remaining_raises(self) -> None:
+        session = MagicMock()
+        session.customization_published.return_value = [PACKAGE_NAME]
+        inst = MagicMock()
+        inst.ssh = ""
+        inst.tenant = "CNBN"
+        with (
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.drain_publish"),
+            patch("acuqms.publish.publish_begin") as begin,
+            patch("acuqms.publish.instance", return_value=inst),
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
+        ):
+            with self.assertRaises(RuntimeError) as ctx:
+                unpublish_package()
+        self.assertIn("AcuBootstrap must stay", str(ctx.exception))
+        begin.assert_not_called()
+
+    def test_unpublish_no_ssh_skips_filesystem_and_documents(self) -> None:
+        session = MagicMock()
+        session.customization_published.return_value = [ACUBOOTSTRAP, PACKAGE_NAME]
+        session.customization_publish_end.return_value = {"isCompleted": True}
+        inst = MagicMock()
+        inst.ssh = ""
+        inst.tenant = "CNBN"
+        err = io.StringIO()
+        with (
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.drain_publish"),
+            patch("acuqms.publish.publish_begin") as begin,
+            patch("acuqms.publish.instance", return_value=inst),
+            patch("acuqms.publish._drop_unpublish_leftovers") as drop,
+            patch("acuqms.publish._restore_ootb_webpack") as webpack,
+            patch("acuqms.publish._recycle_app_pool") as recycle,
+            patch("acuqms.progress.sys.stderr", err),
+        ):
+            status = unpublish_package()
+        self.assertEqual(status, "unpublished")
+        begin.assert_called_once_with(session, [ACUBOOTSTRAP], merge=False)
+        drop.assert_not_called()
+        webpack.assert_not_called()
+        recycle.assert_not_called()
+        rows = parse_progress(err.getvalue())
+        skip = [row for row in rows if row[0] == "filesystem delete and pool recycle"]
+        self.assertEqual(len(skip), 1)
+        self.assertEqual(skip[0][1], "ACU_SSH required")
+        self.assertEqual(skip[0][2], "skip")
+
+    def test_import_after_unpublish_does_not_digest_skip(self) -> None:
+        """V18 / V26: after unpublish, Lab5.QMS is not live → import, not skip."""
+        zip_bytes = _tiny_zip()
+        desc = package_description(zip_bytes)
+        session = _session_with_plan(plan_status=404)
+        session.customization_published.return_value = [ACUBOOTSTRAP]
+        with (
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.drain_publish"),
+            patch("acuqms.publish.publish_begin") as begin,
+            patch("acuqms.publish.wait_published") as wait,
+            patch("acuqms.publish.published_description", return_value=desc),
+            patch("acuqms.publish._ensure_webpack_no_color", return_value=False),
+            patch(
+                "acuqms.publish._remove_file_item_frontend_leftovers",
+                return_value=False,
+            ),
+            patch(
+                "acuqms.publish._webpack_tenant_screens_missing",
+                return_value=False,
+            ),
+            patch("acuqms.publish._ensure_qms_detail_mappings", return_value=0),
+            patch("acuqms.publish._ensure_qm_aspx_pages"),
+            patch("acuqms.publish._recycle_app_pool"),
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
+        ):
+            status = publish_package(zip_bytes)
+        self.assertEqual(status, "published")
+        session.customization_import.assert_called_once()
+        begin.assert_called_once_with(session, [PACKAGE_NAME], replay=True)
+        wait.assert_called_once_with()
+
+    def test_unpublish_source_never_unpublish_all_or_cache_wipe(self) -> None:
+        src = (ROOT / "acuqms" / "publish.py").read_text(encoding="utf-8")
+        body = src[
+            src.index("def unpublish_package") : src.index(
+                "\ndef _webpack_tenant_screens_missing"
+            )
+        ]
+        self.assertNotIn("/CustomizationApi/unpublishAll", src)
+        self.assertNotIn('unpublishAll"', src)
+        self.assertNotIn("unpublishAll'", src)
+        self.assertIn("merge=False", body)
+        self.assertIn("/CustomizationApi/delete", src)
+        self.assertIn("def _delete_unpublished_project", src)
+        self.assertIn("Pages/QM", body)
+        self.assertIn("customizationScreens", body)
+        self.assertIn("IN202500_QMS", body)
+        self.assertIn("src/screens", body)
+        self.assertIn(r"Scripts\\Screens", body)
+        self.assertNotIn("& $npm run build", body)
+        self.assertNotIn("npm.cmd", body)
+        self.assertIn("GenericInquiry", body)
+        self.assertIn("OOTB_WEBPACK_REFERENCE", body)
+        self.assertIn(f"{OOTB_WEBPACK_REFERENCE}", src)
+        self.assertIn("def restore_ootb_webpack_ps1", src)
+        self.assertNotIn("StateCache", body)
+        self.assertNotIn("Temporary ASP.NET", body)
+        self.assertNotIn("InventoryItem", body)
+        help_r = CliRunner().invoke(cli, ["unpublish", "--help"])
+        self.assertEqual(help_r.exit_code, 0, help_r.output)
+        self.assertIn("ACU_SSH", help_r.output)
+        self.assertIn("CustomizationApi", help_r.output)
+
+    def test_unpublish_db_sql_drops_sitemap_and_endpoint_not_stock(self) -> None:
+        sql = unpublish_db_leftover_sql(3)
+        self.assertIn("DELETE FROM", sql)
+        self.assertIn("SiteMap", sql)
+        self.assertIn("EntityDescription", sql)
+        self.assertIn("EntityEndpoint", sql)
+        self.assertIn("MUIScreen", sql)
+        self.assertIn("InterfaceName = N'QMS'", sql)
+        self.assertIn("ScreenID LIKE N'QM%'", sql)
+        self.assertIn("CompanyID IN (1, @cid)", sql)
+        self.assertNotIn("InventoryItem", sql)
+        self.assertNotIn("UsrQMS", sql)
+
+    def test_restore_ootb_webpack_ps1_keeps_site_vendor(self) -> None:
+        """V26 / B16: restore GenericInquiry to IN202000 vendor; never npm production."""
+        ps1 = restore_ootb_webpack_ps1(r"C:\Acumatica\AcumaticaERP", "CNBN")
+        self.assertIn("GenericInquiry", ps1)
+        self.assertIn("IN202500", ps1)
+        self.assertIn(OOTB_WEBPACK_REFERENCE + ".html", ps1)
+        for name in SHARED_WEBPACK_SCREENS:
+            self.assertIn("'" + name + "'", ps1, name)
+        self.assertNotIn("npm run build", ps1)
+        self.assertNotIn("npm.cmd", ps1)
+        self.assertNotIn("screenIds=IN202500", ps1)
+        self.assertNotIn("--env production", ps1)
+        self.assertIn("Sort-Object LastWriteTime", ps1)
+
+    def test_unpublish_delete_transport_error_still_drops_leftovers(self) -> None:
+        """V26: publishEnd recycle must not skip leftover drop or delete retry."""
+        session = MagicMock()
+        session.customization_published.return_value = [ACUBOOTSTRAP, PACKAGE_NAME]
+        session.customization_publish_end.return_value = {"isCompleted": True}
+        session._http.post.side_effect = [
+            httpx.TransportError("reset"),
+            MagicMock(),
+        ]
+        inst = MagicMock()
+        inst.ssh = "Administrator@host"
+        inst.tenant = "CNBN"
+        with (
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.drain_publish"),
+            patch("acuqms.publish.publish_begin"),
+            patch("acuqms.publish.instance", return_value=inst),
+            patch("acuqms.publish._drop_unpublish_leftovers") as drop,
+            patch("acuqms.publish._drop_unpublish_db_leftovers") as drop_db,
+            patch("acuqms.publish._restore_ootb_webpack") as webpack,
+            patch("acuqms.publish._recycle_app_pool") as recycle,
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
+        ):
+            status = unpublish_package()
+        self.assertEqual(status, "unpublished")
+        session.relogin.assert_called()
+        drop.assert_called_once()
+        drop_db.assert_called_once()
+        webpack.assert_called_once()
+        recycle.assert_called_once()
+
+    def test_cli_unpublish_stdout_unpublished(self) -> None:
+        with patch(
+            "acuqms.cli.publish.unpublish_package", return_value="unpublished"
+        ) as unpub:
+            r = CliRunner().invoke(cli, ["unpublish"])
+        self.assertEqual(r.exit_code, 0, r.output)
+        unpub.assert_called_once_with(timeout=900.0)
+        self.assertEqual(r.stdout.strip(), "unpublished")
+        self.assertNotIn("\t", r.stdout)
 
 
 class TestPackModuleZipBytesV8(unittest.TestCase):

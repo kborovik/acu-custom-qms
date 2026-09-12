@@ -1,4 +1,4 @@
-"""CustomizationApi publish + post-publish QM Role seed (T14 / T16 / T25 / T40 / T41 / T42 / T43 / T51 / T54 / V10 / V8 / V14 / V18 / V19 / V20).
+"""CustomizationApi publish + unpublish + post-publish QM Role seed (T14 / T16 / T25 / T40 / T41 / T42 / T43 / T51 / T54 / T57 / V10 / V8 / V14 / V18 / V19 / V20 / V26).
 
 Zip never carries Role / UsersInRoles / RolesInGraph (V8 / I.pkg).
 `ACU_USER` Quality Manager attach stays e2e-only (V10).
@@ -8,6 +8,7 @@ wait_published default 600s; emit start + poll last-GET heartbeat; reuse session
 _recycle_app_pool uses wait_rest 120s, not wait_published (V19 / B12).
 GET /entity 200 is not QMS live; InspectionPlan 500 OptimizedExport NRE after that recycle → one extra recycle (V20 / B15).
 publish_package after publishEnd: EntityMapping then aspx SHA-256 skip then recycle then wait_published (V20 / B13).
+unpublish_package publishes remaining names with merge=False so Lab5.QMS drops and AcuBootstrap stays (V26).
 Never prints ACU_PASSWORD.
 """
 
@@ -38,9 +39,22 @@ from acuqms.acu import (
 from acuqms.progress import heartbeat, progress
 
 PACKAGE_NAME = "Lab5.QMS"
+ACUBOOTSTRAP = "AcuBootstrap"
 QMS_ENDPOINT = "QMS/22.200.001"
 QMS_VERSION = "22.200.001"
 INSPECTION_PLAN_PATH = f"/entity/{QMS_ENDPOINT}/InspectionPlan"
+WEBPACK_TIMEOUT = 600.0
+OOTB_WEBPACK_REFERENCE = "IN202000"
+SHARED_WEBPACK_SCREENS = (
+    "Dashboard",
+    "ExternalResource",
+    "GenericInquiry",
+    "HierarchicalGrid",
+    "IN202500",
+    "PivotTable",
+    "ReportScreen",
+    "ReportViewer",
+)
 
 QM_SCREENS = ("QM101000", "QM201000", "QM301000", "QM302000", "QM401000")
 QUALITY_MANAGER_ROLE = "Quality Manager"
@@ -168,13 +182,31 @@ def drain_publish(session: AcumaticaClient, timeout: float = 120.0) -> None:
         time.sleep(2.0)
 
 
-def publish_begin(session: AcumaticaClient, names: list[str]) -> None:
-    """Publish named projects without dropping already-published ones."""
+def remaining_published(names: list[str], drop: str = PACKAGE_NAME) -> list[str]:
+    """Published names that stay after unpublishing drop (V26)."""
+    return [name for name in names if name != drop]
+
+
+def publish_begin(
+    session: AcumaticaClient,
+    names: list[str],
+    *,
+    merge: bool = True,
+    replay: bool = False,
+) -> None:
+    """Publish named projects.
+
+    merge=True keeps already-published packages (Lab5.QMS import).
+    merge=False publishes only `names` and unpublishes the rest (V26).
+    replay=True re-runs package SQL only (CreateQMSTables is OBJECT_ID gated).
+    SiteMap and EntityDescription restore from package items on publish, not replay.
+    Never unpublishAll — that would drop AcuBootstrap.
+    """
     payload = {
-        "isMergeWithExistingPackages": True,
+        "isMergeWithExistingPackages": merge,
         "isOnlyValidation": False,
         "isOnlyDbUpdates": False,
-        "isReplayPreviouslyExecutedScripts": False,
+        "isReplayPreviouslyExecutedScripts": replay,
         "projectNames": names,
         "tenantMode": "Current",
     }
@@ -187,6 +219,34 @@ def publish_begin(session: AcumaticaClient, names: list[str]) -> None:
         session._checked_log(
             session._http.post("/CustomizationApi/publishBegin", json=payload)
         )
+
+
+def _poll_publish_end(session: AcumaticaClient, timeout: float, name: str) -> None:
+    deadline = time.monotonic() + timeout
+    with progress("poll publishEnd", name):
+        while True:
+            try:
+                status = session.customization_publish_end()
+            except httpx.TransportError:
+                status = {}
+            except RuntimeError:
+                try:
+                    session.relogin()
+                except Exception:
+                    pass
+                status = {}
+            if status.get("isFailed"):
+                detail = _log_tail(status)
+                raise RuntimeError(
+                    f"publishing {name} failed" + (f": {detail}" if detail else "")
+                )
+            if status.get("isCompleted"):
+                return
+            if time.monotonic() >= deadline:
+                raise RuntimeError(
+                    f"publishing {name} did not complete within {timeout:.0f}s"
+                )
+            time.sleep(5.0)
 
 
 def _response_text(response: object) -> str:
@@ -345,33 +405,8 @@ def publish_package(zip_bytes: bytes, *, timeout: float = 900.0) -> str:
         if skip:
             return "already published"
         with progress("publishBegin", PACKAGE_NAME):
-            publish_begin(session, [PACKAGE_NAME])
-        deadline = time.monotonic() + timeout
-        with progress("poll publishEnd", PACKAGE_NAME):
-            while True:
-                try:
-                    status = session.customization_publish_end()
-                except httpx.TransportError:
-                    status = {}
-                except RuntimeError:
-                    try:
-                        session.relogin()
-                    except Exception:
-                        pass
-                    status = {}
-                if status.get("isFailed"):
-                    detail = _log_tail(status)
-                    raise RuntimeError(
-                        f"publishing {PACKAGE_NAME} failed"
-                        + (f": {detail}" if detail else "")
-                    )
-                if status.get("isCompleted"):
-                    break
-                if time.monotonic() >= deadline:
-                    raise RuntimeError(
-                        f"publishing {PACKAGE_NAME} did not complete within {timeout:.0f}s"
-                    )
-                time.sleep(5.0)
+            publish_begin(session, [PACKAGE_NAME], replay=PACKAGE_NAME not in names)
+        _poll_publish_end(session, timeout, PACKAGE_NAME)
 
     with progress("seed EntityMapping", "Tests,Results"):
         _ensure_qms_detail_mappings()
@@ -853,6 +888,226 @@ def _remove_file_item_frontend_leftovers() -> bool:
         "if ($removed) { 'REMOVED' } else { 'OK' }"
     )
     return _ssh_last_token(out) == "REMOVED"
+
+
+def _delete_unpublished_project(session: AcumaticaClient, name: str) -> bool:
+    """POST /CustomizationApi/delete. Relogin once on recycle artifacts."""
+    payload = {"projectName": name}
+    try:
+        session._checked_log(
+            session._http.post("/CustomizationApi/delete", json=payload)
+        )
+        return True
+    except httpx.TransportError, RuntimeError:
+        try:
+            session.relogin()
+            session._checked_log(
+                session._http.post("/CustomizationApi/delete", json=payload)
+            )
+            return True
+        except httpx.TransportError, RuntimeError:
+            return False
+
+
+def unpublish_package(*, timeout: float = 900.0) -> str:
+    """Unpublish Lab5.QMS only. AcuBootstrap stays (V26).
+
+    CustomizationApi publishes remaining names with merge=False — not
+    unpublishAll, which would drop AcuBootstrap. ACU_SSH set: drop leftover
+    classes, restore OOTB IN202500 + GenericInquiry HTML to the site
+    vendor (never ``npm run build`` production), recycle. Does not wipe
+    the Windows state cache and does not delete stock items. no-SSH:
+    CustomizationApi unpublish only; filesystem delete and pool recycle
+    require ACU_SSH.
+    """
+    inst = instance()
+    deleted = False
+    with client() as session:
+        with progress("drain in-flight publish", PACKAGE_NAME):
+            drain_publish(session)
+        names = session.customization_published()
+        remaining = remaining_published(names)
+        skipped = PACKAGE_NAME not in names
+        with progress("unpublish Lab5.QMS", PACKAGE_NAME) as p:
+            if skipped:
+                p.result = "skip"
+            else:
+                if not remaining:
+                    raise RuntimeError(
+                        "unpublish Lab5.QMS would drop every published project; "
+                        "AcuBootstrap must stay"
+                    )
+                publish_begin(session, remaining, merge=False)
+        if not skipped:
+            _poll_publish_end(session, timeout, ",".join(remaining))
+        with progress("delete unpublished Lab5.QMS", PACKAGE_NAME) as p:
+            deleted = _delete_unpublished_project(session, PACKAGE_NAME)
+            if not deleted:
+                p.result = "retry"
+    if inst.ssh:
+        with progress("drop leftover classes", "Pages/QM,src/screens,webpack"):
+            _drop_unpublish_leftovers()
+        with progress("drop leftover SiteMap EntityDescription", "QM,QMS"):
+            _drop_unpublish_db_leftovers()
+        with progress("restore OOTB screen webpack", "IN202500,GenericInquiry"):
+            _restore_ootb_webpack()
+        with progress("recycle app pool", "IIS"):
+            _recycle_app_pool()
+    else:
+        with progress("filesystem delete and pool recycle", "ACU_SSH required") as p:
+            p.result = "skip"
+    if not deleted:
+        with client() as session:
+            with progress("delete unpublished Lab5.QMS", PACKAGE_NAME) as p:
+                deleted = _delete_unpublished_project(session, PACKAGE_NAME)
+                if not deleted:
+                    p.result = "skip"
+    return "unpublished"
+
+
+def _drop_unpublish_leftovers() -> None:
+    """Drop Pages/QM, File-item src/screens, tenant webpack leftovers (V26).
+
+    Does not wipe Windows state cache. Does not delete stock items.
+    """
+    global _aspx_pages_ready
+    inst = instance()
+    if not inst.ssh:
+        return
+    root = ACU_INSTANCE_PATH.replace("'", "''")
+    tenant = inst.tenant.replace("'", "''")
+    ssh_run(
+        "$removed = $false; $paths = @("
+        f"'{root}\\Pages\\QM',"
+        f"'{root}\\FrontendSources\\screen\\src\\screens\\QM',"
+        f"'{root}\\FrontendSources\\screen\\src\\screens\\IN\\IN202500"
+        "\\extensions\\IN202500_QMS.html',"
+        f"'{root}\\FrontendSources\\screen\\src\\screens\\IN\\IN202500"
+        "\\extensions\\IN202500_QMS.ts',"
+        f"'{root}\\FrontendSources\\screen\\src\\customizationScreens\\{tenant}'"
+        "); foreach ($p in $paths) { "
+        "if (Test-Path -LiteralPath $p) { "
+        "Remove-Item -LiteralPath $p -Recurse -Force; $removed = $true } }; "
+        f"$qmDir = '{root}\\Scripts\\Screens\\{tenant}'; "
+        "if (Test-Path -LiteralPath $qmDir) { "
+        "Get-ChildItem -LiteralPath $qmDir -Filter 'QM*' | ForEach-Object { "
+        "Remove-Item -LiteralPath $_.FullName -Force; $removed = $true } }; "
+        "if ($removed) { 'REMOVED' } else { 'OK' }"
+    )
+    _aspx_pages_ready = False
+
+
+def unpublish_db_leftover_sql(cid: int) -> str:
+    """Drop QMS SiteMap / REST metadata for tenant + CompanyID 1. Not stock."""
+    db = DB_NAME
+    return (
+        f"DECLARE @cid int = {cid}; "
+        "DECLARE @ids TABLE (EntityId int); "
+        "INSERT INTO @ids (EntityId) "
+        f"SELECT EntityId FROM {db}.dbo.EntityDescription "
+        "WHERE CompanyID IN (1, @cid) AND InterfaceName = N'QMS'; "
+        f"DELETE m FROM {db}.dbo.EntityMapping m "
+        "INNER JOIN @ids i ON m.MappingKey LIKE "
+        "N'E/' + CAST(i.EntityId AS varchar(20)) + N'/%' "
+        "WHERE m.CompanyID IN (1, @cid); "
+        f"DELETE f FROM {db}.dbo.EntityFieldDescription f "
+        "INNER JOIN @ids i ON f.EntityId = i.EntityId "
+        "WHERE f.CompanyID IN (1, @cid); "
+        f"DELETE FROM {db}.dbo.EntityDescription "
+        "WHERE CompanyID IN (1, @cid) AND InterfaceName = N'QMS'; "
+        f"DELETE FROM {db}.dbo.EntityEndpoint "
+        "WHERE CompanyID IN (1, @cid) AND InterfaceName = N'QMS'; "
+        f"DELETE ms FROM {db}.dbo.MUIScreen ms "
+        f"INNER JOIN {db}.dbo.SiteMap sm "
+        "ON sm.NodeID = ms.NodeID AND sm.CompanyID = ms.CompanyID "
+        "WHERE sm.CompanyID IN (1, @cid) AND sm.ScreenID LIKE N'QM%'; "
+        f"DELETE FROM {db}.dbo.PortalMap "
+        "WHERE CompanyID IN (1, @cid) AND ScreenID LIKE N'QM%'; "
+        f"DELETE FROM {db}.dbo.SiteMap "
+        "WHERE CompanyID IN (1, @cid) AND ScreenID LIKE N'QM%';"
+    )
+
+
+def _drop_unpublish_db_leftovers() -> None:
+    """Drop SiteMap QM* and QMS EntityDescription for tenant + CompanyID 1 (V26)."""
+    inst = instance()
+    if not inst.ssh:
+        return
+    sqlcmd(unpublish_db_leftover_sql(company_id()))
+
+
+def restore_ootb_webpack_ps1(root: str, tenant: str) -> str:
+    """Point shared screen HTML at the installer vendor (V26 / B16).
+
+    Isolated ``npm run build -- --env production screenIds=IN202500``
+    rewrites GenericInquiry.html (Stock Items GI IN2025PL) plus vendors
+    to a new hash and truncates TIME_STAMP. Restore never runs npm.
+    """
+    names = ",".join("'" + name + "'" for name in SHARED_WEBPACK_SCREENS)
+    ref = OOTB_WEBPACK_REFERENCE
+    return (
+        "$ErrorActionPreference = 'Stop'; "
+        f"$root = '{root}'; $tenant = '{tenant}'; "
+        "$ootbDir = Join-Path $root 'Scripts\\Screens'; "
+        "$tenantDir = Join-Path $root ('Scripts\\Screens\\' + $tenant); "
+        f"$refHtml = Join-Path $ootbDir '{ref}.html'; "
+        "if (-not (Test-Path -LiteralPath $refHtml)) { "
+        f"throw ('{ref}.html missing: ' + $refHtml) }}; "
+        "$ref = [System.IO.File]::ReadAllText($refHtml); "
+        "$vendor = [regex]::Match($ref, "
+        "\"VENDOR_TIME_STAMP = '([^']+)'\").Groups[1].Value; "
+        "if (-not $vendor) { throw ('vendor missing in ' + $refHtml) }; "
+        "$sharedSrcs = @(); "
+        "foreach ($m in [regex]::Matches($ref, "
+        '\'src="([^"]+\\.bundle\\.js)"\')) { '
+        f"if ($m.Groups[1].Value -notlike '{ref}.*') {{ "
+        "$sharedSrcs += $m.Groups[1].Value } }; "
+        f"$screens = @({names}); "
+        "$utf8 = New-Object System.Text.UTF8Encoding $false; "
+        "foreach ($name in $screens) { "
+        "$htmlPath = Join-Path $ootbDir ($name + '.html'); "
+        "if (-not (Test-Path -LiteralPath $htmlPath)) { continue }; "
+        "$bundles = @(Get-ChildItem -LiteralPath $ootbDir "
+        "-Filter ($name + '.*.bundle.js') | Sort-Object LastWriteTime); "
+        "if ($bundles.Count -eq 0) { continue }; "
+        "$bundle = $bundles[0]; "
+        "$hash = [regex]::Match($bundle.Name, "
+        "[regex]::Escape($name) + '\\.(.+)\\.bundle\\.js').Groups[1].Value; "
+        "$html = [System.IO.File]::ReadAllText($htmlPath); "
+        "$html = [regex]::Replace($html, \"TIME_STAMP = '[^']*'\", "
+        "('TIME_STAMP = ''' + $hash + '''')); "
+        "$html = [regex]::Replace($html, \"VENDOR_TIME_STAMP = '[^']*'\", "
+        "('VENDOR_TIME_STAMP = ''' + $vendor + '''')); "
+        "$newScripts = ($sharedSrcs + @($bundle.Name) | ForEach-Object { "
+        "'<script defer src=\"' + $_ + '\"></script>' }) -join ''; "
+        "$html = [regex]::Replace($html, "
+        '\'<script defer src="[^"]+"></script>'
+        '(?:\\s*<script defer src="[^"]+"></script>)*\', '
+        "$newScripts); "
+        "[System.IO.File]::WriteAllText($htmlPath, $html, $utf8) }; "
+        "New-Item -ItemType Directory -Force -Path $tenantDir | Out-Null; "
+        "foreach ($copyName in @('IN202500', 'GenericInquiry')) { "
+        "$src = Join-Path $ootbDir ($copyName + '.html'); "
+        "if (-not (Test-Path -LiteralPath $src)) { continue }; "
+        "Copy-Item -LiteralPath $src -Destination "
+        "(Join-Path $tenantDir ($copyName + '.html')) -Force; "
+        "$b = Get-ChildItem -LiteralPath $ootbDir "
+        "-Filter ($copyName + '.*.bundle.js') | "
+        "Sort-Object LastWriteTime | Select-Object -First 1; "
+        "if ($b) { Copy-Item -LiteralPath $b.FullName "
+        "-Destination $tenantDir -Force } }; "
+        "'OK'"
+    )
+
+
+def _restore_ootb_webpack() -> None:
+    """Restore OOTB IN202500 + GenericInquiry to the site vendor (V26 / B16)."""
+    inst = instance()
+    if not inst.ssh:
+        return
+    root = ACU_INSTANCE_PATH.replace("'", "''")
+    tenant = inst.tenant.replace("'", "''")
+    ssh_run(restore_ootb_webpack_ps1(root, tenant), timeout=WEBPACK_TIMEOUT)
 
 
 def _webpack_tenant_screens_missing() -> bool:

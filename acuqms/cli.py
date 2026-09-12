@@ -1,8 +1,9 @@
-"""acuqms Click console script (T14 / T15 / T16 / T25 / T41 / T47 / I.cmd / V8 / V10 / V14 / V18).
+"""acuqms Click console script (T14 / T15 / T16 / T25 / T41 / T47 / T57 / I.cmd / V8 / V10 / V14 / V18 / V26).
 
 Packs Lab5_QMS_Customization.zip, publishes via CustomizationApi, and
 seeds post-publish Role Quality Manager + RolesInGraph Delete on QM*
 screens + UsrQMSSetup (QORD QNCR) per company when missing.
+Unpublish drops Lab5.QMS only (AcuBootstrap stays).
 Zip never includes Role, UsersInRoles, or RolesInGraph.
 ACU_USER Quality Manager attach stays e2e-only.
 Never prints ACU_PASSWORD.
@@ -24,7 +25,7 @@ from acuqms.progress import progress
 )
 @click.pass_context
 def cli(ctx: click.Context) -> None:
-    """Build Lab5_QMS_Customization.zip, publish via CustomizationApi, seed Role Quality Manager."""
+    """Build Lab5_QMS_Customization.zip, publish via CustomizationApi, seed Role Quality Manager, unpublish Lab5.QMS."""
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
         ctx.exit(0)
@@ -92,6 +93,18 @@ def deploy(output: Path | None, timeout: float) -> None:
         with publish.client() as session:
             publish.seed_qm_rights(session)
     click.echo("seeded")
+
+
+@cli.command("unpublish")
+@click.option("--timeout", type=float, default=900.0, show_default=True)
+def unpublish_cmd(timeout: float) -> None:
+    """Unpublish Lab5.QMS only (AcuBootstrap stays).
+
+    Filesystem delete and pool recycle require ACU_SSH; without it only
+    CustomizationApi unpublish runs.
+    """
+    status = publish.unpublish_package(timeout=timeout)
+    click.echo(status)
 
 
 def main() -> None:
