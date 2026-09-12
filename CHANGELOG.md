@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- **Quality Queue GI:** post-publish SQL seeded `GIDesign` into the tenant company, so `PXGenericInqGrph` prefetch (keyed by `DesignID` in company 1) threw "This generic inquiry does not exist anymore" on QM401000 after rebuild. Seed now replaces the inquiry as system `CompanyID=1` with the OOTB GI mask and recycles so the definition cache reloads.
+
 ## [v0.10.0] - 2026-09-12
 
 ### Changed

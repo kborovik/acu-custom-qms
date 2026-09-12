@@ -91,13 +91,18 @@ class TestQualityQueueLiveV16(unittest.TestCase):
         cid = company_id()
         names = sql_lines(
             f"SELECT Name FROM {DB_NAME}.dbo.GIDesign "
-            f"WHERE DesignID = '{GI_DESIGN_ID}' AND CompanyID IN (1, {cid})"
+            f"WHERE DesignID = '{GI_DESIGN_ID}' AND CompanyID = 1"
         )
         self.assertTrue(names, "missing GIDesign Quality Queue")
         self.assertTrue(
             any("Quality Queue" in row for row in names),
             names,
         )
+        other = sql_lines(
+            f"SELECT CompanyID FROM {DB_NAME}.dbo.GIDesign "
+            f"WHERE DesignID = '{GI_DESIGN_ID}' AND CompanyID <> 1"
+        )
+        self.assertEqual(other, [], f"Quality Queue GIDesign not system-only: {other}")
         links = set(
             sql_lines(
                 f"SELECT Link FROM {DB_NAME}.dbo.GINavigationScreen "
@@ -121,6 +126,22 @@ class TestQualityQueueLiveV16(unittest.TestCase):
             f"WHERE ScreenID = N'QM401000' AND CompanyID IN (1, {cid})"
         )
         self.assertTrue(screens, "missing SiteMap QM401000")
+
+    def test_gi_aspx_opens(self) -> None:
+        with client() as session:
+            response = session._http.get(
+                "/GenericInquiry/GenericInquiry.aspx",
+                params={"id": GI_DESIGN_ID},
+                follow_redirects=True,
+            )
+        url = str(response.url)
+        self.assertNotIn(
+            "does+not+exist",
+            url,
+            f"Quality Queue GI missing: {url}",
+        )
+        self.assertNotIn("/ui/error", url, f"Quality Queue GI error: {url}")
+        self.assertEqual(response.status_code, 200)
 
     def test_work_row_grain(self) -> None:
         cid = company_id()

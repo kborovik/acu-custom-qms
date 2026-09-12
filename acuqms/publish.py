@@ -688,37 +688,55 @@ def _ensure_qms_setup_rows() -> None:
     sqlcmd(qms_setup_insert_sql())
 
 
-def quality_queue_seed_sql(cid: int) -> str:
-    """Replace QM401000 GIDesign children (26.101 GI XML upgrades fail)."""
+def quality_queue_seed_sql() -> str:
+    """Replace QM401000 GIDesign as system CompanyID=1.
+
+    26.101 GI XML upgrades fail, so live GI is this SQL. PXGenericInqGrph
+    Definition prefetch is keyed by DesignID from company 1; a tenant-company
+    row is invisible ("This generic inquiry does not exist anymore") and a
+    second copy under the tenant company duplicate-keys the prefetch dict.
+    """
     nil = "00000000-0000-0000-0000-000000000000"
     did = QM401000_DESIGN_ID
     db = DB_NAME
+    child_tables = (
+        "GINavigationParameter",
+        "GINavigationScreen",
+        "GISort",
+        "GIGroupBy",
+        "GIWhere",
+        "GIResult",
+        "GIOn",
+        "GIRelation",
+        "GITable",
+        "GIFilter",
+        "GIMassAction",
+        "GIMassUpdateField",
+        "GIRecordDefault",
+    )
+    deletes = " ".join(
+        f"DELETE FROM {db}.dbo.{table} WHERE DesignID = @did;" for table in child_tables
+    )
     return (
-        f"DECLARE @cid int = {cid}; "
+        "DECLARE @cid int = 1; "
         f"DECLARE @did uniqueidentifier = '{did}'; "
         "DECLARE @mask varbinary(32); "
-        f"SELECT TOP 1 @mask = CompanyMask FROM {db}.dbo.GIDesign WHERE CompanyID = @cid; "
-        "IF @mask IS NULL SET @mask = 0xAAAAAAAA; "
-        f"IF NOT EXISTS (SELECT 1 FROM {db}.dbo.GIDesign WHERE CompanyID = @cid AND DesignID = @did) "
+        f"SELECT TOP 1 @mask = CompanyMask FROM {db}.dbo.GIDesign "
+        "WHERE CompanyID = 1 AND DesignID <> @did; "
+        "IF @mask IS NULL SET @mask = 0xAA2A; "
+        + deletes
+        + f"DELETE FROM {db}.dbo.GIDesign WHERE DesignID = @did; "
         f"INSERT INTO {db}.dbo.GIDesign ("
-        "CompanyID, DesignID, Name, NewRecordCreationEnabled, MassDeleteEnabled, "
+        "CompanyID, DesignID, Name, FilterColCount, PageSize, "
+        "NewRecordCreationEnabled, MassDeleteEnabled, "
         "AutoConfirmDelete, MassRecordsUpdateEnabled, MassActionsOnRecordsEnabled, "
         "ExposeViaOData, ExposeViaMobile, ShowDeletedRecords, ShowArchivedRecords, "
         "DisableCountsAndTotals, CreatedByID, CreatedDateTime, CreatedByScreenID, "
         "LastModifiedByID, LastModifiedDateTime, LastModifiedByScreenID, NoteID, CompanyMask"
         ") VALUES ("
-        f"@cid, @did, N'Quality Queue', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
+        f"@cid, @did, N'Quality Queue', 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
         f"'{nil}', GETDATE(), 'QM401000', '{nil}', GETDATE(), 'QM401000', NEWID(), @mask); "
         "BEGIN "
-        f"DELETE FROM {db}.dbo.GINavigationParameter WHERE CompanyID = @cid AND DesignID = @did; "
-        f"DELETE FROM {db}.dbo.GINavigationScreen WHERE CompanyID = @cid AND DesignID = @did; "
-        f"DELETE FROM {db}.dbo.GISort WHERE CompanyID = @cid AND DesignID = @did; "
-        f"DELETE FROM {db}.dbo.GIGroupBy WHERE CompanyID = @cid AND DesignID = @did; "
-        f"DELETE FROM {db}.dbo.GIWhere WHERE CompanyID = @cid AND DesignID = @did; "
-        f"DELETE FROM {db}.dbo.GIResult WHERE CompanyID = @cid AND DesignID = @did; "
-        f"DELETE FROM {db}.dbo.GIOn WHERE CompanyID = @cid AND DesignID = @did; "
-        f"DELETE FROM {db}.dbo.GIRelation WHERE CompanyID = @cid AND DesignID = @did; "
-        f"DELETE FROM {db}.dbo.GITable WHERE CompanyID = @cid AND DesignID = @did; "
         f"INSERT INTO {db}.dbo.GITable ("
         "CompanyID, DesignID, Alias, Name, Type, CreatedByID, CreatedDateTime, "
         "CreatedByScreenID, LastModifiedByID, LastModifiedDateTime, LastModifiedByScreenID, "
@@ -796,7 +814,8 @@ def quality_queue_seed_sql(cid: int) -> str:
 
 
 def _ensure_quality_queue_gi() -> None:
-    sqlcmd(quality_queue_seed_sql(company_id()))
+    sqlcmd(quality_queue_seed_sql())
+    _recycle_app_pool()
 
 
 def sitemap_selected_ui_sql() -> str:

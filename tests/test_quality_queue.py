@@ -142,15 +142,19 @@ class TestQualityQueueGI(unittest.TestCase):
     def test_seed_sql_covers_work_filter_and_drills(self) -> None:
         from acuqms.publish import QM401000_DESIGN_ID, quality_queue_seed_sql
 
-        sql = quality_queue_seed_sql(14)
+        sql = quality_queue_seed_sql()
         self.assertIn(QM401000_DESIGN_ID, sql)
+        self.assertIn("DECLARE @cid int = 1", sql)
+        self.assertNotIn("0xAAAAAAAA", sql)
+        self.assertIn("0xAA2A", sql)
+        self.assertIn("DELETE FROM", sql)
+        self.assertIn("WHERE DesignID = @did", sql)
         self.assertIn("Quality Queue", sql)
         self.assertIn("QC Hold", sql)
         self.assertIn("QM301000", sql)
         self.assertIn("QM302000", sql)
         self.assertNotIn("EvaluateResults", sql)
         self.assertIn("GIGroupBy", sql)
-        self.assertIn("DELETE FROM", sql)
         self.assertIn("N'Order.inspectionOrderNbr'", sql)
         self.assertIn("AggregateFunction", sql)
         self.assertEqual(sql.count("N'MAX'"), 9)
