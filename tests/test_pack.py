@@ -13,6 +13,8 @@ import unittest
 import zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from subprocess import CompletedProcess
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -84,8 +86,27 @@ def _project(zf: zipfile.ZipFile) -> ET.Element:
     return ET.fromstring(zf.read("project.xml"))
 
 
+def _git(
+    describe_code: int, describe_out: str, porcelain: str
+) -> list[CompletedProcess[str]]:
+    return [
+        CompletedProcess(
+            ["git", "describe", "--tags", "--exact-match", "HEAD"],
+            describe_code,
+            stdout=describe_out,
+            stderr="",
+        ),
+        CompletedProcess(
+            ["git", "status", "--porcelain"],
+            0,
+            stdout=porcelain,
+            stderr="",
+        ),
+    ]
+
+
 class TestPackDescriptionV27(unittest.TestCase):
-    """T59 / V27: pack stamps project.xml; CustomizationApi reads that string."""
+    """T59 / T60 / V27: pack stamps project.xml; CustomizationApi reads that string."""
 
     def test_packed_project_xml_matches_package_description(self) -> None:
         zip_bytes = pack.package_zip(ROOT)
@@ -105,6 +126,46 @@ class TestPackDescriptionV27(unittest.TestCase):
         src = (ROOT / "acuqms" / "pack.py").read_text(encoding="utf-8")
         self.assertNotIn("api.github.com", src)
         self.assertNotIn("github.com/repos", src)
+
+
+class TestPackageVersionDecisionTableV27(unittest.TestCase):
+    """T60 / V27: `{ver}` exact-tag+clean / dirty / post-tag / missing-git."""
+
+    def test_package_version_decision_table(self) -> None:
+        version = "1.2.3"
+        cases = (
+            ("exact-tag+clean", _git(0, "v1.2.3\n", ""), "1.2.3"),
+            ("dirty", _git(0, "v1.2.3\n", " M acuqms/pack.py\n"), "1.2.3-dev"),
+            ("post-tag", _git(128, "", ""), "1.2.3-dev"),
+        )
+        for name, procs, want in cases:
+            with self.subTest(name):
+                with (
+                    patch("acuqms.pack.pyproject_version", return_value=version),
+                    patch("acuqms.pack.subprocess.run", side_effect=procs),
+                ):
+                    self.assertEqual(pack.package_version(ROOT), want)
+
+    def test_package_version_missing_git(self) -> None:
+        with (
+            patch("acuqms.pack.pyproject_version", return_value="1.2.3"),
+            patch(
+                "acuqms.pack.subprocess.run",
+                side_effect=FileNotFoundError("git"),
+            ),
+        ):
+            self.assertEqual(pack.package_version(ROOT), "1.2.3-dev")
+
+    def test_packed_description_uses_mocked_package_version(self) -> None:
+        with patch("acuqms.pack.package_version", return_value="1.2.3-dev"):
+            zip_bytes = pack.package_zip(ROOT)
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+            desc = ET.fromstring(zf.read("project.xml")).get("description") or ""
+        self.assertTrue(desc.startswith("Lab5.QMS 1.2.3-dev;"), desc)
+        self.assertIn("22.200.001", desc)
+        self.assertIn("Lab5.QMS.dll", desc)
+        self.assertIn("[sha256:", desc)
+        self.assertEqual(package_description(zip_bytes), desc)
 
 
 class TestPackZipV8(unittest.TestCase):
