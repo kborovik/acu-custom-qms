@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [v0.8.0] - 2026-09-12
+
 ### Fixed
 
 - **Publish recycle (V20 / B15):** after aspx recopy, `wait_rest` GET `/entity` 200 is not QMS live.
