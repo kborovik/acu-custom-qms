@@ -292,9 +292,11 @@ No subcommand prints Click help and exits 0.
 gmake check               # ruff format --check, ruff check, unit tests
 gmake build               # compile Lab5.QMS.dll if C# changed; write zip
 gmake deploy              # build zip + publish + seed (no e2e)
+gmake unpublish           # unpublish Lab5.QMS only (AcuBootstrap stays)
 gmake e2e                 # check + preflight + live e2e (publishes)
 uv run acuqms build       # same as gmake build
 uv run acuqms deploy      # same as gmake deploy
+uv run acuqms unpublish   # same as gmake unpublish
 uv run acuqms             # Click help (exit 0)
 ```
 

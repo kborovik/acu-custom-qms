@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+
+- **`acuqms unpublish`:** unpublish Lab5.QMS only (AcuBootstrap stays).
+  CustomizationApi republishes the remaining list with merge off (`unpublishAll` is never used).
+  With `ACU_SSH`, drop `Pages/QM`, File-item `src/screens` leftovers, tenant `customizationScreens`, and tenant `QM*` webpack, then rebuild IN202500 without the QMS extension and recycle the app pool.
+  Hosted (blank `ACU_SSH`) runs CustomizationApi unpublish only.
+  Does not wipe the Windows state cache and does not delete CNBN stock items.
+
 ## [v0.8.0] - 2026-09-12
 
 ### Fixed

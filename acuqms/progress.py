@@ -1,7 +1,7 @@
 """Per-step CLI progress on stderr (T16 / I.cmd).
 
 Lines are tab-separated: step, target, result, elapsed.
-Stdout stays path / status / seeded.
+Stdout stays path / status / seeded / unpublished.
 """
 
 from __future__ import annotations

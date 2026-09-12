@@ -25,6 +25,7 @@ Recipes (never `acu check` — destructive tenant rebuild):
 | `gmake check` | `ruff format --check`, `ruff check`, unit tests (no tenant) |
 | `gmake build` | compile `Lab5.QMS.dll` if `QMS/Lab5.QMS` C# changed; write zip |
 | `gmake deploy` | build zip + CustomizationApi publish + Role / `RolesInGraph` / `UsrQMSSetup` seed |
+| `gmake unpublish` | CustomizationApi unpublish Lab5.QMS only (AcuBootstrap stays); `ACU_SSH` drops leftovers + rebuilds IN202500 webpack + recycle |
 | `gmake e2e` | `gmake check` + `acu config check` + live e2e (publishes if the package digest differs) |
 | `gmake release` | unit tests, compile if stale, bump, tag, pack, `gh release` (no e2e) |
 
@@ -71,9 +72,13 @@ System `python3` will not see the package.
 
 `gmake deploy` / `uv run acuqms deploy` builds `Lab5_QMS_Customization.zip`, publishes via `/CustomizationApi` (same cookie session as `acu`; field is `projectContentBase64`, not `projectContents`), and seeds post-publish Role `Quality Manager` plus QM `RolesInGraph` and `UsrQMSSetup`.
 Publish skip is a SHA-256 of **every zip member** (pages, SQL, DLL, `project.xml`); an ASPX-only change must republish.
-Subcommands: `build`, `publish`, `seed`, `deploy`.
+Subcommands: `build`, `publish`, `seed`, `deploy`, `unpublish`.
 Naked `acuqms` prints Click help and exits 0 (does not deploy).
 `gmake build` runs `acuqms build`.
+`gmake unpublish` runs `acuqms unpublish`: CustomizationApi publishes remaining names (AcuBootstrap) with merge off so Lab5.QMS drops; `unpublishAll` is never used.
+`ACU_SSH` set → drop `Pages/QM`, File-item `src/screens/QM` + `IN202500_QMS.*`, tenant `customizationScreens/<tenant>`, tenant `Scripts/Screens/<tenant>/QM*`, rebuild IN202500 webpack without QMS, recycle.
+Blank `ACU_SSH` → CustomizationApi unpublish only (filesystem delete and pool recycle require SSH).
+Does not wipe the Windows state cache and does not delete CNBN stock.
 Then prove the tenant has the package:
 
 | Check | Expect |
