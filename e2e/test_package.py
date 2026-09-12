@@ -5,12 +5,22 @@ from __future__ import annotations
 
 import unittest
 
+import acuqms.publish as pub
+from acuqms.acu import ACU_INSTANCE_PATH, ssh_run
+from acuqms.publish import (
+    _ensure_qm_aspx_pages,
+    _qm_aspx_names,
+    _recycle_app_pool,
+    qms_endpoint_live,
+    wait_published,
+)
 from e2e.helper import (
     PACKAGE_NAME,
     QMS_ENDPOINT,
     QMS_VERSION,
     client,
     ensure_published,
+    instance,
     qms_get,
 )
 
@@ -86,6 +96,33 @@ class TestPublishAndPresence(unittest.TestCase):
         with client() as session:
             rows = qms_get(session, entity, params={"$top": "1"})
         self.assertIsInstance(rows, list)
+
+
+class TestAspxHashMismatchPublishV20(unittest.TestCase):
+    def test_aspx_hash_mismatch_inspection_plan_200_without_manual_recycle(
+        self,
+    ) -> None:
+        """V20 / B15: aspx recopy + recycle → InspectionPlan 200; test ! extra recycle."""
+        inst = instance()
+        if not inst.ssh:
+            raise unittest.SkipTest("ACU_SSH empty — hosted path has no aspx scp")
+        ensure_published()
+        name = _qm_aspx_names()[0]
+        win_dir = (ACU_INSTANCE_PATH + r"\Pages\QM").replace("'", "''")
+        ssh_run(
+            f"Set-Content -LiteralPath (Join-Path '{win_dir}' '{name}') "
+            "-Value 'aspx-hash-mismatch' -Encoding ASCII"
+        )
+        pub._aspx_pages_ready = False
+        try:
+            _ensure_qm_aspx_pages()
+            _recycle_app_pool()
+            wait_published()
+            with client() as session:
+                self.assertTrue(qms_endpoint_live(session))
+        finally:
+            pub._aspx_pages_ready = False
+            _ensure_qm_aspx_pages()
 
 
 if __name__ == "__main__":

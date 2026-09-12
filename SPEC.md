@@ -107,7 +107,7 @@ T50|x|wait_published emit start + poll last-GET heartbeat; recycle wait_rest 120
 T51|x|recycle after import+publish before wait_published even when nested maps already present|V20,I.cmd,B13
 T52|x|fix QMSInspectionOrderEntry QMSInspectionPlanMaint QMSNonConformanceEntry Document PXSelect drop Current-key Where; Next/Prev land sibling; unit assert Document ! Equal Current; e2e QM301000 Next from named order lands next nbr|V22,B14,I.graph,I.screen
 T53|x|hide LineNbr on QM201000 Tests + QM301000 Results (TS view ! LineNbr, ASPX ! PXGridColumn LineNbr, DAC Visible=false); REST LineNbr stay; unit GRID_FIELDS drop LineNbr + assert TS+ASPX ! LineNbr; e2e published TS ! LineNbr field|V23,I.screen
-T54|.|after aspx+recycle, InspectionPlan 500 OptimizedExport NRE → recycle again then wait_published; GET /entity 200 ! QMS live; unit assert second recycle on NRE; e2e aspx-hash-mismatch publish → InspectionPlan 200 w/o manual recycle|V20,I.cmd,B15
+T54|x|after aspx+recycle, InspectionPlan 500 OptimizedExport NRE → recycle again then wait_published; GET /entity 200 ! QMS live; unit assert second recycle on NRE; e2e aspx-hash-mismatch publish → InspectionPlan 200 w/o manual recycle|V20,I.cmd,B15
 
 ## §B BUGS
 id|date|cause|fix

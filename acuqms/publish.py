@@ -1,4 +1,4 @@
-"""CustomizationApi publish + post-publish QM Role seed (T14 / T16 / T25 / T40 / T41 / T42 / T43 / T51 / V10 / V8 / V14 / V18 / V19 / V20).
+"""CustomizationApi publish + post-publish QM Role seed (T14 / T16 / T25 / T40 / T41 / T42 / T43 / T51 / T54 / V10 / V8 / V14 / V18 / V19 / V20).
 
 Zip never carries Role / UsersInRoles / RolesInGraph (V8 / I.pkg).
 `ACU_USER` Quality Manager attach stays e2e-only (V10).
@@ -6,6 +6,7 @@ Post-publish seed inserts UsrQMSSetup (QORD QNCR) per company when missing (V14)
 Skip already-published only when current-tenant InspectionPlan GET is 200 JSON array (V18 / B8).
 wait_published default 600s; emit start + poll last-GET heartbeat; reuse session across polls (V19 / B12).
 _recycle_app_pool uses wait_rest 120s, not wait_published (V19 / B12).
+GET /entity 200 is not QMS live; InspectionPlan 500 OptimizedExport NRE after that recycle → one extra recycle (V20 / B15).
 publish_package after publishEnd: EntityMapping then aspx SHA-256 skip then recycle then wait_published (V20 / B13).
 Never prints ACU_PASSWORD.
 """
@@ -50,6 +51,8 @@ ACCESSRIGHTS_DELETE = 4
 QORD = "QORD"
 QNCR = "QNCR"
 QM401000_DESIGN_ID = "9f9483b9-6427-40c6-9c91-96b22c67c28e"
+OPTIMIZED_EXPORT_NRE_KIND = "500 OptimizedExport NRE"
+OPTIMIZED_EXPORT_NRE_EXTRA_RECYCLES = 1
 
 
 def instance() -> Instance:
@@ -186,6 +189,27 @@ def publish_begin(session: AcumaticaClient, names: list[str]) -> None:
         )
 
 
+def _response_text(response: object) -> str:
+    text = getattr(response, "text", None)
+    if isinstance(text, str) and text:
+        return text
+    try:
+        body = response.json()  # type: ignore[union-attr]
+    except Exception:
+        return ""
+    if isinstance(body, (str, dict, list)):
+        return str(body)
+    return ""
+
+
+def _is_optimized_export_nre(response: object) -> bool:
+    status = getattr(response, "status_code", None)
+    if status != 500:
+        return False
+    text = _response_text(response)
+    return "OptimizedExport" in text and "NullReference" in text
+
+
 def _inspection_plan_kind(session: AcumaticaClient) -> tuple[bool, str]:
     """(live, last GET status or body kind). Timeout diagnostic for V19 / B9."""
     try:
@@ -194,6 +218,8 @@ def _inspection_plan_kind(session: AcumaticaClient) -> tuple[bool, str]:
         return False, "transport"
     status = response.status_code
     if status != 200:
+        if _is_optimized_export_nre(response):
+            return False, OPTIMIZED_EXPORT_NRE_KIND
         return False, str(status)
     try:
         body = response.json()
@@ -284,6 +310,9 @@ def publish_package(zip_bytes: bytes, *, timeout: float = 900.0) -> str:
     (SHA-256 skip), recycle, then wait_published (V20 / B13).
     Recycle runs even when nested maps already exist — 26.101 OptimizedExport
     NRE on QM GET until the pool reloads endpoint metadata.
+    wait_rest GET /entity 200 is not QMS live. InspectionPlan 500
+    OptimizedExport NRE after that recycle triggers one extra recycle
+    (V20 / B15) before wait_published.
     """
     description = package_description(zip_bytes)
     with progress("webpack NO_COLOR for SaveStatus", "IIS"):
@@ -572,8 +601,35 @@ def _recycle_app_pool() -> None:
     inst = instance()
     if not inst.ssh:
         return
+    _restart_app_pool()
+    _recycle_if_optimized_export_nre()
+
+
+def _restart_app_pool() -> None:
+    """IIS recycle + wait_rest. GET /entity 200 is not QMS live (V20 / B15)."""
+    inst = instance()
+    if not inst.ssh:
+        return
     ssh_run("Restart-WebAppPool -Name AcumaticaERP")
     wait_rest()
+
+
+def _recycle_if_optimized_export_nre(
+    *, extra: int = OPTIMIZED_EXPORT_NRE_EXTRA_RECYCLES
+) -> None:
+    """Recycle again while InspectionPlan is OptimizedExport NRE (V20 / B15).
+
+    Bound extra recycles, then wait_published polls the rest.
+    """
+    for _ in range(extra):
+        try:
+            with client() as session:
+                _, kind = _inspection_plan_kind(session)
+        except RuntimeError, httpx.TransportError, httpx.HTTPError:
+            return
+        if kind != OPTIMIZED_EXPORT_NRE_KIND:
+            return
+        _restart_app_pool()
 
 
 def qms_setup_insert_sql() -> str:

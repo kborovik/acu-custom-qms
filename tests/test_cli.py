@@ -3,7 +3,7 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""T14 / T15 / T16 / T40 / T41 / T42 / T43 / T47 / T50 / T51 / I.cmd / V8 / V10 / V18 / V19 / V20 / B8 / B9 / B10 / B12 / B13: Click console script acuqms build+publish+seed+deploy."""
+"""T14 / T15 / T16 / T40 / T41 / T42 / T43 / T47 / T50 / T51 / T54 / I.cmd / V8 / V10 / V18 / V19 / V20 / B8 / B9 / B10 / B12 / B13 / B15: Click console script acuqms build+publish+seed+deploy."""
 
 from __future__ import annotations
 
@@ -26,17 +26,21 @@ if str(ROOT) not in sys.path:
 from acuqms.cli import cli  # noqa: E402
 from acuqms.publish import (  # noqa: E402
     INSPECTION_PLAN_PATH,
+    OPTIMIZED_EXPORT_NRE_EXTRA_RECYCLES,
+    OPTIMIZED_EXPORT_NRE_KIND,
     PACKAGE_NAME,
     QM_SCREENS,
     QMS_ENDPOINT,
     QMS_VERSION,
     QUALITY_MANAGER_ROLE,
+    _inspection_plan_kind,
     _recycle_app_pool,
     package_description,
     publish_package,
     qms_endpoint_live,
     seed_qm_rights,
     wait_published,
+    wait_rest,
 )
 
 ELAPSED_RE = r"^\d+\.\d{2}s$"
@@ -83,16 +87,29 @@ def _plan_get(
     body: object | None = None,
     *,
     html: bool = False,
+    text: str | None = None,
 ) -> MagicMock:
     response = MagicMock()
     response.status_code = status
     if html:
         response.json.side_effect = ValueError("Expecting value")
+        response.text = text if text is not None else "<html>login</html>"
         return response
     if body is None:
         body = [] if status == 200 else {"message": "error"}
     response.json.return_value = body
+    response.text = text if text is not None else str(body)
     return response
+
+
+def _nre_get() -> MagicMock:
+    return _plan_get(
+        500,
+        {
+            "exceptionType": "System.NullReferenceException",
+            "exceptionMessage": "OptimizedExportProviderBuilder",
+        },
+    )
 
 
 def _session_with_plan(*, published: bool = True, plan_status: int = 200) -> MagicMock:
@@ -787,11 +804,13 @@ class TestV19_WaitPublished600s(unittest.TestCase):
         """V19 / B12: recycle waits for GET /entity 120s, not wait_published 600s."""
         inst = MagicMock()
         inst.ssh = "Administrator@host"
+        session = _session_with_plan(plan_status=200)
         with (
             patch("acuqms.publish.instance", return_value=inst),
             patch("acuqms.publish.ssh_run"),
             patch("acuqms.publish.wait_rest") as rest,
             patch("acuqms.publish.wait_published") as wait,
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
         ):
             _recycle_app_pool()
         rest.assert_called_once_with()
@@ -1049,6 +1068,119 @@ class TestV20_EntityMappingBeforeWait(unittest.TestCase):
         self.assertEqual(status, "published")
         self.assertEqual(order, ["maps", "get"])
         self.assertEqual(clients, [])
+
+
+class TestV20_SecondRecycleOnOptimizedExportNre(unittest.TestCase):
+    def _recycle(
+        self,
+        session: MagicMock,
+        *,
+        inst_ssh: str | None = "Administrator@host",
+    ) -> tuple[MagicMock, MagicMock]:
+        inst = MagicMock()
+        inst.ssh = inst_ssh
+        with (
+            patch("acuqms.publish.instance", return_value=inst),
+            patch("acuqms.publish.ssh_run") as ssh,
+            patch("acuqms.publish.wait_rest") as rest,
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+        ):
+            _recycle_app_pool()
+        return ssh, rest
+
+    def test_second_recycle_on_nre(self) -> None:
+        """V20 / B15: InspectionPlan 500 OptimizedExport NRE → one extra recycle."""
+        session = MagicMock()
+        session._http.get.return_value = _nre_get()
+        ssh, rest = self._recycle(session)
+        self.assertEqual(ssh.call_count, 2)
+        self.assertEqual(rest.call_count, 2)
+        self.assertEqual(session._http.get.call_count, 1)
+        session._http.get.assert_called_with(INSPECTION_PLAN_PATH)
+
+    def test_no_second_recycle_when_inspection_plan_200(self) -> None:
+        session = _session_with_plan(plan_status=200)
+        ssh, rest = self._recycle(session)
+        self.assertEqual(ssh.call_count, 1)
+        self.assertEqual(rest.call_count, 1)
+
+    def test_no_second_recycle_when_inspection_plan_404(self) -> None:
+        session = _session_with_plan(plan_status=404)
+        ssh, rest = self._recycle(session)
+        self.assertEqual(ssh.call_count, 1)
+        self.assertEqual(rest.call_count, 1)
+
+    def test_no_second_recycle_when_500_is_not_optimized_export_nre(self) -> None:
+        session = MagicMock()
+        session._http.get.return_value = _plan_get(
+            500, {"message": "The view  doesn't exist"}
+        )
+        ssh, rest = self._recycle(session)
+        self.assertEqual(ssh.call_count, 1)
+        self.assertEqual(rest.call_count, 1)
+
+    def test_bound_one_extra_recycle(self) -> None:
+        session = MagicMock()
+        session._http.get.return_value = _nre_get()
+        ssh, rest = self._recycle(session)
+        self.assertEqual(OPTIMIZED_EXPORT_NRE_EXTRA_RECYCLES, 1)
+        self.assertEqual(ssh.call_count, 1 + OPTIMIZED_EXPORT_NRE_EXTRA_RECYCLES)
+        self.assertEqual(rest.call_count, 1 + OPTIMIZED_EXPORT_NRE_EXTRA_RECYCLES)
+        self.assertEqual(
+            session._http.get.call_count, OPTIMIZED_EXPORT_NRE_EXTRA_RECYCLES
+        )
+
+    def test_kind_reports_optimized_export_nre(self) -> None:
+        session = MagicMock()
+        session._http.get.return_value = _nre_get()
+        live, kind = _inspection_plan_kind(session)
+        self.assertFalse(live)
+        self.assertEqual(kind, OPTIMIZED_EXPORT_NRE_KIND)
+
+    def test_wait_timeout_reports_optimized_export_nre(self) -> None:
+        session = MagicMock()
+        session._http.get.return_value = _nre_get()
+        with (
+            patch("acuqms.publish.client", return_value=_session_ctx(session)),
+            patch("acuqms.publish.time.sleep"),
+            patch(
+                "acuqms.publish.time.monotonic",
+                side_effect=[0.0, 0.0, 10.0],
+            ),
+            patch("acuqms.progress.sys.stderr", io.StringIO()),
+        ):
+            with self.assertRaises(RuntimeError) as ctx:
+                wait_published(timeout=5.0, poll=1.0)
+        self.assertIn(f"last GET {OPTIMIZED_EXPORT_NRE_KIND}", str(ctx.exception))
+
+    def test_entity_200_is_not_qms_live(self) -> None:
+        """V20 / B15: wait_rest GET /entity 200 is not InspectionPlan live."""
+        rest_src = inspect.getsource(wait_rest)
+        live_src = inspect.getsource(qms_endpoint_live)
+        self.assertIn("list_endpoints", rest_src)
+        self.assertNotIn("InspectionPlan", rest_src)
+        self.assertIn("InspectionPlan", live_src)
+        src = (ROOT / "acuqms" / "publish.py").read_text(encoding="utf-8")
+        body = src[
+            src.index("def _recycle_app_pool") : src.index("\ndef qms_setup_insert_sql")
+        ]
+        self.assertIn("_recycle_if_optimized_export_nre", body)
+        self.assertIn("OPTIMIZED_EXPORT_NRE_KIND", body)
+        publish_body = src[
+            src.index("def publish_package") : src.index("\ndef roles_in_graph_rows")
+        ]
+        self.assertLess(
+            publish_body.index("_recycle_app_pool"),
+            publish_body.index("wait_published()"),
+        )
+
+    def test_hosted_path_skips_recycle(self) -> None:
+        session = MagicMock()
+        session._http.get.return_value = _nre_get()
+        ssh, rest = self._recycle(session, inst_ssh=None)
+        self.assertEqual(ssh.call_count, 0)
+        self.assertEqual(rest.call_count, 0)
+        session._http.get.assert_not_called()
 
 
 class TestPackModuleZipBytesV8(unittest.TestCase):

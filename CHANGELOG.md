@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Fixed
+
+- **Publish recycle (V20 / B15):** after aspx recopy, `wait_rest` GET `/entity` 200 is not QMS live.
+  InspectionPlan 500 (`OptimizedExportProviderBuilder` NullReferenceException) triggers one extra app-pool recycle before `wait_published`.
+
 ## [v0.7.0] - 2026-09-11
 
 ### Fixed
