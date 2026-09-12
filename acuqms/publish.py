@@ -177,19 +177,25 @@ def remaining_published(names: list[str], drop: str = PACKAGE_NAME) -> list[str]
 
 
 def publish_begin(
-    session: AcumaticaClient, names: list[str], *, merge: bool = True
+    session: AcumaticaClient,
+    names: list[str],
+    *,
+    merge: bool = True,
+    replay: bool = False,
 ) -> None:
     """Publish named projects.
 
     merge=True keeps already-published packages (Lab5.QMS import).
     merge=False publishes only `names` and unpublishes the rest (V26).
+    replay=True re-applies SQL/items so a post-unpublish import restores
+    SiteMap and EntityDescription after leftover SQL delete (V26).
     Never unpublishAll — that would drop AcuBootstrap.
     """
     payload = {
         "isMergeWithExistingPackages": merge,
         "isOnlyValidation": False,
         "isOnlyDbUpdates": False,
-        "isReplayPreviouslyExecutedScripts": False,
+        "isReplayPreviouslyExecutedScripts": replay,
         "projectNames": names,
         "tenantMode": "Current",
     }
@@ -388,7 +394,7 @@ def publish_package(zip_bytes: bytes, *, timeout: float = 900.0) -> str:
         if skip:
             return "already published"
         with progress("publishBegin", PACKAGE_NAME):
-            publish_begin(session, [PACKAGE_NAME])
+            publish_begin(session, [PACKAGE_NAME], replay=True)
         _poll_publish_end(session, timeout, PACKAGE_NAME)
 
     with progress("seed EntityMapping", "Tests,Results"):
@@ -902,9 +908,21 @@ def unpublish_package(*, timeout: float = 900.0) -> str:
                 publish_begin(session, remaining, merge=False)
         if not skipped:
             _poll_publish_end(session, timeout, ",".join(remaining))
+        with progress("delete unpublished Lab5.QMS", PACKAGE_NAME) as p:
+            try:
+                session._checked_log(
+                    session._http.post(
+                        "/CustomizationApi/delete",
+                        json={"projectName": PACKAGE_NAME},
+                    )
+                )
+            except RuntimeError:
+                p.result = "skip"
     if inst.ssh:
         with progress("drop leftover classes", "Pages/QM,src/screens,webpack"):
             _drop_unpublish_leftovers()
+        with progress("drop leftover SiteMap EntityDescription", "QM,QMS"):
+            _drop_unpublish_db_leftovers()
         with progress("rebuild IN202500 webpack", "without QMS"):
             _rebuild_in202500_webpack()
         with progress("recycle app pool", "IIS"):
@@ -947,6 +965,45 @@ def _drop_unpublish_leftovers() -> None:
     _aspx_pages_ready = False
 
 
+def unpublish_db_leftover_sql(cid: int) -> str:
+    """Drop tenant QMS SiteMap / REST metadata. Does not touch stock items."""
+    db = DB_NAME
+    return (
+        f"DECLARE @cid int = {cid}; "
+        "DECLARE @ids TABLE (EntityId int); "
+        "INSERT INTO @ids (EntityId) "
+        f"SELECT EntityId FROM {db}.dbo.EntityDescription "
+        "WHERE CompanyID = @cid AND InterfaceName = N'QMS'; "
+        f"DELETE m FROM {db}.dbo.EntityMapping m "
+        "INNER JOIN @ids i ON m.MappingKey LIKE "
+        "N'E/' + CAST(i.EntityId AS varchar(20)) + N'/%' "
+        "WHERE m.CompanyID = @cid; "
+        f"DELETE f FROM {db}.dbo.EntityFieldDescription f "
+        "INNER JOIN @ids i ON f.EntityId = i.EntityId "
+        "WHERE f.CompanyID = @cid; "
+        f"DELETE FROM {db}.dbo.EntityDescription "
+        "WHERE CompanyID = @cid AND InterfaceName = N'QMS'; "
+        f"DELETE FROM {db}.dbo.EntityEndpoint "
+        "WHERE CompanyID = @cid AND InterfaceName = N'QMS'; "
+        f"DELETE ms FROM {db}.dbo.MUIScreen ms "
+        f"INNER JOIN {db}.dbo.SiteMap sm "
+        "ON sm.NodeID = ms.NodeID AND sm.CompanyID = ms.CompanyID "
+        "WHERE sm.CompanyID = @cid AND sm.ScreenID LIKE N'QM%'; "
+        f"DELETE FROM {db}.dbo.PortalMap "
+        "WHERE CompanyID = @cid AND ScreenID LIKE N'QM%'; "
+        f"DELETE FROM {db}.dbo.SiteMap "
+        "WHERE CompanyID = @cid AND ScreenID LIKE N'QM%';"
+    )
+
+
+def _drop_unpublish_db_leftovers() -> None:
+    """Drop tenant SiteMap QM* and QMS EntityDescription after unpublish (V26)."""
+    inst = instance()
+    if not inst.ssh:
+        return
+    sqlcmd(unpublish_db_leftover_sql(company_id()))
+
+
 def _rebuild_in202500_webpack() -> None:
     """Rebuild Stock Items webpack without IN202500_QMS (V26)."""
     inst = instance()
@@ -957,26 +1014,38 @@ def _rebuild_in202500_webpack() -> None:
     ssh_run(
         "$ErrorActionPreference = 'Stop'; "
         f"$root = '{root}'; $tenant = '{tenant}'; "
+        "$nodeDir = 'C:\\Program Files\\AcumaticaTools\\NodeJS\\"
+        "node-v22.11.0-win-x64'; "
+        "$webConfig = Join-Path $root 'web.config'; "
+        "if (Test-Path -LiteralPath $webConfig) { "
+        "[xml]$cfg = Get-Content -LiteralPath $webConfig; "
+        "$add = @($cfg.configuration.appSettings.add) | "
+        "Where-Object { $_.key -eq 'NodeJs:NodeJsPath' }; "
+        "if ($add -and $add.value) { $nodeDir = $add.value } }; "
+        "$npm = Join-Path $nodeDir 'npm.cmd'; "
+        "if (-not (Test-Path -LiteralPath $npm)) { "
+        "throw ('npm.cmd missing: ' + $npm) }; "
+        "$env:PATH = $nodeDir + ';' + $env:PATH; "
         "$screen = Join-Path $root 'FrontendSources\\screen'; "
+        "$ootbDir = Join-Path $root 'Scripts\\Screens'; "
         "$tenantDir = Join-Path $root ('Scripts\\Screens\\' + $tenant); "
-        "if (Test-Path -LiteralPath $tenantDir) { "
-        "Get-ChildItem -LiteralPath $tenantDir -Filter 'IN202500*' | "
-        "Remove-Item -Force }; "
+        "New-Item -ItemType Directory -Force -Path $tenantDir | Out-Null; "
+        "$copyOotb = { "
+        "$ootbHtml = Join-Path $ootbDir 'IN202500.html'; "
+        "if (Test-Path -LiteralPath $ootbHtml) { "
+        "Copy-Item -LiteralPath $ootbHtml -Destination "
+        "(Join-Path $tenantDir 'IN202500.html') -Force; "
+        "Get-ChildItem -LiteralPath $ootbDir -Filter 'IN202500.*.bundle.js' | "
+        "Copy-Item -Destination $tenantDir -Force } }; "
+        "& $copyOotb; "
         "if (-not (Test-Path -LiteralPath $screen)) { "
         "throw ('webpack screen root missing: ' + $screen) }; "
         "Set-Location -LiteralPath $screen; "
         "$env:NO_COLOR = '1'; $env:FORCE_COLOR = '0'; $env:CI = 'true'; "
-        "npm run build -- --env screenIds=IN202500; "
+        "& $npm run build -- --env screenIds=IN202500; "
         "if ($LASTEXITCODE -ne 0) { "
         "throw ('webpack IN202500 failed (' + $LASTEXITCODE + ')') }; "
-        "$ootbDir = Join-Path $root 'Scripts\\Screens'; "
-        "New-Item -ItemType Directory -Force -Path $tenantDir | Out-Null; "
-        "$ootbHtml = Join-Path $ootbDir 'IN202500.html'; "
-        "$tenantHtml = Join-Path $tenantDir 'IN202500.html'; "
-        "if (Test-Path -LiteralPath $ootbHtml) { "
-        "Copy-Item -LiteralPath $ootbHtml -Destination $tenantHtml -Force; "
-        "Get-ChildItem -LiteralPath $ootbDir -Filter 'IN202500.*.bundle.js' | "
-        "Copy-Item -Destination $tenantDir -Force }; "
+        "& $copyOotb; "
         "'OK'",
         timeout=WEBPACK_TIMEOUT,
     )
