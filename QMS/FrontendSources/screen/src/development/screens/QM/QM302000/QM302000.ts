@@ -31,6 +31,7 @@ export class QMSNonConformance extends PXView {
   InventoryID: PXFieldState;
   LotSerialNbr: PXFieldState;
   VendorID: PXFieldState;
+  @controlConfig({ allowEdit: true })
   ReceiptNbr: PXFieldState;
   Severity: PXFieldState;
   NonConformanceType: PXFieldState;

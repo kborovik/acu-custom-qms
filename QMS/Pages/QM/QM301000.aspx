@@ -21,7 +21,7 @@
             <px:PXSegmentMask ID="edInventoryID" runat="server" DataField="InventoryID" />
             <px:PXTextEdit ID="edLotSerialNbr" runat="server" DataField="LotSerialNbr" />
             <px:PXSegmentMask ID="edVendorID" runat="server" DataField="VendorID" />
-            <px:PXSelector ID="edReceiptNbr" runat="server" DataField="ReceiptNbr" />
+            <px:PXSelector ID="edReceiptNbr" runat="server" DataField="ReceiptNbr" AllowEdit="True" />
             <px:PXSelector ID="edPlanID" runat="server" DataField="PlanID" />
             <px:PXTextEdit ID="edTestingLabID" runat="server" DataField="TestingLabID" />
             <px:PXTextEdit ID="edLabCertificateNbr" runat="server" DataField="LabCertificateNbr" />

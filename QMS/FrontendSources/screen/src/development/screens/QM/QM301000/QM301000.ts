@@ -9,6 +9,7 @@ import {
   graphInfo,
   viewInfo,
   gridConfig,
+  controlConfig,
   GridPreset,
   PXPageLoadBehavior,
 } from "client-controls";
@@ -37,6 +38,7 @@ export class QMSInspectionOrder extends PXView {
   InventoryID: PXFieldState;
   LotSerialNbr: PXFieldState;
   VendorID: PXFieldState;
+  @controlConfig({ allowEdit: true })
   ReceiptNbr: PXFieldState;
   PlanID: PXFieldState;
   TestingLabID: PXFieldState;

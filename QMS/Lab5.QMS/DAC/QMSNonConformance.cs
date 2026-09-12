@@ -78,8 +78,8 @@ namespace Lab5.QMS
 
         #region ReceiptNbr
         [PXDBString(15, IsUnicode = true)]
-        [PXSelector(typeof(Search<POReceipt.receiptNbr>))]
-        [PXUIField(DisplayName = "Receipt Nbr")]
+        [PXSelector(typeof(Search<POReceipt.receiptNbr>), AllowEdit = true)]
+        [PXUIField(DisplayName = "Purchase Receipt")]
         public virtual string ReceiptNbr { get; set; }
         public abstract class receiptNbr : PX.Data.BQL.BqlString.Field<receiptNbr> { }
         #endregion
