@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [v0.9.0] - 2026-09-12
+
 ### Added
 
 - **`acuqms unpublish`:** unpublish Lab5.QMS only (AcuBootstrap stays).

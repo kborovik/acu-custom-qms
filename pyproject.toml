@@ -1,6 +1,6 @@
 [project]
 name = "acuqms"
-version = "0.8.0"
+version = "0.9.0"
 description = "Acumatica Cloud xRP customization package Lab5.QMS (build + tests)"
 authors = [{ name = "Konstantin Borovik", email = "kb@lab5.ca" }]
 license = "Apache-2.0"
