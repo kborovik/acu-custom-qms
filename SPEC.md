@@ -106,7 +106,7 @@ T49|x|sweep tests Path-literal `QMS/FrontendSources/screen/src/development/scree
 T50|x|wait_published emit start + poll last-GET heartbeat; recycle wait_rest 120s; aspx SHA-256 skip before wait; ssh_run SSH_TIMEOUT; reuse wait session|V19,V20,I.cmd,B12
 T51|x|recycle after import+publish before wait_published even when nested maps already present|V20,I.cmd,B13
 T52|x|fix QMSInspectionOrderEntry QMSInspectionPlanMaint QMSNonConformanceEntry Document PXSelect drop Current-key Where; Next/Prev land sibling; unit assert Document ! Equal Current; e2e QM301000 Next from named order lands next nbr|V22,B14,I.graph,I.screen
-T53|.|hide LineNbr on QM201000 Tests + QM301000 Results (TS view ! LineNbr, ASPX ! PXGridColumn LineNbr, DAC Visible=false); REST LineNbr stay; unit GRID_FIELDS drop LineNbr + assert TS+ASPX ! LineNbr; e2e published TS ! LineNbr field|V23,I.screen
+T53|x|hide LineNbr on QM201000 Tests + QM301000 Results (TS view ! LineNbr, ASPX ! PXGridColumn LineNbr, DAC Visible=false); REST LineNbr stay; unit GRID_FIELDS drop LineNbr + assert TS+ASPX ! LineNbr; e2e published TS ! LineNbr field|V23,I.screen
 
 ## §B BUGS
 id|date|cause|fix

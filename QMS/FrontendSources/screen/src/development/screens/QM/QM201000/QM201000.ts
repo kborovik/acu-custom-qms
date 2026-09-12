@@ -42,7 +42,6 @@ export class QMSInspectionPlan extends PXView {
   allowDelete: true,
 })
 export class QMSInspectionPlanTest extends PXView {
-  LineNbr: PXFieldState;
   TestID: PXFieldState<PXFieldOptions.CommitChanges>;
   Description: PXFieldState;
   TestMethod: PXFieldState;

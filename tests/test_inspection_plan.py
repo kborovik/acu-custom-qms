@@ -26,6 +26,7 @@ GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSInspectionPlanMaint.cs"
 RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSInspectionPlanRules.cs"
 HTML = ROOT / FRONTEND_SCREENS_REL / "QM" / "QM201000" / "QM201000.html"
 TS = ROOT / FRONTEND_SCREENS_REL / "QM" / "QM201000" / "QM201000.ts"
+ASPX = ROOT / "QMS" / "Pages" / "QM" / "QM201000.aspx"
 SQL = ROOT / "QMS" / "SQL" / "CreateQMSTables.sql"
 
 PLAN_FIELDS = (
@@ -67,7 +68,6 @@ SUMMARY_FIELDS = (
 )
 
 GRID_FIELDS = (
-    "LineNbr",
     "TestID",
     "Description",
     "TestMethod",
@@ -175,6 +175,7 @@ class TestInspectionPlanDac(unittest.TestCase):
             )
         ]
         self.assertNotIn("Enabled = false", line_nbr)
+        self.assertIn("Visible = false", line_nbr)
         for name in TEST_FIELDS:
             self.assertIn(f"#region {name}", src)
 
@@ -227,6 +228,9 @@ class TestInspectionPlanGraphAndScreen(unittest.TestCase):
             self.assertIn(f'name="{field}"', html)
         for field in GRID_FIELDS:
             self.assertIn(field, ts)
+        self.assertNotIn("LineNbr: PXFieldState", ts)
+        aspx = ASPX.read_text(encoding="utf-8")
+        self.assertNotIn('DataField="LineNbr"', aspx)
 
 
 def _table_block(sql: str, table: str) -> str:

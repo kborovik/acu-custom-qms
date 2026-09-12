@@ -52,7 +52,6 @@ export class QMSInspectionOrder extends PXView {
   allowDelete: true,
 })
 export class QMSInspectionOrderResult extends PXView {
-  LineNbr: PXFieldState;
   TestID: PXFieldState;
   TestMethod: PXFieldState;
   TargetSpec: PXFieldState;

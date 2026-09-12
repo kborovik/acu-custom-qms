@@ -26,7 +26,7 @@ namespace Lab5.QMS
 
         #region LineNbr
         [PXDBInt(IsKey = true)]
-        [PXUIField(DisplayName = "Line Nbr")]
+        [PXUIField(DisplayName = "Line Nbr", Visible = false)]
         public virtual int? LineNbr { get; set; }
         public abstract class lineNbr : PX.Data.BQL.BqlInt.Field<lineNbr> { }
         #endregion

@@ -27,6 +27,7 @@ GRAPH_CS = ROOT / "QMS" / "Lab5.QMS" / "Graph" / "QMSInspectionOrderEntry.cs"
 RULES_CS = ROOT / "QMS" / "Lab5.QMS" / "QMSInspectionOrderRules.cs"
 HTML = ROOT / FRONTEND_SCREENS_REL / "QM" / "QM301000" / "QM301000.html"
 TS = ROOT / FRONTEND_SCREENS_REL / "QM" / "QM301000" / "QM301000.ts"
+ASPX = ROOT / "QMS" / "Pages" / "QM" / "QM301000.aspx"
 SQL = ROOT / "QMS" / "SQL" / "CreateQMSTables.sql"
 
 LINE_PASS = "P"
@@ -82,7 +83,6 @@ SUMMARY_FIELDS = (
 )
 
 GRID_FIELDS = (
-    "LineNbr",
     "TestID",
     "TestMethod",
     "TargetSpec",
@@ -377,6 +377,12 @@ class TestInspectionOrderDac(unittest.TestCase):
             "class QMSInspectionOrderResult : UsrQMSInspectionOrderResult", src
         )
         self.assertIn("[PXTableName]", src)
+        line_nbr = src[
+            src.index("#region LineNbr") : src.index(
+                "#endregion", src.index("#region LineNbr")
+            )
+        ]
+        self.assertIn("Visible = false", line_nbr)
         for name in RESULT_FIELDS:
             self.assertIn(f"#region {name}", src)
 
@@ -442,6 +448,9 @@ class TestInspectionOrderGraphAndScreen(unittest.TestCase):
             self.assertIn(f'name="{field}"', html)
         for field in GRID_FIELDS:
             self.assertIn(field, ts)
+        self.assertNotIn("LineNbr: PXFieldState", ts)
+        aspx = ASPX.read_text(encoding="utf-8")
+        self.assertNotIn('DataField="LineNbr"', aspx)
 
 
 if __name__ == "__main__":

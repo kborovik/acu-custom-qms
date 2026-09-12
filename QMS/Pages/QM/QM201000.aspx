@@ -27,7 +27,6 @@
         <Levels>
             <px:PXGridLevel DataMember="Tests">
                 <Columns>
-                    <px:PXGridColumn DataField="LineNbr" Width="70px" />
                     <px:PXGridColumn DataField="TestID" Width="140px" />
                     <px:PXGridColumn DataField="Description" Width="220px" />
                     <px:PXGridColumn DataField="TestMethod" Width="180px" />

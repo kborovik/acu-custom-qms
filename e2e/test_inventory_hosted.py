@@ -291,12 +291,15 @@ class TestStockItemModernUiV17(unittest.TestCase):
             self.assertNotIn("MISSING", text, path)
             return text
 
+        qm201 = _read_ts("QM201000")
         qm301 = _read_ts("QM301000")
         qm302 = _read_ts("QM302000")
         self.assertIn("EvaluateResults: PXActionState", qm301)
         self.assertIn("ReleaseLotDecision: PXActionState", qm301)
         self.assertIn("hideFilesIndicator: false", qm301)
         self.assertIn("hideNotesIndicator: false", qm301)
+        self.assertNotIn("LineNbr: PXFieldState", qm201)
+        self.assertNotIn("LineNbr: PXFieldState", qm301)
         self.assertIn("CloseNCR: PXActionState", qm302)
         self.assertIn("DispositionRTV: PXActionState", qm302)
 
