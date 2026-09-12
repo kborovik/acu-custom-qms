@@ -6,9 +6,13 @@
 
 - **`acuqms unpublish`:** unpublish Lab5.QMS only (AcuBootstrap stays).
   CustomizationApi republishes the remaining list with merge off (`unpublishAll` is never used).
-  With `ACU_SSH`, drop `Pages/QM`, File-item `src/screens` leftovers, tenant `customizationScreens`, and tenant `QM*` webpack, then rebuild IN202500 without the QMS extension and recycle the app pool.
+  With `ACU_SSH`, drop `Pages/QM`, File-item `src/screens` leftovers, tenant `customizationScreens`, and tenant `QM*` webpack, then restore OOTB IN202500 + GenericInquiry HTML to the site vendor (never `npm run build` production) and recycle the app pool.
   Hosted (blank `ACU_SSH`) runs CustomizationApi unpublish only.
   Does not wipe the Windows state cache and does not delete CNBN stock items.
+
+### Fixed
+
+- **Unpublish Stock Items GI (V26 / B16):** isolated `npm run build --env production screenIds=IN202500` rewrote `GenericInquiry.html` (IN2025PL) onto a new vendor hash and truncated `TIME_STAMP`, so Inventory → Stock Items rendered blank. Restore points those shared screens at the installer vendor from IN202000.
 
 ## [v0.8.0] - 2026-09-12
 

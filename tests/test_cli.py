@@ -3,7 +3,7 @@
 # requires-python = ">=3.14"
 # dependencies = []
 # ///
-"""T14 / T15 / T16 / T40 / T41 / T42 / T43 / T47 / T50 / T51 / T54 / T57 / T58 / I.cmd / V8 / V10 / V18 / V19 / V20 / V26 / B8 / B9 / B10 / B12 / B13 / B15: Click console script acuqms build+publish+seed+deploy+unpublish."""
+"""T14 / T15 / T16 / T40 / T41 / T42 / T43 / T47 / T50 / T51 / T54 / T57 / T58 / I.cmd / V8 / V10 / V18 / V19 / V20 / V26 / B8 / B9 / B10 / B12 / B13 / B15 / B16: Click console script acuqms build+publish+seed+deploy+unpublish."""
 
 from __future__ import annotations
 
@@ -27,6 +27,7 @@ from acuqms.cli import cli  # noqa: E402
 from acuqms.publish import (  # noqa: E402
     ACUBOOTSTRAP,
     INSPECTION_PLAN_PATH,
+    OOTB_WEBPACK_REFERENCE,
     OPTIMIZED_EXPORT_NRE_EXTRA_RECYCLES,
     OPTIMIZED_EXPORT_NRE_KIND,
     PACKAGE_NAME,
@@ -34,12 +35,14 @@ from acuqms.publish import (  # noqa: E402
     QMS_ENDPOINT,
     QMS_VERSION,
     QUALITY_MANAGER_ROLE,
+    SHARED_WEBPACK_SCREENS,
     _inspection_plan_kind,
     _recycle_app_pool,
     package_description,
     publish_package,
     qms_endpoint_live,
     remaining_published,
+    restore_ootb_webpack_ps1,
     seed_qm_rights,
     unpublish_db_leftover_sql,
     unpublish_package,
@@ -1218,7 +1221,7 @@ class TestUnpublishV26(unittest.TestCase):
             patch("acuqms.publish.instance", return_value=inst),
             patch("acuqms.publish._drop_unpublish_leftovers") as drop,
             patch("acuqms.publish._drop_unpublish_db_leftovers") as drop_db,
-            patch("acuqms.publish._rebuild_in202500_webpack") as webpack,
+            patch("acuqms.publish._restore_ootb_webpack") as webpack,
             patch("acuqms.publish._recycle_app_pool") as recycle,
             patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):
@@ -1266,7 +1269,7 @@ class TestUnpublishV26(unittest.TestCase):
             patch("acuqms.publish.publish_begin") as begin,
             patch("acuqms.publish.instance", return_value=inst),
             patch("acuqms.publish._drop_unpublish_leftovers") as drop,
-            patch("acuqms.publish._rebuild_in202500_webpack") as webpack,
+            patch("acuqms.publish._restore_ootb_webpack") as webpack,
             patch("acuqms.publish._recycle_app_pool") as recycle,
             patch("acuqms.progress.sys.stderr", err),
         ):
@@ -1332,9 +1335,12 @@ class TestUnpublishV26(unittest.TestCase):
         self.assertIn("IN202500_QMS", body)
         self.assertIn("src/screens", body)
         self.assertIn(r"Scripts\\Screens", body)
-        self.assertIn("npm run build", body)
-        self.assertIn("npm.cmd", body)
-        self.assertIn("NodeJs:NodeJsPath", body)
+        self.assertNotIn("& $npm run build", body)
+        self.assertNotIn("npm.cmd", body)
+        self.assertIn("GenericInquiry", body)
+        self.assertIn("OOTB_WEBPACK_REFERENCE", body)
+        self.assertIn(f"{OOTB_WEBPACK_REFERENCE}", src)
+        self.assertIn("def restore_ootb_webpack_ps1", src)
         self.assertNotIn("StateCache", body)
         self.assertNotIn("Temporary ASP.NET", body)
         self.assertNotIn("InventoryItem", body)
@@ -1356,6 +1362,20 @@ class TestUnpublishV26(unittest.TestCase):
         self.assertNotIn("InventoryItem", sql)
         self.assertNotIn("UsrQMS", sql)
 
+    def test_restore_ootb_webpack_ps1_keeps_site_vendor(self) -> None:
+        """V26 / B16: restore GenericInquiry to IN202000 vendor; never npm production."""
+        ps1 = restore_ootb_webpack_ps1(r"C:\Acumatica\AcumaticaERP", "CNBN")
+        self.assertIn("GenericInquiry", ps1)
+        self.assertIn("IN202500", ps1)
+        self.assertIn(OOTB_WEBPACK_REFERENCE + ".html", ps1)
+        for name in SHARED_WEBPACK_SCREENS:
+            self.assertIn("'" + name + "'", ps1, name)
+        self.assertNotIn("npm run build", ps1)
+        self.assertNotIn("npm.cmd", ps1)
+        self.assertNotIn("screenIds=IN202500", ps1)
+        self.assertNotIn("--env production", ps1)
+        self.assertIn("Sort-Object LastWriteTime", ps1)
+
     def test_unpublish_delete_transport_error_still_drops_leftovers(self) -> None:
         """V26: publishEnd recycle must not skip leftover drop or delete retry."""
         session = MagicMock()
@@ -1375,7 +1395,7 @@ class TestUnpublishV26(unittest.TestCase):
             patch("acuqms.publish.instance", return_value=inst),
             patch("acuqms.publish._drop_unpublish_leftovers") as drop,
             patch("acuqms.publish._drop_unpublish_db_leftovers") as drop_db,
-            patch("acuqms.publish._rebuild_in202500_webpack") as webpack,
+            patch("acuqms.publish._restore_ootb_webpack") as webpack,
             patch("acuqms.publish._recycle_app_pool") as recycle,
             patch("acuqms.progress.sys.stderr", io.StringIO()),
         ):

@@ -44,6 +44,17 @@ QMS_ENDPOINT = "QMS/22.200.001"
 QMS_VERSION = "22.200.001"
 INSPECTION_PLAN_PATH = f"/entity/{QMS_ENDPOINT}/InspectionPlan"
 WEBPACK_TIMEOUT = 600.0
+OOTB_WEBPACK_REFERENCE = "IN202000"
+SHARED_WEBPACK_SCREENS = (
+    "Dashboard",
+    "ExternalResource",
+    "GenericInquiry",
+    "HierarchicalGrid",
+    "IN202500",
+    "PivotTable",
+    "ReportScreen",
+    "ReportViewer",
+)
 
 QM_SCREENS = ("QM101000", "QM201000", "QM301000", "QM302000", "QM401000")
 QUALITY_MANAGER_ROLE = "Quality Manager"
@@ -903,7 +914,8 @@ def unpublish_package(*, timeout: float = 900.0) -> str:
 
     CustomizationApi publishes remaining names with merge=False — not
     unpublishAll, which would drop AcuBootstrap. ACU_SSH set: drop leftover
-    classes, rebuild IN202500 webpack without QMS, recycle. Does not wipe
+    classes, restore OOTB IN202500 + GenericInquiry HTML to the site
+    vendor (never ``npm run build`` production), recycle. Does not wipe
     the Windows state cache and does not delete stock items. no-SSH:
     CustomizationApi unpublish only; filesystem delete and pool recycle
     require ACU_SSH.
@@ -937,8 +949,8 @@ def unpublish_package(*, timeout: float = 900.0) -> str:
             _drop_unpublish_leftovers()
         with progress("drop leftover SiteMap EntityDescription", "QM,QMS"):
             _drop_unpublish_db_leftovers()
-        with progress("rebuild IN202500 webpack", "without QMS"):
-            _rebuild_in202500_webpack()
+        with progress("restore OOTB screen webpack", "IN202500,GenericInquiry"):
+            _restore_ootb_webpack()
         with progress("recycle app pool", "IIS"):
             _recycle_app_pool()
     else:
@@ -1024,51 +1036,78 @@ def _drop_unpublish_db_leftovers() -> None:
     sqlcmd(unpublish_db_leftover_sql(company_id()))
 
 
-def _rebuild_in202500_webpack() -> None:
-    """Rebuild Stock Items webpack without IN202500_QMS (V26)."""
+def restore_ootb_webpack_ps1(root: str, tenant: str) -> str:
+    """Point shared screen HTML at the installer vendor (V26 / B16).
+
+    Isolated ``npm run build -- --env production screenIds=IN202500``
+    rewrites GenericInquiry.html (Stock Items GI IN2025PL) plus vendors
+    to a new hash and truncates TIME_STAMP. Restore never runs npm.
+    """
+    names = ",".join("'" + name + "'" for name in SHARED_WEBPACK_SCREENS)
+    ref = OOTB_WEBPACK_REFERENCE
+    return (
+        "$ErrorActionPreference = 'Stop'; "
+        f"$root = '{root}'; $tenant = '{tenant}'; "
+        "$ootbDir = Join-Path $root 'Scripts\\Screens'; "
+        "$tenantDir = Join-Path $root ('Scripts\\Screens\\' + $tenant); "
+        f"$refHtml = Join-Path $ootbDir '{ref}.html'; "
+        "if (-not (Test-Path -LiteralPath $refHtml)) { "
+        f"throw ('{ref}.html missing: ' + $refHtml) }}; "
+        "$ref = [System.IO.File]::ReadAllText($refHtml); "
+        "$vendor = [regex]::Match($ref, "
+        "\"VENDOR_TIME_STAMP = '([^']+)'\").Groups[1].Value; "
+        "if (-not $vendor) { throw ('vendor missing in ' + $refHtml) }; "
+        "$sharedSrcs = @(); "
+        "foreach ($m in [regex]::Matches($ref, "
+        '\'src="([^"]+\\.bundle\\.js)"\')) { '
+        f"if ($m.Groups[1].Value -notlike '{ref}.*') {{ "
+        "$sharedSrcs += $m.Groups[1].Value } }; "
+        f"$screens = @({names}); "
+        "$utf8 = New-Object System.Text.UTF8Encoding $false; "
+        "foreach ($name in $screens) { "
+        "$htmlPath = Join-Path $ootbDir ($name + '.html'); "
+        "if (-not (Test-Path -LiteralPath $htmlPath)) { continue }; "
+        "$bundles = @(Get-ChildItem -LiteralPath $ootbDir "
+        "-Filter ($name + '.*.bundle.js') | Sort-Object LastWriteTime); "
+        "if ($bundles.Count -eq 0) { continue }; "
+        "$bundle = $bundles[0]; "
+        "$hash = [regex]::Match($bundle.Name, "
+        "[regex]::Escape($name) + '\\.(.+)\\.bundle\\.js').Groups[1].Value; "
+        "$html = [System.IO.File]::ReadAllText($htmlPath); "
+        "$html = [regex]::Replace($html, \"TIME_STAMP = '[^']*'\", "
+        "('TIME_STAMP = ''' + $hash + '''')); "
+        "$html = [regex]::Replace($html, \"VENDOR_TIME_STAMP = '[^']*'\", "
+        "('VENDOR_TIME_STAMP = ''' + $vendor + '''')); "
+        "$newScripts = ($sharedSrcs + @($bundle.Name) | ForEach-Object { "
+        "'<script defer src=\"' + $_ + '\"></script>' }) -join ''; "
+        "$html = [regex]::Replace($html, "
+        '\'<script defer src="[^"]+"></script>'
+        '(?:\\s*<script defer src="[^"]+"></script>)*\', '
+        "$newScripts); "
+        "[System.IO.File]::WriteAllText($htmlPath, $html, $utf8) }; "
+        "New-Item -ItemType Directory -Force -Path $tenantDir | Out-Null; "
+        "foreach ($copyName in @('IN202500', 'GenericInquiry')) { "
+        "$src = Join-Path $ootbDir ($copyName + '.html'); "
+        "if (-not (Test-Path -LiteralPath $src)) { continue }; "
+        "Copy-Item -LiteralPath $src -Destination "
+        "(Join-Path $tenantDir ($copyName + '.html')) -Force; "
+        "$b = Get-ChildItem -LiteralPath $ootbDir "
+        "-Filter ($copyName + '.*.bundle.js') | "
+        "Sort-Object LastWriteTime | Select-Object -First 1; "
+        "if ($b) { Copy-Item -LiteralPath $b.FullName "
+        "-Destination $tenantDir -Force } }; "
+        "'OK'"
+    )
+
+
+def _restore_ootb_webpack() -> None:
+    """Restore OOTB IN202500 + GenericInquiry to the site vendor (V26 / B16)."""
     inst = instance()
     if not inst.ssh:
         return
     root = ACU_INSTANCE_PATH.replace("'", "''")
     tenant = inst.tenant.replace("'", "''")
-    ssh_run(
-        "$ErrorActionPreference = 'Stop'; "
-        f"$root = '{root}'; $tenant = '{tenant}'; "
-        "$nodeDir = 'C:\\Program Files\\AcumaticaTools\\NodeJS\\"
-        "node-v22.11.0-win-x64'; "
-        "$webConfig = Join-Path $root 'web.config'; "
-        "if (Test-Path -LiteralPath $webConfig) { "
-        "[xml]$cfg = Get-Content -LiteralPath $webConfig; "
-        "$add = @($cfg.configuration.appSettings.add) | "
-        "Where-Object { $_.key -eq 'NodeJs:NodeJsPath' }; "
-        "if ($add -and $add.value) { $nodeDir = $add.value } }; "
-        "$npm = Join-Path $nodeDir 'npm.cmd'; "
-        "if (-not (Test-Path -LiteralPath $npm)) { "
-        "throw ('npm.cmd missing: ' + $npm) }; "
-        "$env:PATH = $nodeDir + ';' + $env:PATH; "
-        "$screen = Join-Path $root 'FrontendSources\\screen'; "
-        "$ootbDir = Join-Path $root 'Scripts\\Screens'; "
-        "$tenantDir = Join-Path $root ('Scripts\\Screens\\' + $tenant); "
-        "New-Item -ItemType Directory -Force -Path $tenantDir | Out-Null; "
-        "$copyOotb = { "
-        "$ootbHtml = Join-Path $ootbDir 'IN202500.html'; "
-        "if (Test-Path -LiteralPath $ootbHtml) { "
-        "Copy-Item -LiteralPath $ootbHtml -Destination "
-        "(Join-Path $tenantDir 'IN202500.html') -Force; "
-        "Get-ChildItem -LiteralPath $ootbDir -Filter 'IN202500.*.bundle.js' | "
-        "Copy-Item -Destination $tenantDir -Force } }; "
-        "& $copyOotb; "
-        "if (-not (Test-Path -LiteralPath $screen)) { "
-        "throw ('webpack screen root missing: ' + $screen) }; "
-        "Set-Location -LiteralPath $screen; "
-        "$env:NO_COLOR = '1'; $env:FORCE_COLOR = '0'; $env:CI = 'true'; "
-        "& $npm run build -- --env screenIds=IN202500; "
-        "if ($LASTEXITCODE -ne 0) { "
-        "throw ('webpack IN202500 failed (' + $LASTEXITCODE + ')') }; "
-        "& $copyOotb; "
-        "'OK'",
-        timeout=WEBPACK_TIMEOUT,
-    )
+    ssh_run(restore_ootb_webpack_ps1(root, tenant), timeout=WEBPACK_TIMEOUT)
 
 
 def _webpack_tenant_screens_missing() -> bool:

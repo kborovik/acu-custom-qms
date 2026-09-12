@@ -1,5 +1,5 @@
 #!/usr/bin/env -S uv run
-"""T58 / V26 / V18: unpublish Lab5.QMS only, then deploy imports again."""
+"""T58 / V26 / V18 / B16: unpublish Lab5.QMS only, then deploy imports again."""
 
 from __future__ import annotations
 
@@ -96,9 +96,17 @@ class TestUnpublishLab5OnlyV26(unittest.TestCase):
         present = [path for path in leftover if _path_exists(path)]
         self.assertEqual(present, [], f"unpublish leftovers still on disk: {present}")
 
+    def _html_vendor(self, html: str) -> str:
+        marker = "VENDOR_TIME_STAMP = '"
+        start = html.find(marker)
+        self.assertNotEqual(start, -1, html[:400])
+        start += len(marker)
+        end = html.find("'", start)
+        return html[start:end]
+
     def test_in202500_without_usrqms(self) -> None:
         if not instance().ssh:
-            raise unittest.SkipTest("ACU_SSH empty — webpack not rebuilt")
+            raise unittest.SkipTest("ACU_SSH empty — OOTB webpack not restored")
         tenant = instance().tenant
         with client() as session:
             compiled = session._http.get(f"/Scripts/Screens/{tenant}/IN202500.html")
@@ -136,6 +144,34 @@ class TestUnpublishLab5OnlyV26(unittest.TestCase):
         self.assertTrue(
             "ScreenId=IN202500" in url or "ScreenID=IN202500" in url,
             f"IN202500 dropped from url after redirects: {url}",
+        )
+
+    def test_generic_inquiry_vendor_matches_site(self) -> None:
+        """B16: Stock Items GI uses GenericInquiry.html; vendor must match IN202000."""
+        if not instance().ssh:
+            raise unittest.SkipTest("ACU_SSH empty — OOTB webpack not restored")
+        with client() as session:
+            gi = session._http.get("/Scripts/Screens/GenericInquiry.html")
+            ref = session._http.get("/Scripts/Screens/IN202000.html")
+            self.assertEqual(gi.status_code, 200, "GenericInquiry.html")
+            self.assertEqual(ref.status_code, 200, "IN202000.html")
+            self.assertNotIn("TIME_STAMP = 'quiry.", gi.text)
+            self.assertEqual(
+                self._html_vendor(gi.text),
+                self._html_vendor(ref.text),
+                "GenericInquiry vendor drifted from site screens",
+            )
+            plist = session._checked(
+                session._http.get(
+                    "/Main",
+                    params={"ScreenId": "IN2025PL"},
+                    follow_redirects=True,
+                )
+            )
+        url = str(plist.url)
+        self.assertTrue(
+            "IN2025PL" in url or "e4352bbd" in url.lower() or "GenericInquiry" in url,
+            f"Stock Items GI dropped from url after redirects: {url}",
         )
 
     def test_navbar_inspection_zero(self) -> None:
